@@ -1,0 +1,44 @@
+title: Unusual Outbound Port Usage
+id: d8e3f1a4-2b75-4c91-8d6e-3f7a9c5e2b14
+status: experimental
+description: |
+  Detects outbound connections from internal hosts to non-standard ports
+  that may indicate C2 traffic, data exfiltration, or covert channels.
+  Flags ports commonly abused by malware: 4444, 8888, 9001, 31337, etc.
+references:
+  - https://attack.mitre.org/techniques/T1571/
+  - https://attack.mitre.org/techniques/T1571/
+author: dram64
+date: 2026/04/27
+tags:
+  - attack.command-and-control
+  - attack.t1571
+logsource:
+  category: network_connection
+  product: zeek
+  service: conn
+detection:
+  outbound_flow:
+    direction: 'outbound'
+  suspicious_port:
+    dest_port:
+      - 4444   # Metasploit default
+      - 8888   # Common C2 port
+      - 9001   # Tor relay
+      - 31337  # Elite/Back Orifice legacy
+      - 1337
+      - 6666
+      - 6667   # IRC C2
+  condition: outbound_flow and suspicious_port
+falsepositives:
+  - Legitimate Tor usage (rare in production environments)
+  - Custom application using non-standard ports (whitelist explicitly)
+  - Pen-testing or red-team exercises
+level: medium
+fields:
+  - src_ip
+  - dest_ip
+  - dest_port
+  - protocol
+  - bytes_sent
+  - duration

@@ -1,0 +1,51 @@
+name: Sigma Rule Validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'sigma/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'sigma/**'
+
+jobs:
+  sigma-validate:
+    name: Validate Sigma rule syntax
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install sigma-cli
+        run: |
+          pip install --upgrade pip
+          pip install pysigma sigma-cli
+
+      - name: Validate all Sigma rules
+        run: |
+          set -e
+          for rule in sigma/rules/*.yml; do
+            echo "==> Validating $rule"
+            sigma check "$rule"
+          done
+
+      - name: Convert rules to Splunk format (smoke test)
+        run: |
+          for rule in sigma/rules/*.yml; do
+            echo "==> Converting $rule to Splunk SPL"
+            sigma convert -t splunk "$rule" || echo "  (may not have a splunk backend mapping yet)"
+          done
+
+      - name: Convert rules to ElasticSearch format (smoke test)
+        run: |
+          for rule in sigma/rules/*.yml; do
+            echo "==> Converting $rule to Elasticsearch query"
+            sigma convert -t es-qs "$rule" || echo "  (may not have an es backend mapping yet)"
+          done

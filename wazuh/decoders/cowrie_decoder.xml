@@ -1,0 +1,14 @@
+<!--
+  Cowrie SSH/Telnet honeypot JSON log decoder
+  Cowrie writes JSON events to /var/log/cowrie/cowrie.json
+  Each line is a single event: login attempts, commands, file uploads, etc.
+-->
+
+<decoder name="cowrie">
+  <prematch>^{.*"eventid":"cowrie\.</prematch>
+</decoder>
+
+<decoder name="cowrie-json">
+  <parent>cowrie</parent>
+  <plugin_decoder>JSON_Decoder</plugin_decoder>
+</decoder>

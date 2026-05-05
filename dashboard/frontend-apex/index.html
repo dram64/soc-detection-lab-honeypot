@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SOC Detection Lab — Honeypot pipeline visualized in real time</title>
+<meta name="description" content="A live SSH honeypot pipeline visualized in real time. Cowrie → S3 → Lambda → DynamoDB → API → React dashboard, on AWS.">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="canonical" href="https://dram-soc.org/">
+
+<style>
+:root {
+  --bg: #0b0f14;
+  --bg-elev: #121821;
+  --bg-border: #1f2933;
+  --fg: #e6edf3;
+  --fg-muted: #8b96a3;
+  --fg-subtle: #5a6473;
+  --accent: #2dd4bf;
+  --accent-dim: #0f766e;
+  --danger: #f87171;
+  --max: 1100px;
+  --rad: 10px;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--fg); margin: 0; padding: 0; }
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.55;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; text-decoration-color: var(--accent-dim); }
+code, .mono { font-family: var(--mono); }
+
+nav.top {
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(11, 15, 20, 0.86);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--bg-border);
+}
+nav.top .row {
+  max-width: var(--max); margin: 0 auto;
+  padding: 14px 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+nav.top .brand { font-weight: 600; letter-spacing: -0.01em; }
+nav.top .brand .dot { color: var(--accent); }
+nav.top .links { display: flex; gap: 18px; align-items: center; font-size: 14px; color: var(--fg-muted); }
+nav.top .links a { color: var(--fg-muted); }
+nav.top .links a:hover { color: var(--fg); }
+nav.top .cta {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: 8px;
+  background: var(--accent); color: #052e2a;
+  font-weight: 600; font-size: 13px;
+}
+nav.top .cta:hover { background: #5eead4; text-decoration: none; }
+
+main { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+
+section.hero { padding: 72px 0 56px; }
+section.hero h1 {
+  font-size: clamp(34px, 5vw, 52px);
+  font-weight: 700; letter-spacing: -0.02em;
+  margin: 0 0 16px;
+}
+section.hero h1 .accent { color: var(--accent); }
+section.hero p.lede {
+  font-size: clamp(17px, 2vw, 19px);
+  color: var(--fg-muted);
+  max-width: 64ch;
+  margin: 0 0 28px;
+}
+.cta-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-bottom: 36px; }
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 22px; border-radius: 8px;
+  background: var(--accent); color: #052e2a;
+  font-weight: 600; font-size: 15px;
+}
+.btn-primary:hover { background: #5eead4; text-decoration: none; }
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 18px; border-radius: 8px;
+  border: 1px solid var(--bg-border); color: var(--fg);
+  font-size: 15px;
+}
+.btn-ghost:hover { border-color: var(--accent); text-decoration: none; }
+
+.hero-media {
+  border: 1px solid var(--bg-border);
+  border-radius: var(--rad);
+  background: var(--bg-elev);
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(255,255,255,.02), 0 16px 32px -16px rgba(0,0,0,0.55);
+}
+.hero-media video, .hero-media img {
+  width: 100%; height: auto; display: block;
+}
+.hero-media-cap {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px; font-size: 12px; color: var(--fg-subtle);
+  border-top: 1px solid var(--bg-border);
+}
+.hero-media-cap .live {
+  color: var(--accent); font-family: var(--mono);
+}
+.hero-media-cap .live::before {
+  content: "●"; margin-right: 6px; animation: blink 1.6s infinite;
+}
+@keyframes blink { 50% { opacity: 0.3; } }
+
+.live-stat {
+  margin-top: 28px; padding: 18px 22px;
+  border: 1px solid var(--bg-border); background: var(--bg-elev);
+  border-radius: var(--rad);
+  font-size: 16px; color: var(--fg-muted);
+}
+.live-stat strong { color: var(--accent); font-family: var(--mono); font-weight: 600; font-size: 1.15em; }
+.live-stat.error a { color: var(--accent); }
+
+section { padding: 56px 0; border-top: 1px solid var(--bg-border); }
+section h2 {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--fg-subtle); font-weight: 600; margin: 0 0 24px;
+}
+section h3 {
+  font-size: 24px; font-weight: 600; letter-spacing: -0.01em;
+  margin: 0 0 16px;
+}
+section p { color: var(--fg-muted); max-width: 70ch; margin: 0 0 14px; }
+section p strong { color: var(--fg); font-weight: 600; }
+
+.arch {
+  background: var(--bg-elev);
+  border: 1px solid var(--bg-border);
+  border-radius: var(--rad);
+  padding: 22px;
+}
+.arch svg { width: 100%; height: auto; display: block; }
+.arch figcaption { color: var(--fg-subtle); font-size: 13px; margin-top: 14px; line-height: 1.6; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  display: inline-flex; align-items: center;
+  padding: 6px 12px; border-radius: 999px;
+  background: var(--bg-elev); border: 1px solid var(--bg-border);
+  color: var(--fg-muted); font-size: 13px; font-family: var(--mono);
+}
+.chip.accent { color: var(--accent); border-color: var(--accent-dim); }
+
+.adr-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media (min-width: 760px) { .adr-grid { grid-template-columns: 1fr 1fr; } }
+.adr-card {
+  border: 1px solid var(--bg-border); background: var(--bg-elev);
+  border-radius: var(--rad); padding: 20px;
+}
+.adr-card .badge {
+  display: inline-block; padding: 3px 8px; border-radius: 4px;
+  background: rgba(45,212,191,0.08); color: var(--accent);
+  font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  margin-bottom: 10px;
+}
+.adr-card h4 {
+  margin: 0 0 8px; font-size: 16px; font-weight: 600; color: var(--fg);
+}
+.adr-card p { font-size: 14px; line-height: 1.55; margin: 0 0 12px; }
+.adr-card .read { font-size: 13px; }
+
+.links-row { display: flex; flex-wrap: wrap; gap: 22px; align-items: center; }
+.links-row a { font-size: 15px; }
+
+footer {
+  border-top: 1px solid var(--bg-border);
+  margin-top: 56px;
+  padding: 24px;
+  text-align: center;
+  color: var(--fg-subtle);
+  font-size: 13px;
+}
+footer a { color: var(--fg-subtle); }
+footer a:hover { color: var(--accent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-media-cap .live::before { animation: none; }
+  .hero-media video { display: none; }
+  .hero-media img.poster { display: block; }
+}
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="row">
+    <div class="brand">SOC Detection Lab<span class="dot">.</span></div>
+    <div class="links">
+      <a href="https://github.com/dram64/soc-detection-lab" rel="noopener">GitHub</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#decisions">Decisions</a>
+      <a class="cta" href="https://dashboard.dram-soc.org">View Dashboard →</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <section class="hero" aria-labelledby="heroTitle">
+    <h1 id="heroTitle">A live SSH honeypot, <span class="accent">visualized</span>.</h1>
+    <p class="lede">
+      An SSH honeypot captures real attacker traffic. A serverless AWS pipeline ingests, classifies, and aggregates every login attempt. A React dashboard renders the result in near-real time — at <a href="https://dashboard.dram-soc.org">dashboard.dram-soc.org</a>.
+    </p>
+
+    <div class="cta-row">
+      <a class="btn-primary" href="https://dashboard.dram-soc.org">View the live dashboard →</a>
+      <a class="btn-ghost" href="https://github.com/dram64/soc-detection-lab" rel="noopener">Source on GitHub</a>
+    </div>
+
+    <figure class="hero-media" aria-label="Dashboard preview">
+      <video autoplay muted loop playsinline poster="/preview.jpg">
+        <source src="/preview.webm" type="video/webm">
+      </video>
+      <img class="poster" src="/preview.jpg" alt="Honeypot dashboard with attacker counters, top usernames, top passwords, choropleth map of source countries, and a virtualized recent-events table." style="display:none">
+      <figcaption class="hero-media-cap">
+        <span>dashboard.dram-soc.org</span>
+        <span class="live">live</span>
+      </figcaption>
+    </figure>
+
+    <p id="live-stat" class="live-stat" aria-live="polite">Loading live data…</p>
+  </section>
+
+  <section id="what" aria-labelledby="whatTitle">
+    <h2 id="whatTitle">What this is</h2>
+    <h3>An SSH honeypot's traffic, plumbed end-to-end on AWS.</h3>
+    <p>
+      A <strong>Cowrie</strong> SSH honeypot accepts every login attempt the public internet throws at it and records the username, the password, the source IP, the timing, and any post-login activity. Honeypots see attacker traffic almost exclusively — most legitimate users never hit one — so the data is unusually clean signal.
+    </p>
+    <p>
+      The pipeline ships those events as gzipped JSON to S3. A <strong>Python Lambda</strong> validates each event with a strict Pydantic schema, classifies passwords against a bundled known-bad dictionary (<a href="https://github.com/dram64/soc-detection-lab/blob/main/dashboard/docs/adr/005-password-filtering.md">ADR-005</a>), attaches GeoIP enrichment, and writes a single-table <strong>DynamoDB</strong> row. A second Lambda consumes DynamoDB Streams to produce SUMMARY and RANK rollups idempotently.
+    </p>
+    <p>
+      A read-only <strong>API Lambda</strong> serves a TypeScript-strict <strong>React + Recharts</strong> SPA over CloudFront, behind <strong>Cloudflare</strong>'s free WAF (<a href="https://github.com/dram64/soc-detection-lab/blob/main/dashboard/docs/adr/007-cloudflare-waf-over-aws-waf.md">ADR-007</a>). The whole stack is Terraformed and runs at <strong class="mono">~$2.60/month</strong>.
+    </p>
+  </section>
+
+  <section id="architecture" aria-labelledby="archHeading">
+    <h2 id="archHeading">Architecture</h2>
+    <h3>Three paths: ingest, read, render.</h3>
+    <figure class="arch" id="archFigure">
+      <img src="/architecture.svg" alt="System architecture: Cowrie SSH honeypot on Raspberry Pi → S3 raw bucket → ingest Lambda (password classifier, GeoIP) → DynamoDB single-table; aggregator Lambda consumes DDB Streams to write SUMMARY/RANK rollups; API Lambda serves read-only routes via API Gateway; S3 frontend bundle → CloudFront → Cloudflare proxy → browser." style="width:100%; display:block">
+
+      <figcaption>
+        Solid teal lines mark the ingest and origin-fetch paths; dashed teal marks the API read path the browser walks every 30 seconds. Two security boundaries are explicit: the password-classifier inside the ingest Lambda (<a href="https://github.com/dram64/soc-detection-lab/blob/main/dashboard/docs/adr/005-password-filtering.md">ADR-005</a>) splits dictionary attempts from raw plaintext; Cloudflare's proxy (<a href="https://github.com/dram64/soc-detection-lab/blob/main/dashboard/docs/adr/007-cloudflare-waf-over-aws-waf.md">ADR-007</a>) is the public WAF, replacing AWS WAF entirely.
+      </figcaption>
+    </figure>
+  </section>
+
+  <section id="stack" aria-labelledby="stackHeading">
+    <h2 id="stackHeading">Tech stack</h2>
+    <div class="chips">
+      <span class="chip accent">Python 3.13</span>
+      <span class="chip accent">TypeScript (strict)</span>
+      <span class="chip">AWS Lambda</span>
+      <span class="chip">DynamoDB</span>
+      <span class="chip">API Gateway</span>
+      <span class="chip">CloudFront</span>
+      <span class="chip">S3 + OAC</span>
+      <span class="chip">ACM</span>
+      <span class="chip">CloudWatch</span>
+      <span class="chip">Pydantic v2</span>
+      <span class="chip">boto3</span>
+      <span class="chip">Terraform</span>
+      <span class="chip">React 18</span>
+      <span class="chip">Vite</span>
+      <span class="chip">TanStack Query</span>
+      <span class="chip">Recharts</span>
+      <span class="chip">Tailwind CSS</span>
+      <span class="chip">Cloudflare</span>
+      <span class="chip">Cowrie</span>
+    </div>
+  </section>
+
+  <section id="decisions" aria-labelledby="decHeading">
+    <h2 id="decHeading">Engineering decisions</h2>
+    <h3>Four trade-offs the project owns explicitly.</h3>
+    <div class="adr-grid">
+
+      <article class="adr-card">
+        <span class="badge">ADR-005</span>
+        <h4>Attempted-password dictionary filtering</h4>
+        <p>Cowrie captures every plaintext password tried. Publishing them verbatim risks surfacing real victims' credentials. The ingest Lambda checks each attempt against a bundled known-bad dictionary; matches are public, non-matches are length-redacted. <span class="mono">password_raw</span> never leaves the ingest path.</p>
+        <a class="read" href="https://github.com/dram64/soc-detection-lab/blob/main/dashboard/docs/adr/005-password-filtering.md" rel="noopener">Read full ADR →</a>
+      </article>
+
+      <article class="adr-card">
+        <span class="badge">ADR-007</span>
+        <h4>Cloudflare proxy as edge WAF (no AWS WAF)</h4>
+        <p>AWS WAF runs ~$5.40/mo on this volume — the largest line item on the bill. Cloudflare's free tier covers DDoS, managed WAF rules, bot management, and TLS at the edge. Decision: orange-cloud the dashboard behind Cloudflare; CloudFront origin sits behind it.</p>
+        <a class="read" href="https://github.com/dram64/soc-detection-lab/blob/main/dashboard/docs/adr/007-cloudflare-waf-over-aws-waf.md" rel="noopener">Read full ADR →</a>
+      </article>
+
+      <article class="adr-card">
+        <span class="badge">ADR-003</span>
+        <h4>DynamoDB single-table design</h4>
+        <p>Five distinct entity shapes — events, hourly aggregates, rank items, daily summaries, heartbeats — share one table with overloaded keys and three GSIs. Every access pattern resolves to a Query, never a Scan. Costs ~$0.55/mo; alternative (Aurora Serverless) would alone breach the cap.</p>
+        <a class="read" href="https://github.com/dram64/soc-detection-lab/blob/main/dashboard/docs/adr/003-single-table-design.md" rel="noopener">Read full ADR →</a>
+      </article>
+
+      <article class="adr-card">
+        <span class="badge">ADR-009</span>
+        <h4>Captured-malware policy: SHA + URL only</h4>
+        <p>Cowrie can store the binaries attackers try to drop. The dashboard does not — only the SHA-256 and source URL are kept; the binary itself is dropped at the Pi. Eliminates the binary-custody liability from the cloud surface and keeps the AWS storage policy boring.</p>
+        <a class="read" href="https://github.com/dram64/soc-detection-lab/blob/main/dashboard/docs/adr/009-captured-malware-policy.md" rel="noopener">Read full ADR →</a>
+      </article>
+
+    </div>
+  </section>
+
+  <section id="links" aria-labelledby="linksHeading">
+    <h2 id="linksHeading">Links</h2>
+    <div class="links-row">
+      <a href="https://dashboard.dram-soc.org">Live dashboard</a>
+      <a href="https://github.com/dram64/soc-detection-lab" rel="noopener">GitHub repo</a>
+      <a href="https://github.com/dram64/soc-detection-lab/tree/main/dashboard/docs/adr" rel="noopener">All ADRs</a>
+      <a href="https://github.com/dram64/soc-detection-lab/blob/main/dashboard/docs/ENGINEERING_NARRATIVE.md" rel="noopener">Engineering narrative</a>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  © 2026 dram-soc.org · Built on AWS · <a href="https://github.com/dram64/soc-detection-lab" rel="noopener" aria-label="GitHub">GitHub</a>
+</footer>
+
+<script>
+(function () {
+  var API = "https://mlncxsr5a9.execute-api.us-east-1.amazonaws.com";
+  var el = document.getElementById("live-stat");
+
+  function setError() {
+    el.classList.add("error");
+    el.innerHTML = 'Live data unavailable — <a href="https://dashboard.dram-soc.org">view the dashboard for current stats →</a>';
+  }
+
+  // 5-second timeout. AbortSignal.timeout shipped in Node 18 / Chromium 103.
+  var controller = (typeof AbortSignal !== "undefined" && AbortSignal.timeout)
+    ? { signal: AbortSignal.timeout(5000) }
+    : {};
+
+  fetch(API + "/api/top/countries?limit=50", controller)
+    .then(function (res) {
+      if (!res.ok) throw new Error("status " + res.status);
+      return res.json();
+    })
+    .then(function (body) {
+      var items = (body && body.items) || [];
+      var n = 0;
+      for (var i = 0; i < items.length; i++) { if (items[i] && items[i].count > 0) n++; }
+      if (n <= 0) { setError(); return; }
+      el.innerHTML = 'Currently observing <strong>' + n + '</strong> countries targeting this honeypot.';
+    })
+    .catch(setError);
+})();
+</script>
+
+</body>
+</html>

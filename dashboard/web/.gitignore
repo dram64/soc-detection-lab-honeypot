@@ -1,0 +1,19 @@
+# Vite / Node
+node_modules
+dist
+.vite
+
+# Tests
+coverage
+
+# Local env overrides
+.env.local
+.env.*.local
+
+# Editor
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 520" role="img" aria-labelledby="archTitle archDesc" preserveAspectRatio="xMidYMid meet">
+  <title id="archTitle">SOC Detection Lab — system architecture</title>
+  <desc id="archDesc">Data flow from a Cowrie SSH honeypot on a Raspberry Pi through an AWS serverless ingest pipeline to a React dashboard, with Cloudflare proxied DNS and CloudFront at the edge. ADR-005 marks the password-filter boundary inside the ingest Lambda; ADR-007 marks Cloudflare's role as the public WAF.</desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2dd4bf"/>
+    </marker>
+    <marker id="arrowDim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5a6473"/>
+    </marker>
+    <style>
+      .lbl { fill:#e6edf3; font:600 13px ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; }
+      .sub { fill:#8b96a3; font:500 11px ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; }
+      .mono { fill:#8b96a3; font:500 10px ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; }
+      .adr { fill:#f87171; font:600 11px ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; }
+      .panel { fill:#121821; stroke:#1f2933; stroke-width:1; }
+      .panelAccent { fill:#121821; stroke:#2dd4bf; stroke-width:1.5; }
+      .ingestPath { stroke:#2dd4bf; stroke-width:2; fill:none; }
+      .renderPath { stroke:#2dd4bf; stroke-width:2; fill:none; stroke-dasharray:4 3; }
+      .boundary { fill:none; stroke:#f87171; stroke-width:1.2; stroke-dasharray:4 4; }
+    </style>
+  </defs>
+
+  <!-- background -->
+  <rect width="880" height="520" fill="#0b0f14"/>
+
+  <!-- Pi / Cowrie -->
+  <rect x="20" y="40" width="140" height="64" rx="8" class="panel"/>
+  <text x="90" y="65" text-anchor="middle" class="lbl">Raspberry Pi</text>
+  <text x="90" y="84" text-anchor="middle" class="sub">Cowrie SSH honeypot</text>
+  <text x="90" y="98" text-anchor="middle" class="mono">cowrie.login.* events</text>
+
+  <!-- S3 raw -->
+  <rect x="200" y="40" width="140" height="64" rx="8" class="panel"/>
+  <text x="270" y="65" text-anchor="middle" class="lbl">S3 (raw)</text>
+  <text x="270" y="84" text-anchor="middle" class="sub">gz event batches</text>
+  <text x="270" y="98" text-anchor="middle" class="mono">raw/yyyy/mm/dd/hh/</text>
+
+  <!-- Ingest Lambda (security boundary 1) -->
+  <rect x="380" y="40" width="180" height="64" rx="8" class="panelAccent"/>
+  <text x="470" y="65" text-anchor="middle" class="lbl">Lambda — ingest</text>
+  <text x="470" y="84" text-anchor="middle" class="sub">password classifier · GeoIP</text>
+  <text x="470" y="98" text-anchor="middle" class="mono">Pydantic v2, extra="forbid"</text>
+
+  <!-- ADR-005 boundary -->
+  <rect x="372" y="32" width="196" height="80" class="boundary" rx="10"/>
+  <text x="568" y="30" class="adr">ADR-005</text>
+
+  <!-- DynamoDB -->
+  <rect x="600" y="40" width="160" height="64" rx="8" class="panel"/>
+  <text x="680" y="65" text-anchor="middle" class="lbl">DynamoDB</text>
+  <text x="680" y="84" text-anchor="middle" class="sub">single-table</text>
+  <text x="680" y="98" text-anchor="middle" class="mono">events · rollups · GSIs</text>
+
+  <!-- Aggregator Lambda -->
+  <rect x="600" y="160" width="160" height="64" rx="8" class="panel"/>
+  <text x="680" y="185" text-anchor="middle" class="lbl">Lambda — aggregator</text>
+  <text x="680" y="204" text-anchor="middle" class="sub">DDB Streams consumer</text>
+  <text x="680" y="218" text-anchor="middle" class="mono">SUMMARY / RANK rollups</text>
+
+  <!-- API Lambda -->
+  <rect x="380" y="160" width="180" height="64" rx="8" class="panel"/>
+  <text x="470" y="185" text-anchor="middle" class="lbl">Lambda — api</text>
+  <text x="470" y="204" text-anchor="middle" class="sub">read-only · 8 routes</text>
+  <text x="470" y="218" text-anchor="middle" class="mono">DDB Query (parallel boto3)</text>
+
+  <!-- API GW -->
+  <rect x="200" y="160" width="140" height="64" rx="8" class="panel"/>
+  <text x="270" y="185" text-anchor="middle" class="lbl">API Gateway</text>
+  <text x="270" y="204" text-anchor="middle" class="sub">HTTP API · throttle · CORS</text>
+
+  <!-- S3 frontend -->
+  <rect x="20" y="290" width="140" height="64" rx="8" class="panel"/>
+  <text x="90" y="315" text-anchor="middle" class="lbl">S3 (frontend)</text>
+  <text x="90" y="334" text-anchor="middle" class="sub">React SPA bundle</text>
+  <text x="90" y="348" text-anchor="middle" class="mono">OAC-only access</text>
+
+  <!-- CloudFront -->
+  <rect x="200" y="290" width="140" height="64" rx="8" class="panel"/>
+  <text x="270" y="315" text-anchor="middle" class="lbl">CloudFront</text>
+  <text x="270" y="334" text-anchor="middle" class="sub">HTTPS · cache · CSP/HSTS</text>
+  <text x="270" y="348" text-anchor="middle" class="mono">PriceClass_100</text>
+
+  <!-- Cloudflare boundary -->
+  <rect x="372" y="282" width="196" height="80" class="boundary" rx="10"/>
+  <text x="568" y="280" class="adr">ADR-007</text>
+
+  <rect x="380" y="290" width="180" height="64" rx="8" class="panelAccent"/>
+  <text x="470" y="315" text-anchor="middle" class="lbl">Cloudflare proxy</text>
+  <text x="470" y="334" text-anchor="middle" class="sub">free WAF · DDoS · TLS</text>
+  <text x="470" y="348" text-anchor="middle" class="mono">orange cloud</text>
+
+  <!-- Browser -->
+  <rect x="600" y="290" width="160" height="64" rx="8" class="panel"/>
+  <text x="680" y="315" text-anchor="middle" class="lbl">Browser</text>
+  <text x="680" y="334" text-anchor="middle" class="sub">recruiter / public</text>
+  <text x="680" y="348" text-anchor="middle" class="mono">dashboard.dram-soc.org</text>
+
+  <!-- INGEST PATH (top row, left to right) -->
+  <line x1="160" y1="72" x2="200" y2="72" class="ingestPath" marker-end="url(#arrow)"/>
+  <text x="180" y="62" text-anchor="middle" class="mono">PUT</text>
+  <line x1="340" y1="72" x2="380" y2="72" class="ingestPath" marker-end="url(#arrow)"/>
+  <text x="360" y="62" text-anchor="middle" class="mono">S3 event</text>
+  <line x1="560" y1="72" x2="600" y2="72" class="ingestPath" marker-end="url(#arrow)"/>
+  <text x="580" y="62" text-anchor="middle" class="mono">PutItem</text>
+
+  <!-- DDB → Aggregator → DDB (Streams loop) -->
+  <line x1="700" y1="104" x2="700" y2="160" class="ingestPath" marker-end="url(#arrow)"/>
+  <text x="713" y="135" class="mono">Stream</text>
+  <line x1="660" y1="160" x2="660" y2="104" class="ingestPath" marker-end="url(#arrow)"/>
+  <text x="618" y="135" text-anchor="end" class="mono">UpdateItem</text>
+
+  <!-- API path (middle row, right to left) -->
+  <line x1="600" y1="192" x2="560" y2="192" class="renderPath" marker-end="url(#arrow)"/>
+  <text x="580" y="182" text-anchor="middle" class="mono">Query</text>
+  <line x1="380" y1="192" x2="340" y2="192" class="renderPath" marker-end="url(#arrow)"/>
+  <line x1="200" y1="192" x2="160" y2="192" class="renderPath" marker-end="url(#arrow)"/>
+
+  <!-- Browser → API GW (XHR) — long arrow up the right side -->
+  <path d="M 680 290 L 680 250 L 270 250 L 270 224" class="renderPath" fill="none" marker-end="url(#arrow)"/>
+  <text x="475" y="244" text-anchor="middle" class="mono">XHR /api/*</text>
+
+  <!-- Render path (bottom row, S3 → CloudFront → Cloudflare → Browser) -->
+  <line x1="160" y1="322" x2="200" y2="322" class="ingestPath" marker-end="url(#arrow)"/>
+  <text x="180" y="312" text-anchor="middle" class="mono">GetObject</text>
+  <line x1="340" y1="322" x2="380" y2="322" class="ingestPath" marker-end="url(#arrow)"/>
+  <line x1="560" y1="322" x2="600" y2="322" class="ingestPath" marker-end="url(#arrow)"/>
+  <text x="580" y="312" text-anchor="middle" class="mono">HTTPS</text>
+
+  <!-- Section labels -->
+  <text x="20" y="20" class="sub">INGEST PATH</text>
+  <text x="20" y="140" class="sub">READ PATH</text>
+  <text x="20" y="270" class="sub">RENDER PATH</text>
+
+  <!-- Legend -->
+  <g transform="translate(20, 420)">
+    <line x1="0" y1="10" x2="40" y2="10" class="ingestPath"/>
+    <text x="48" y="14" class="sub">solid · ingest / origin fetch</text>
+    <line x1="0" y1="34" x2="40" y2="34" class="renderPath"/>
+    <text x="48" y="38" class="sub">dashed · API read (browser → DDB)</text>
+    <rect x="0" y="54" width="40" height="14" class="boundary"/>
+    <text x="48" y="65" class="adr">ADR boundary</text>
+  </g>
+
+  <!-- ADR captions -->
+  <g transform="translate(420, 432)">
+    <text x="0" y="0" class="lbl">ADR-005</text>
+    <text x="0" y="18" class="sub">Password classifier splits dictionary attempts</text>
+    <text x="0" y="33" class="sub">(public) from raw plaintext (private only).</text>
+  </g>
+  <g transform="translate(640, 432)">
+    <text x="0" y="0" class="lbl">ADR-007</text>
+    <text x="0" y="18" class="sub">Cloudflare proxy is the public WAF.</text>
+    <text x="0" y="33" class="sub">No AWS WAF — saves ~$5.40/mo.</text>
+  </g>
+</svg>

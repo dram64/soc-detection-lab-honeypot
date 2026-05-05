@@ -1,0 +1,17 @@
+{
+  "generator_version": "0.1.0",
+  "seed": 2001,
+  "events_total": 10000,
+  "files": [
+    {
+      "path": "cowrie.2026-04-28.json.gz",
+      "events": 8497,
+      "sha256": "e0ffbf32f02794d3b87bca039dfec811090a3f30b2e7053970168a6ab949183b"
+    },
+    {
+      "path": "cowrie.2026-04-29.json.gz",
+      "events": 1503,
+      "sha256": "428f879d1bf84224af7403b386fd36e260b1f2801241b00d862f0e50de433548"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  gitleaks:
+    name: Secret scanning (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  tfsec:
+    name: IaC security scanning (tfsec)
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, '.tf') || contains(github.event.head_commit.added, '.tf')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1
+        with:
+          working_directory: .
+          format: sarif
+          additional_args: --soft-fail
+
+  yaml-lint:
+    name: YAML syntax validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Lint YAML files
+        run: |
+          yamllint -d "{extends: relaxed, rules: {line-length: {max: 200}}}" \
+            sigma/rules/*.yml \
+            docker-compose.yml \
+            elastic/*.yml \
+            .github/workflows/*.yml
+
+  shellcheck:
+    name: Shell script linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run shellcheck
+        run: |
+          sudo apt-get update && sudo apt-get install -y shellcheck
+          find scripts/ -name "*.sh" -exec shellcheck {} +

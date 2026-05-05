@@ -1,0 +1,23 @@
+<!--
+  Wazuh rules for MISP threat intel correlation
+  Rule IDs in 100300-100399 range
+-->
+
+<group name="misp,threat-intel,">
+
+  <rule id="100300" level="12">
+    <decoded_as>json</decoded_as>
+    <field name="misp.event_id">.+</field>
+    <description>MISP: IOC match — IP $(src_ip) found in MISP event $(misp.event_id)</description>
+    <mitre>
+      <id>T1071</id>
+    </mitre>
+  </rule>
+
+  <rule id="100301" level="13">
+    <if_sid>100300</if_sid>
+    <field name="misp.threat_level">1</field>
+    <description>MISP: HIGH threat IOC match — $(misp.event_info)</description>
+  </rule>
+
+</group>

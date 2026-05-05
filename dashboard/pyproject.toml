@@ -1,0 +1,96 @@
+[project]
+name = "soc-detection-dashboard"
+version = "0.1.0"
+description = "Honeypot Visualizer Dashboard backend + tooling for the SOC Detection Lab"
+requires-python = ">=3.13"
+authors = [{ name = "dram64" }]
+readme = "docs/PROJECT_PLAN.md"
+license = { text = "MIT" }
+
+dependencies = [
+    "boto3>=1.35.0",
+    "pydantic>=2.9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-cov>=5.0.0",
+    "moto[s3,dynamodb,sqs,lambda]>=5.0.0",
+    "ruff>=0.6.0",
+    "mypy>=1.11.0",
+    "types-boto3",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["functions*", "tools*"]
+exclude = ["tests*", "infrastructure*", "frontend*", "frontend-apex*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["frontend", "frontend-apex", "infrastructure"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",     # pycodestyle / pyflakes
+    "I",               # isort
+    "B",               # bugbear
+    "UP",              # pyupgrade
+    "SIM",             # simplify
+    "RUF",             # ruff-specific
+]
+ignore = [
+    "E501",            # line length is enforced by formatter
+]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unused_ignores = true
+warn_return_any = true
+warn_redundant_casts = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+no_implicit_optional = true
+exclude = ["frontend/", "frontend-apex/", "infrastructure/", "tests/fixtures/"]
+
+[[tool.mypy.overrides]]
+module = ["moto.*", "boto3.*", "botocore.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests/backend"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning:botocore.*",
+]
+
+[tool.coverage.run]
+source = ["functions", "tools"]
+branch = true
+omit = ["*/tests/*", "*/__main__.py"]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]

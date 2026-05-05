@@ -1,0 +1,80 @@
+# Environment
+.env
+.env.local
+
+# Secrets
+*.key
+*.pem
+*-secret*
+*credentials*
+ssl/
+certs/
+
+# Docker volumes (if mounted locally)
+data/
+logs/
+volumes/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Honeypot raw captures (can be large; archive separately)
+honeypot-captures/
+
+# Local Wazuh state
+wazuh/queue/
+wazuh/stats/
+
+# Splunk runtime data
+splunk/var/
+
+# Pcap files
+*.pcap
+*.pcapng
+
+# Dashboard subproject
+dashboard/frontend/node_modules/
+dashboard/frontend/dist/
+dashboard/web/node_modules/
+dashboard/web/dist/
+dashboard/web/.vite/
+dashboard/web/coverage/
+dashboard/web/.env.local
+dashboard/web/.env.*.local
+dashboard/**/.terraform/
+dashboard/**/*.tfstate*
+dashboard/**/*.tfplan
+dashboard/**/.venv/
+dashboard/**/__pycache__/
+dashboard/tests/fixtures/synthetic/*.json.gz
+dashboard/functions/layers/geolite2/*.mmdb
+dashboard/functions/**/build/
+dashboard/functions/**/*.zip
+dashboard/infrastructure/terraform/**/build/
+
+# Pytest coverage SQLite (regenerates per pytest --cov / npm run test)
+dashboard/.coverage
+dashboard/**/.coverage
+
+# Phase 4 latency-triage scratch outputs (DDB query bodies/responses)
+dashboard/_ds_*.json
+
+# TypeScript incremental build cache (regenerates per `npm run build`)
+*.tsbuildinfo
+
+# Claude Code per-machine state (permission allowlist, scheduled-task lock).
+# Project-relevant Claude config (skills, hooks the team should share) lives
+# in .claude/settings.json — committed when present. .local.json is the
+# user-local override; never commit. The scheduled_tasks.lock is a runtime
+# mutex; never commit.
+.claude/settings.local.json
+.claude/scheduled_tasks.lock

@@ -1,0 +1,39 @@
+title: Lateral Movement via SMB/Admin Shares
+id: f7c2b8e3-4d61-49a2-bc15-7e3f9a2c5d18
+status: experimental
+description: |
+  Detects potential lateral movement via SMB administrative shares
+  (C$, ADMIN$, IPC$). Flags connections to admin shares from non-server
+  hosts during off-hours, or from accounts not normally accessing infrastructure.
+references:
+  - https://attack.mitre.org/techniques/T1021/002/
+author: dram64
+date: 2026/04/27
+tags:
+  - attack.lateral-movement
+  - attack.t1021.002
+logsource:
+  category: network_connection
+  product: zeek
+  service: smb
+detection:
+  smb_admin_share:
+    smb.share|endswith:
+      - '\C$'
+      - '\ADMIN$'
+      - '\IPC$'
+  off_hours:
+    timestamp_hour|gte: 22
+    timestamp_hour|lt: 6
+  condition: smb_admin_share and off_hours
+falsepositives:
+  - Authorized admin operations during maintenance windows
+  - Backup software using admin shares
+  - Patch management agents
+level: medium
+fields:
+  - src_ip
+  - dst_ip
+  - smb.share
+  - smb.username
+  - timestamp

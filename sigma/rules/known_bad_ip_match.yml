@@ -1,0 +1,39 @@
+title: Connection to Known-Bad IP from MISP Feed
+id: c4a7d2e9-3f81-4b12-9e37-1a6c8d3f2b95
+status: stable
+description: |
+  Detects any inbound or outbound connection to/from an IP address that
+  appears in the MISP threat intelligence feed. Correlates Suricata flow
+  records against the MISP IOC database refreshed every 6 hours.
+references:
+  - https://attack.mitre.org/techniques/T1071/
+  - https://www.misp-project.org/
+author: dram64
+date: 2026/04/27
+tags:
+  - attack.command-and-control
+  - attack.t1071
+  - attack.initial-access
+logsource:
+  category: network_connection
+  product: suricata
+detection:
+  flow_event:
+    event_type: 'flow'
+  bad_src_match:
+    src_ip:
+      - '%MISP_BAD_IPS%'
+  bad_dst_match:
+    dest_ip:
+      - '%MISP_BAD_IPS%'
+  condition: flow_event and (bad_src_match or bad_dst_match)
+falsepositives:
+  - MISP feed ingesting low-confidence indicators (tune confidence threshold)
+  - Stale IOCs (whitelist verified-clean IPs explicitly)
+level: high
+fields:
+  - src_ip
+  - dest_ip
+  - misp_event_id
+  - misp_attribute_uuid
+  - threat_score

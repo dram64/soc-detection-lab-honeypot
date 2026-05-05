@@ -1,0 +1,151 @@
+# SOC Detection Lab — Suricata config
+# This is a minimal config; tune for your network/sensor before production use.
+
+%YAML 1.1
+---
+
+# ============================================================
+# Sensor identity
+# ============================================================
+sensor-name: soc-lab-suricata
+default-log-dir: /var/log/suricata/
+
+# ============================================================
+# Variables
+# ============================================================
+vars:
+  address-groups:
+    HOME_NET: "[10.0.0.0/8,172.16.0.0/12,192.168.0.0/16]"
+    EXTERNAL_NET: "!$HOME_NET"
+    HTTP_SERVERS: "$HOME_NET"
+    SMTP_SERVERS: "$HOME_NET"
+    SQL_SERVERS: "$HOME_NET"
+    DNS_SERVERS: "$HOME_NET"
+    TELNET_SERVERS: "$HOME_NET"
+    AIM_SERVERS: "$EXTERNAL_NET"
+    DC_SERVERS: "$HOME_NET"
+    DNP3_SERVER: "$HOME_NET"
+    DNP3_CLIENT: "$HOME_NET"
+    MODBUS_CLIENT: "$HOME_NET"
+    MODBUS_SERVER: "$HOME_NET"
+    ENIP_CLIENT: "$HOME_NET"
+    ENIP_SERVER: "$HOME_NET"
+
+  port-groups:
+    HTTP_PORTS: "80"
+    SHELLCODE_PORTS: "!80"
+    ORACLE_PORTS: 1521
+    SSH_PORTS: 22
+    DNP3_PORTS: 20000
+    MODBUS_PORTS: 502
+    FILE_DATA_PORTS: "[$HTTP_PORTS,110,143]"
+    FTP_PORTS: 21
+
+# ============================================================
+# Outputs
+# ============================================================
+outputs:
+  # EVE JSON — primary output for SIEM ingestion
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      community-id: yes
+      community-id-seed: 0
+      types:
+        - alert:
+            payload: yes
+            payload-printable: yes
+            packet: yes
+            metadata: yes
+            http-body: yes
+            http-body-printable: yes
+        - http:
+            extended: yes
+        - dns:
+            query: yes
+            answer: yes
+        - tls:
+            extended: yes
+        - files:
+            force-magic: no
+        - smtp:
+        - ssh:
+        - flow:
+        - netflow:
+
+  # Stats output
+  - stats:
+      enabled: yes
+      filename: stats.log
+      interval: 60
+
+  # Stream events for debugging
+  - stream-events:
+      enabled: no
+
+# ============================================================
+# Detection
+# ============================================================
+default-rule-path: /etc/suricata/rules
+rule-files:
+  # ET Open ruleset (downloaded by setup script)
+  - suricata.rules
+  # Custom local rules
+  - local/local.rules
+
+classification-file: /etc/suricata/classification.config
+reference-config-file: /etc/suricata/reference.config
+threshold-file: /etc/suricata/threshold.config
+
+# ============================================================
+# Performance
+# ============================================================
+af-packet:
+  - interface: eth0
+    threads: auto
+    cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes
+    use-mmap: yes
+    tpacket-v3: yes
+
+# ============================================================
+# Application layer parsers
+# ============================================================
+app-layer:
+  protocols:
+    tls:
+      enabled: yes
+      detection-ports:
+        dp: 443
+    http:
+      enabled: yes
+    ftp:
+      enabled: yes
+    smtp:
+      enabled: yes
+    ssh:
+      enabled: yes
+    dns:
+      tcp:
+        enabled: yes
+        detection-ports:
+          dp: 53
+      udp:
+        enabled: yes
+        detection-ports:
+          dp: 53
+
+# ============================================================
+# Logging
+# ============================================================
+logging:
+  default-log-level: notice
+  outputs:
+    - console:
+        enabled: yes
+    - file:
+        enabled: yes
+        level: info
+        filename: /var/log/suricata/suricata.log

@@ -1,0 +1,290 @@
+version: '3.8'
+
+# SOC Detection Lab — full stack
+# Wazuh + ELK + Splunk + MISP + Suricata + Zeek
+# Brought up via: docker compose up -d
+# Tear down via: docker compose down -v (note: -v removes volumes)
+
+x-common-env: &common-env
+  TZ: UTC
+
+networks:
+  soc-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  wazuh-config:
+  wazuh-logs:
+  wazuh-queue:
+  wazuh-stats:
+  wazuh-active-response:
+  elastic-data:
+  elastic-config:
+  splunk-data:
+  splunk-config:
+  misp-data:
+  misp-config:
+  suricata-logs:
+  zeek-logs:
+
+services:
+
+  # ============================================================
+  # Wazuh — host-based SIEM (manager + indexer + dashboard)
+  # ============================================================
+  wazuh-manager:
+    image: wazuh/wazuh-manager:4.7.5
+    container_name: wazuh-manager
+    environment:
+      <<: *common-env
+      INDEXER_URL: https://wazuh-indexer:9200
+      INDEXER_USERNAME: admin
+      INDEXER_PASSWORD: ${WAZUH_INDEXER_PASSWORD:-SecretPassword}
+      FILEBEAT_SSL_VERIFICATION_MODE: full
+      SSL_CERTIFICATE_AUTHORITIES: /etc/ssl/root-ca.pem
+      SSL_CERTIFICATE: /etc/ssl/filebeat.pem
+      SSL_KEY: /etc/ssl/filebeat.key
+      API_USERNAME: wazuh-wui
+      API_PASSWORD: ${WAZUH_API_PASSWORD:-MyS3cr37P450r.*-}
+    volumes:
+      - wazuh-config:/var/ossec/etc
+      - wazuh-logs:/var/ossec/logs
+      - wazuh-queue:/var/ossec/queue
+      - wazuh-stats:/var/ossec/stats
+      - wazuh-active-response:/var/ossec/active-response/bin
+      - ./wazuh/ossec.conf:/wazuh-config-mount/etc/ossec.conf
+      - ./wazuh/decoders:/var/ossec/etc/decoders/local
+      - ./wazuh/rules:/var/ossec/etc/rules/local
+    ports:
+      - "1514:1514/udp"   # Wazuh agent comms
+      - "1515:1515"       # Wazuh enrollment
+      - "514:514/udp"     # Syslog ingestion (Cowrie, Suricata)
+      - "55000:55000"     # API
+    networks:
+      - soc-net
+    restart: unless-stopped
+
+  wazuh-indexer:
+    image: wazuh/wazuh-indexer:4.7.5
+    container_name: wazuh-indexer
+    environment:
+      <<: *common-env
+      OPENSEARCH_JAVA_OPTS: "-Xms2g -Xmx2g"
+      bootstrap.memory_lock: "true"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - elastic-data:/var/lib/wazuh-indexer
+    ports:
+      - "9200:9200"
+    networks:
+      - soc-net
+    restart: unless-stopped
+
+  wazuh-dashboard:
+    image: wazuh/wazuh-dashboard:4.7.5
+    container_name: wazuh-dashboard
+    depends_on:
+      - wazuh-indexer
+      - wazuh-manager
+    environment:
+      <<: *common-env
+      INDEXER_USERNAME: admin
+      INDEXER_PASSWORD: ${WAZUH_INDEXER_PASSWORD:-SecretPassword}
+      WAZUH_API_URL: https://wazuh-manager
+      DASHBOARD_USERNAME: kibanaserver
+      DASHBOARD_PASSWORD: kibanaserver
+    ports:
+      - "443:5601"
+    networks:
+      - soc-net
+    restart: unless-stopped
+
+  # ============================================================
+  # Elastic Stack — secondary SIEM for hunting + visualization
+  # ============================================================
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
+    container_name: elasticsearch
+    environment:
+      <<: *common-env
+      discovery.type: single-node
+      xpack.security.enabled: "true"
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
+      ES_JAVA_OPTS: "-Xms2g -Xmx2g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elastic-data:/usr/share/elasticsearch/data
+    ports:
+      - "9201:9200"
+    networks:
+      - soc-net
+    restart: unless-stopped
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.3
+    container_name: logstash
+    depends_on:
+      - elasticsearch
+    environment:
+      <<: *common-env
+      LS_JAVA_OPTS: "-Xms1g -Xmx1g"
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
+    volumes:
+      - ./elastic/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./elastic/pipelines:/usr/share/logstash/pipelines
+    ports:
+      - "5044:5044"     # Filebeat input
+      - "5514:5514/udp" # Syslog input from Suricata
+    networks:
+      - soc-net
+    restart: unless-stopped
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.3
+    container_name: kibana
+    depends_on:
+      - elasticsearch
+    environment:
+      <<: *common-env
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: ${KIBANA_PASSWORD:-changeme}
+    ports:
+      - "5601:5601"
+    networks:
+      - soc-net
+    restart: unless-stopped
+
+  # ============================================================
+  # Splunk Free — third SIEM for cross-tool comparison
+  # ============================================================
+  splunk:
+    image: splunk/splunk:9.1
+    container_name: splunk
+    environment:
+      <<: *common-env
+      SPLUNK_START_ARGS: "--accept-license"
+      SPLUNK_PASSWORD: ${SPLUNK_PASSWORD:-changemechangeme}
+      SPLUNK_LICENSE_URI: Free
+    volumes:
+      - splunk-data:/opt/splunk/var
+      - splunk-config:/opt/splunk/etc
+      - ./splunk/apps:/opt/splunk/etc/apps
+      - ./splunk/conf:/opt/splunk/etc/system/local
+    ports:
+      - "8000:8000"     # Web UI
+      - "8089:8089"     # Management
+      - "9997:9997"     # Splunk receiver
+      - "1515:1515/udp" # Syslog (custom port; Wazuh uses 1514)
+    networks:
+      - soc-net
+    restart: unless-stopped
+
+  # ============================================================
+  # MISP — threat intelligence platform
+  # ============================================================
+  misp:
+    image: coolacid/misp-docker:core-latest
+    container_name: misp
+    depends_on:
+      - misp-db
+    environment:
+      <<: *common-env
+      HOSTNAME: https://localhost:8443
+      ADMIN_EMAIL: admin@admin.test
+      ADMIN_PASSWORD: ${MISP_ADMIN_PASSWORD:-admin}
+      ADMIN_KEY: ${MISP_API_KEY:-}
+      MYSQL_HOST: misp-db
+      MYSQL_DATABASE: misp
+      MYSQL_USER: misp
+      MYSQL_PASSWORD: ${MISP_DB_PASSWORD:-misp}
+    volumes:
+      - misp-data:/var/www/MISP
+      - misp-config:/var/www/MISP/app/Config
+    ports:
+      - "8443:443"
+    networks:
+      - soc-net
+    restart: unless-stopped
+
+  misp-db:
+    image: mysql:8.0
+    container_name: misp-db
+    environment:
+      <<: *common-env
+      MYSQL_DATABASE: misp
+      MYSQL_USER: misp
+      MYSQL_PASSWORD: ${MISP_DB_PASSWORD:-misp}
+      MYSQL_ROOT_PASSWORD: ${MISP_DB_ROOT_PASSWORD:-mispmisp}
+    volumes:
+      - misp-data:/var/lib/mysql
+    networks:
+      - soc-net
+    restart: unless-stopped
+
+  # ============================================================
+  # Suricata — network IDS
+  # ============================================================
+  suricata:
+    image: jasonish/suricata:7.0.4
+    container_name: suricata
+    network_mode: host  # Required for proper packet capture
+    cap_add:
+      - NET_ADMIN
+      - SYS_NICE
+      - NET_RAW
+    environment:
+      <<: *common-env
+      SURICATA_OPTIONS: "-i eth0 --set sensor-name=soc-lab-suricata"
+    volumes:
+      - ./suricata/suricata.yaml:/etc/suricata/suricata.yaml
+      - ./suricata/custom-rules:/etc/suricata/rules/local
+      - suricata-logs:/var/log/suricata
+    restart: unless-stopped
+
+  # ============================================================
+  # Zeek — network metadata
+  # ============================================================
+  zeek:
+    image: zeekurity/zeek:6.2
+    container_name: zeek
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ./zeek/local.zeek:/usr/local/zeek/share/zeek/site/local.zeek
+      - zeek-logs:/usr/local/zeek/logs
+    command: ["zeek", "-i", "eth0", "/usr/local/zeek/share/zeek/site/local.zeek"]
+    restart: unless-stopped
+
+  # ============================================================
+  # Filebeat — ships logs from honeypot/sensors to ELK
+  # ============================================================
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.11.3
+    container_name: filebeat
+    user: root
+    depends_on:
+      - logstash
+    environment:
+      <<: *common-env
+    volumes:
+      - ./elastic/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - suricata-logs:/var/log/suricata:ro
+      - zeek-logs:/var/log/zeek:ro
+    networks:
+      - soc-net
+    restart: unless-stopped

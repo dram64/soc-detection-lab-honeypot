@@ -1,0 +1,52 @@
+<!--
+  Wazuh rules for Suricata IDS events ingested via syslog
+  Rule IDs in 100200-100299 range
+-->
+
+<group name="suricata,ids,">
+
+  <rule id="100200" level="3">
+    <decoded_as>json</decoded_as>
+    <field name="event_type">alert</field>
+    <description>Suricata: IDS alert</description>
+  </rule>
+
+  <rule id="100201" level="8">
+    <if_sid>100200</if_sid>
+    <field name="alert.severity">1</field>
+    <description>Suricata: High severity alert — $(alert.signature)</description>
+    <mitre>
+      <id>T1071</id>
+    </mitre>
+  </rule>
+
+  <rule id="100202" level="6">
+    <if_sid>100200</if_sid>
+    <field name="alert.signature">.*ET MALWARE.*</field>
+    <description>Suricata: ET MALWARE rule triggered — $(alert.signature)</description>
+    <mitre>
+      <id>T1071</id>
+    </mitre>
+  </rule>
+
+  <rule id="100203" level="8">
+    <if_sid>100200</if_sid>
+    <field name="alert.signature">.*ET SCAN.*</field>
+    <description>Suricata: Scanning activity detected — $(alert.signature)</description>
+    <mitre>
+      <id>T1595</id>
+    </mitre>
+  </rule>
+
+  <!-- Correlation: Cowrie attacker IP also triggering Suricata = high confidence threat -->
+  <rule id="100210" level="13">
+    <if_matched_sid>100101</if_matched_sid>
+    <if_sid>100200</if_sid>
+    <same_source_ip />
+    <description>HIGH CONFIDENCE: IP $(src_ip) attacking honeypot AND triggering IDS</description>
+    <mitre>
+      <id>T1071</id>
+    </mitre>
+  </rule>
+
+</group>

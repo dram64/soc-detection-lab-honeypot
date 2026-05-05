@@ -1,0 +1,55 @@
+{
+  "feeds": [
+    {
+      "name": "Abuse.ch URLhaus",
+      "url": "https://urlhaus.abuse.ch/downloads/csv_recent/",
+      "format": "csv",
+      "provider": "Abuse.ch",
+      "enabled": true,
+      "tag": "tlp:white",
+      "description": "Recently observed malicious URLs"
+    },
+    {
+      "name": "Abuse.ch SSL Blacklist",
+      "url": "https://sslbl.abuse.ch/blacklist/sslblacklist.csv",
+      "format": "csv",
+      "provider": "Abuse.ch",
+      "enabled": true,
+      "tag": "tlp:white",
+      "description": "SHA1 fingerprints of malicious SSL certificates"
+    },
+    {
+      "name": "Feodo Tracker IP Blocklist",
+      "url": "https://feodotracker.abuse.ch/downloads/ipblocklist.txt",
+      "format": "freetext",
+      "provider": "Abuse.ch",
+      "enabled": true,
+      "tag": "tlp:white",
+      "description": "C2 server IPs for Emotet, Dridex, Heodo"
+    },
+    {
+      "name": "DigitalSide Threat-Intel",
+      "url": "https://osint.digitalside.it/Threat-Intel/lists/latestips.txt",
+      "format": "freetext",
+      "provider": "DigitalSide",
+      "enabled": true,
+      "tag": "tlp:white",
+      "description": "Recently observed malicious IPs"
+    },
+    {
+      "name": "MISP Default OSINT Feed",
+      "url": "https://www.botvrij.eu/data/feed-osint",
+      "format": "misp",
+      "provider": "Botvrij",
+      "enabled": true,
+      "tag": "tlp:white",
+      "description": "MISP-format OSINT feed"
+    }
+  ],
+  "_notes": [
+    "Add new feeds here. After modifying:",
+    "  1. Reload via MISP UI: Sync Actions > List Feeds > Update",
+    "  2. Or via API: curl -X POST -H 'Authorization: $MISP_KEY' https://localhost:8443/feeds/cacheFreetext",
+    "Tune confidence thresholds via the Tagging system (high/medium/low)."
+  ]
+}
