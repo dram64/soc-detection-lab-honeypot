@@ -77,7 +77,9 @@ def _build_function_zip(
 
     (stage / "functions").mkdir()
     (stage / "functions" / "__init__.py").touch()
-    shutil.copytree(DASHBOARD / "functions" / function_subpkg, stage / "functions" / function_subpkg)
+    shutil.copytree(
+        DASHBOARD / "functions" / function_subpkg, stage / "functions" / function_subpkg
+    )
     shutil.copytree(DASHBOARD / "functions" / "shared", stage / "functions" / "shared")
 
     _run(

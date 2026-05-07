@@ -70,12 +70,27 @@ def test_chunked_exact():
 
 
 def test_ingest_id_deterministic():
-    a = _ingest_id({"session": "abcd", "timestamp": "2026-04-27T00:00:00.000000Z",
-                    "eventid": "cowrie.session.connect"})
-    b = _ingest_id({"session": "abcd", "timestamp": "2026-04-27T00:00:00.000000Z",
-                    "eventid": "cowrie.session.connect"})
-    c = _ingest_id({"session": "abcd", "timestamp": "2026-04-27T00:00:01.000000Z",
-                    "eventid": "cowrie.session.connect"})
+    a = _ingest_id(
+        {
+            "session": "abcd",
+            "timestamp": "2026-04-27T00:00:00.000000Z",
+            "eventid": "cowrie.session.connect",
+        }
+    )
+    b = _ingest_id(
+        {
+            "session": "abcd",
+            "timestamp": "2026-04-27T00:00:00.000000Z",
+            "eventid": "cowrie.session.connect",
+        }
+    )
+    c = _ingest_id(
+        {
+            "session": "abcd",
+            "timestamp": "2026-04-27T00:00:01.000000Z",
+            "eventid": "cowrie.session.connect",
+        }
+    )
     assert a == b
     assert a != c
     assert len(a) == 40  # SHA-1 hex

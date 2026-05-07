@@ -173,9 +173,7 @@ def _claim_event_id(event_id: str) -> bool:
         raise
 
 
-def _increment_counter(
-    *, bucket: str, dimension: Dimension, value: str, delta: int = 1
-) -> None:
+def _increment_counter(*, bucket: str, dimension: Dimension, value: str, delta: int = 1) -> None:
     """Atomic ADD-increment of an AGG#HOUR# counter."""
     pk = f"AGG#HOUR#{bucket}#{dimension}"
     sk = f"VALUE#{value}"
@@ -233,9 +231,7 @@ def _process_event_item(item: dict[str, Any]) -> int:
         # weighing the AGG#HOUR# blow-up risk.
         cmd = (item.get("input") or "").strip().split()
         if cmd:
-            _increment_counter(
-                bucket=bucket, dimension="command", value=cmd[0], delta=1
-            )
+            _increment_counter(bucket=bucket, dimension="command", value=cmd[0], delta=1)
             touched += 1
     elif eid in {"cowrie.direct-tcpip.request", "cowrie.direct-tcpip.data"}:
         # Proxy-abuse attempts. Counting `dst_port` surfaces what services
@@ -253,9 +249,7 @@ def _process_event_item(item: dict[str, Any]) -> int:
     if item.get("eventid") == "cowrie.session.closed":
         technique = _classify_session_for_event(item)
         if technique is not None:
-            _increment_counter(
-                bucket=bucket, dimension="technique", value=technique, delta=1
-            )
+            _increment_counter(bucket=bucket, dimension="technique", value=technique, delta=1)
             touched += 1
     return touched
 
@@ -450,7 +444,9 @@ def _handle_rank_rebuild(now: datetime | None = None) -> dict[str, int]:
 # ---------------------------------------------------------------------------
 
 
-def _handle_daily_summary(now: datetime | None = None, *, target: str = "yesterday") -> dict[str, Any]:
+def _handle_daily_summary(
+    now: datetime | None = None, *, target: str = "yesterday"
+) -> dict[str, Any]:
     """Walk a day's events via GSI2 and write the SUMMARY#DAY item.
 
     `target`:
@@ -532,9 +528,7 @@ def _handle_daily_summary(now: datetime | None = None, *, target: str = "yesterd
 
 def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     """Top-level entry point. Dispatches by event shape."""
-    if "Records" in event and any(
-        r.get("eventSource") == "aws:dynamodb" for r in event["Records"]
-    ):
+    if "Records" in event and any(r.get("eventSource") == "aws:dynamodb" for r in event["Records"]):
         result = _handle_stream_records(event["Records"])
         _log("stream_summary", **result)
         return result
@@ -547,8 +541,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
     if action == "daily_summary":
         result = _handle_daily_summary()
-        _log("daily_summary_summary", day=result["day"],
-             total_events=result["total_events"])
+        _log("daily_summary_summary", day=result["day"], total_events=result["total_events"])
         return {"day": result["day"], "total_events": result["total_events"]}
 
     if action == "today_summary":
@@ -556,8 +549,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         # SUMMARY#DAY rollup is near-real-time. Overwrites the same key
         # the 00:05 daily cron eventually finalizes.
         result = _handle_daily_summary(target="today")
-        _log("today_summary_summary", day=result["day"],
-             total_events=result["total_events"])
+        _log("today_summary_summary", day=result["day"], total_events=result["total_events"])
         return {"day": result["day"], "total_events": result["total_events"]}
 
     _log("unknown_event_shape", keys=list(event.keys()))

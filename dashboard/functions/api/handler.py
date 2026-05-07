@@ -172,9 +172,7 @@ def _run_parallel(
     """
     successes: list[Any] = []
     failures: list[tuple[Any, Exception]] = []
-    futures = {
-        _DDB_QUERY_EXECUTOR.submit(fn, item): item for item in work_items
-    }
+    futures = {_DDB_QUERY_EXECUTOR.submit(fn, item): item for item in work_items}
     for fut in as_completed(futures):
         item = futures[fut]
         try:
@@ -219,9 +217,7 @@ def _handle_summary() -> dict[str, Any]:
 
     # Two GetItems in parallel — independent reads, ~one-RTT latency.
     def _get(key_pair: tuple[str, str]) -> dict[str, Any]:
-        return _TABLE.get_item(
-            Key={"pk": key_pair[0], "sk": key_pair[1]}
-        ).get("Item", {})
+        return _TABLE.get_item(Key={"pk": key_pair[0], "sk": key_pair[1]}).get("Item", {})
 
     results, _failures = _run_parallel(
         [("SUMMARY#DAY", today), ("HEARTBEAT", "honeypot")],
@@ -292,9 +288,7 @@ def _query_one_hour_eventid_bucket(bucket_dt: datetime) -> TimelineBucketRow:
     bucket_str = bucket_dt.strftime("%Y-%m-%dT%H")
     items = _client_query_paginate(f"AGG#HOUR#{bucket_str}#eventid")
     count = sum(_coerce_int(it.get("count")) for it in items)
-    return TimelineBucketRow(
-        ts=bucket_dt.strftime("%Y-%m-%dT%H:00:00Z"), count=count
-    )
+    return TimelineBucketRow(ts=bucket_dt.strftime("%Y-%m-%dT%H:00:00Z"), count=count)
 
 
 def _query_one_day_summary(day_dt: datetime) -> TimelineBucketRow:
@@ -321,9 +315,7 @@ def _handle_timeline(query: dict[str, str]) -> dict[str, Any]:
         # Each failure becomes an explicit gap with `count=None`.
         for bucket_dt, _exc in failures:
             successes.append(
-                TimelineBucketRow(
-                    ts=bucket_dt.strftime("%Y-%m-%dT%H:00:00Z"), count=None
-                )
+                TimelineBucketRow(ts=bucket_dt.strftime("%Y-%m-%dT%H:00:00Z"), count=None)
             )
         buckets = sorted(successes, key=lambda b: b.ts)
     else:  # 1d
@@ -334,9 +326,7 @@ def _handle_timeline(query: dict[str, str]) -> dict[str, Any]:
         )
         for day_dt, _exc in failures:
             successes.append(
-                TimelineBucketRow(
-                    ts=f"{day_dt.date().isoformat()}T00:00:00Z", count=None
-                )
+                TimelineBucketRow(ts=f"{day_dt.date().isoformat()}T00:00:00Z", count=None)
             )
         buckets = sorted(successes, key=lambda b: b.ts)
 
@@ -360,10 +350,7 @@ def _handle_top_list(dimension: str, query: dict[str, str]) -> dict[str, Any]:
         return _err(400, f"invalid params: {exc.errors()}")
     window = "24H" if params.window == "24h" else "7D"
     rows = _query_rank(window=window, dimension=dimension, limit=params.limit)
-    items = [
-        TopListItem(value=str(it["value"]), count=_coerce_int(it.get("count")))
-        for it in rows
-    ]
+    items = [TopListItem(value=str(it["value"]), count=_coerce_int(it.get("count"))) for it in rows]
     body = TopListResponse(items=items).model_dump()
     return _resp(200, body, cache_control="public, max-age=30, s-maxage=30")
 
@@ -414,9 +401,9 @@ def _handle_events(query: dict[str, str]) -> dict[str, Any]:
         # Look up everything strictly older than `before` (ISO 8601).
         # GSI2 sk format: "<ts>#SESSION#<sid>"; "<before>" sorts before any
         # timestamp at-or-after `before`, so the inequality holds.
-        kwargs["KeyConditionExpression"] = Key("gsi2pk").eq(
-            f"DAY#{today_iso}"
-        ) & Key("gsi2sk").lt(params.before)
+        kwargs["KeyConditionExpression"] = Key("gsi2pk").eq(f"DAY#{today_iso}") & Key("gsi2sk").lt(
+            params.before
+        )
 
     resp = _TABLE.query(**kwargs)
     raw_items = resp.get("Items", [])
@@ -441,9 +428,7 @@ def _handle_events(query: dict[str, str]) -> dict[str, Any]:
         oldest = public_events[-1]
         next_before = oldest.ts
 
-    body = EventsResponse(
-        items=public_events, next_before=next_before
-    ).model_dump()
+    body = EventsResponse(items=public_events, next_before=next_before).model_dump()
     return _resp(200, body, cache_control="public, max-age=15, s-maxage=15")
 
 
@@ -487,9 +472,7 @@ def _handle_breakdown(query: dict[str, str]) -> dict[str, Any]:
 def _handle_session(session_id: str) -> dict[str, Any]:
     if not session_id:
         return _err(400, "session id required")
-    raw_items = _query_all(
-        KeyConditionExpression=Key("pk").eq(f"SESSION#{session_id}")
-    )
+    raw_items = _query_all(KeyConditionExpression=Key("pk").eq(f"SESSION#{session_id}"))
     public_events: list[PublicEvent] = []
     for raw in raw_items:
         try:

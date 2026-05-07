@@ -39,9 +39,7 @@ def test_parse_record_extracts_microsecond_timestamp():
     assert rec.client_port == 8728
     assert rec.frontend_port == 22
     # ts_us is microseconds-since-epoch
-    expected = int(
-        datetime(2026, 5, 7, 0, 55, 1, 948594, tzinfo=UTC).timestamp() * 1_000_000
-    )
+    expected = int(datetime(2026, 5, 7, 0, 55, 1, 948594, tzinfo=UTC).timestamp() * 1_000_000)
     assert rec.ts_us == expected
 
 
@@ -80,7 +78,9 @@ def test_to_ddb_item_ttl_is_90_days_out_by_default():
     assert rec is not None
     item = to_ddb_item(rec, ttl_days=90)
     expected_ttl_us = rec.ts_us + 90 * 86400 * 1_000_000
-    assert abs(item["ttl"] * 1_000_000 - expected_ttl_us) < 2_000_000  # within 2s of microsecond math
+    assert (
+        abs(item["ttl"] * 1_000_000 - expected_ttl_us) < 2_000_000
+    )  # within 2s of microsecond math
 
 
 def test_cowrie_ts_to_us_handles_both_z_and_offset_forms():

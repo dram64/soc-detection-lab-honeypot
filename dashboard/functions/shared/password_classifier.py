@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-DICTIONARY_PATH = (
-    Path(__file__).resolve().parent / "data" / "password_dictionary.txt"
-)
+DICTIONARY_PATH = Path(__file__).resolve().parent / "data" / "password_dictionary.txt"
 
 
 def load_dictionary(path: Path | None = None) -> frozenset[str]:

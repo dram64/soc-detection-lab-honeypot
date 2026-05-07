@@ -193,11 +193,11 @@ def _common_event_fields(
     }
 
 
-def _connect_event(
-    *, ts: datetime, src_ip: str, src_port: int, session: str
-) -> dict[str, Any]:
+def _connect_event(*, ts: datetime, src_ip: str, src_port: int, session: str) -> dict[str, Any]:
     return {
-        **_common_event_fields(eventid="cowrie.session.connect", ts=ts, src_ip=src_ip, session=session),
+        **_common_event_fields(
+            eventid="cowrie.session.connect", ts=ts, src_ip=src_ip, session=session
+        ),
         "src_port": src_port,
         "dst_ip": HONEYPOT_DST_IP,
         "dst_port": HONEYPOT_DST_PORT,
@@ -214,7 +214,9 @@ def _client_version_event(
     *, ts: datetime, src_ip: str, session: str, version: str
 ) -> dict[str, Any]:
     return {
-        **_common_event_fields(eventid="cowrie.client.version", ts=ts, src_ip=src_ip, session=session),
+        **_common_event_fields(
+            eventid="cowrie.client.version", ts=ts, src_ip=src_ip, session=session
+        ),
         "version": version,
     }
 
@@ -251,11 +253,11 @@ def _login_event(
     }
 
 
-def _command_event(
-    *, ts: datetime, src_ip: str, session: str, cmd: str
-) -> dict[str, Any]:
+def _command_event(*, ts: datetime, src_ip: str, session: str, cmd: str) -> dict[str, Any]:
     return {
-        **_common_event_fields(eventid="cowrie.command.input", ts=ts, src_ip=src_ip, session=session),
+        **_common_event_fields(
+            eventid="cowrie.command.input", ts=ts, src_ip=src_ip, session=session
+        ),
         "input": cmd,
         "message": f"CMD: {cmd}",
     }
@@ -266,7 +268,9 @@ def _file_download_event(
 ) -> dict[str, Any]:
     sha = _shasum(rng)
     return {
-        **_common_event_fields(eventid="cowrie.session.file_download", ts=ts, src_ip=src_ip, session=session),
+        **_common_event_fields(
+            eventid="cowrie.session.file_download", ts=ts, src_ip=src_ip, session=session
+        ),
         "url": url,
         "outfile": f"var/dl/{sha}",
         "shasum": sha,
@@ -278,7 +282,9 @@ def _session_closed_event(
     *, ts: datetime, src_ip: str, session: str, duration: float
 ) -> dict[str, Any]:
     return {
-        **_common_event_fields(eventid="cowrie.session.closed", ts=ts, src_ip=src_ip, session=session),
+        **_common_event_fields(
+            eventid="cowrie.session.closed", ts=ts, src_ip=src_ip, session=session
+        ),
         "duration": duration,
         "message": f"Connection lost after {duration:.1f} seconds",
     }
@@ -411,9 +417,7 @@ def _build_session(
     if fake_url:
         ts += timedelta(seconds=rng.uniform(0.5, 3.0))
         events.append(
-            _file_download_event(
-                rng=rng, ts=ts, src_ip=src_ip, session=session, url=fake_url
-            )
+            _file_download_event(rng=rng, ts=ts, src_ip=src_ip, session=session, url=fake_url)
         )
     duration_s = (ts - start).total_seconds() + rng.uniform(2.0, 30.0)
     events.append(
@@ -437,9 +441,7 @@ def _pick_cohort(rng: random.Random) -> Cohort:
     return COHORTS[-1]
 
 
-def _pick_session_start(
-    rng: random.Random, *, days: int, now: datetime
-) -> datetime:
+def _pick_session_start(rng: random.Random, *, days: int, now: datetime) -> datetime:
     """Pick a session-start timestamp uniformly across [now - days, now],
     weighted by hour-of-day to peak overnight UTC.
     """
@@ -569,7 +571,13 @@ def upload_to_s3(
         date_part, hour_part = hour_key.split("T")
         y, m, d = date_part.split("-")
         key = f"raw/{y}/{m}/{d}/{hour_part}/synthetic-{seed}-{idx:04d}.json.gz"
-        s3.put_object(Bucket=bucket, Key=key, Body=gz, ContentEncoding="gzip", ContentType="application/x-ndjson")
+        s3.put_object(
+            Bucket=bucket,
+            Key=key,
+            Body=gz,
+            ContentEncoding="gzip",
+            ContentType="application/x-ndjson",
+        )
 
 
 def inject_to_dynamodb(
@@ -625,9 +633,7 @@ def _parse_anchor(value: str) -> datetime:
     return parsed.astimezone(UTC)
 
 
-def resolve_anchor(
-    *, seed_supplied: bool, anchor_time: datetime | None
-) -> datetime:
+def resolve_anchor(*, seed_supplied: bool, anchor_time: datetime | None) -> datetime:
     """Determine the wall-clock anchor used for timestamp generation.
 
     Precedence (per the determinism contract in the module docstring):
@@ -643,10 +649,17 @@ def resolve_anchor(
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Synthetic Cowrie data generator (PROJECT_PLAN.md §8)")
+    parser = argparse.ArgumentParser(
+        description="Synthetic Cowrie data generator (PROJECT_PLAN.md §8)"
+    )
     parser.add_argument("--events", type=int, default=10_000, help="Total events to generate")
     parser.add_argument("--days", type=int, default=7, help="Distribute across the last N days")
-    parser.add_argument("--seed", type=int, default=None, help="Deterministic random seed; without --anchor-time, anchor defaults to midnight UTC today")
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Deterministic random seed; without --anchor-time, anchor defaults to midnight UTC today",
+    )
     parser.add_argument(
         "--anchor-time",
         dest="anchor_time",
@@ -655,9 +668,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="ISO 8601 UTC timestamp anchoring all generated timestamps. With --seed, makes runs byte-identical.",
     )
     parser.add_argument("--out", type=Path, help="Write daily .json.gz files into this directory")
-    parser.add_argument("--upload-s3", dest="upload_s3", help="S3 bucket to upload synthetic files into")
-    parser.add_argument("--inject-ddb", dest="inject_ddb", action="store_true", help="Direct DynamoDB BatchWriteItem injection")
-    parser.add_argument("--table", default="dram-soc-honeypot", help="DynamoDB table for --inject-ddb")
+    parser.add_argument(
+        "--upload-s3", dest="upload_s3", help="S3 bucket to upload synthetic files into"
+    )
+    parser.add_argument(
+        "--inject-ddb",
+        dest="inject_ddb",
+        action="store_true",
+        help="Direct DynamoDB BatchWriteItem injection",
+    )
+    parser.add_argument(
+        "--table", default="dram-soc-honeypot", help="DynamoDB table for --inject-ddb"
+    )
     parser.add_argument("--profile", help="AWS profile (defaults to environment)")
     return parser.parse_args(argv)
 

@@ -127,8 +127,9 @@ def _haproxy_item_to_attrs(item: dict[str, Any]) -> dict[str, Any]:
     return {k: _to_ddb_attr(v) for k, v in item.items() if v is not None}
 
 
-def _emit_metric(name: str, value: float, *, dimensions: dict[str, str] | None = None,
-                 unit: str = "Count") -> None:
+def _emit_metric(
+    name: str, value: float, *, dimensions: dict[str, str] | None = None, unit: str = "Count"
+) -> None:
     """Emit a CloudWatch custom metric via Embedded Metric Format.
 
     Cheaper than PutMetricData (no API call); CloudWatch parses the EMF
@@ -139,11 +140,13 @@ def _emit_metric(name: str, value: float, *, dimensions: dict[str, str] | None =
     record: dict[str, Any] = {
         "_aws": {
             "Timestamp": int(time.time() * 1000),
-            "CloudWatchMetrics": [{
-                "Namespace": "DramSoc/Edge",
-                "Dimensions": [list(dims.keys())] if dims else [[]],
-                "Metrics": [{"Name": name, "Unit": unit}],
-            }],
+            "CloudWatchMetrics": [
+                {
+                    "Namespace": "DramSoc/Edge",
+                    "Dimensions": [list(dims.keys())] if dims else [[]],
+                    "Metrics": [{"Name": name, "Unit": unit}],
+                }
+            ],
         },
         name: value,
     }
@@ -156,8 +159,8 @@ def _emit_metric(name: str, value: float, *, dimensions: dict[str, str] | None =
 
 def _query_haproxy_window(cowrie_ts_us: int) -> list[HAProxyRecord]:
     """Return all HAProxy records whose ts_us falls in
-        [cowrie_ts_us - CORRELATION_WINDOW_US,
-         cowrie_ts_us - CORRELATION_MIN_DELTA_US]
+    [cowrie_ts_us - CORRELATION_WINDOW_US,
+     cowrie_ts_us - CORRELATION_MIN_DELTA_US]
     """
     lo_us = cowrie_ts_us - CORRELATION_WINDOW_US
     hi_us = cowrie_ts_us - CORRELATION_MIN_DELTA_US
@@ -179,17 +182,19 @@ def _query_haproxy_window(cowrie_ts_us: int) -> list[HAProxyRecord]:
             for item in resp.get("Items", []):
                 ts_us = int(item.get("ts_us", {}).get("N", "0"))
                 if lo_us <= ts_us <= hi_us:
-                    candidates.append(HAProxyRecord(
-                        ts=item["ts"]["S"],
-                        ts_us=ts_us,
-                        client_ip=item["client_ip"]["S"],
-                        client_port=int(item["client_port"]["N"]),
-                        frontend_port=int(item.get("frontend_port", {}).get("N", "0")),
-                        duration=int(item.get("duration", {}).get("N", "0")),
-                        bytes_uploaded=int(item.get("bytes_uploaded", {}).get("N", "0")),
-                        bytes_downloaded=int(item.get("bytes_downloaded", {}).get("N", "0")),
-                        status=item.get("status", {}).get("S", ""),
-                    ))
+                    candidates.append(
+                        HAProxyRecord(
+                            ts=item["ts"]["S"],
+                            ts_us=ts_us,
+                            client_ip=item["client_ip"]["S"],
+                            client_port=int(item["client_port"]["N"]),
+                            frontend_port=int(item.get("frontend_port", {}).get("N", "0")),
+                            duration=int(item.get("duration", {}).get("N", "0")),
+                            bytes_uploaded=int(item.get("bytes_uploaded", {}).get("N", "0")),
+                            bytes_downloaded=int(item.get("bytes_downloaded", {}).get("N", "0")),
+                            status=item.get("status", {}).get("S", ""),
+                        )
+                    )
             last_evaluated = resp.get("LastEvaluatedKey")
             if not last_evaluated:
                 break
@@ -203,8 +208,9 @@ def _correlate(cowrie_ts: str) -> tuple[str, list[HAProxyRecord]]:
     cowrie_us = cowrie_ts_to_us(cowrie_ts)
     candidates = _query_haproxy_window(cowrie_us)
 
-    _emit_metric("CorrelationCandidateCount", float(len(candidates)),
-                 dimensions={"Source": "cowrie"})
+    _emit_metric(
+        "CorrelationCandidateCount", float(len(candidates)), dimensions={"Source": "cowrie"}
+    )
 
     if len(candidates) == 0:
         return "missed", []
@@ -287,9 +293,11 @@ def _batch_write_with_retries(items: list[dict[str, Any]]) -> int:
                 resp = _DDB.batch_write_item(RequestItems=request_items)
             except ClientError as exc:
                 code = exc.response.get("Error", {}).get("Code", "")
-                if code in {"ProvisionedThroughputExceededException",
-                            "RequestLimitExceeded",
-                            "ThrottlingException"}:
+                if code in {
+                    "ProvisionedThroughputExceededException",
+                    "RequestLimitExceeded",
+                    "ThrottlingException",
+                }:
                     if attempts > 10:
                         raise
                     time.sleep(min(backoff, 30.0))
@@ -304,9 +312,7 @@ def _batch_write_with_retries(items: list[dict[str, Any]]) -> int:
                 break
             if attempts > 10:
                 _log("batch_write_unprocessed_giveup", remaining=len(unprocessed))
-                raise RuntimeError(
-                    f"giving up with {len(unprocessed)} unprocessed items"
-                )
+                raise RuntimeError(f"giving up with {len(unprocessed)} unprocessed items")
             request_items = {TABLE_NAME: unprocessed}
             time.sleep(min(backoff, 30.0))
             backoff *= 2
@@ -388,22 +394,15 @@ def _backward_correlate(rec: HAProxyRecord) -> None:
                 break
 
     # Restrict to loopback-IP events — those are the correlation candidates.
-    loopback_items = [
-        it for it in candidate_items
-        if it.get("src_ip", {}).get("S") == "127.0.0.1"
-    ]
-    sessions_in_window = {
-        it["session"]["S"] for it in loopback_items if "session" in it
-    }
+    loopback_items = [it for it in candidate_items if it.get("src_ip", {}).get("S") == "127.0.0.1"]
+    sessions_in_window = {it["session"]["S"] for it in loopback_items if "session" in it}
 
     if not sessions_in_window:
-        _emit_metric("BackwardCorrelationOutcomes", 1.0,
-                     dimensions={"result": "no_candidates"})
+        _emit_metric("BackwardCorrelationOutcomes", 1.0, dimensions={"result": "no_candidates"})
         return
 
     if len(sessions_in_window) > 1:
-        _emit_metric("BackwardCorrelationOutcomes", 1.0,
-                     dimensions={"result": "ambiguous"})
+        _emit_metric("BackwardCorrelationOutcomes", 1.0, dimensions={"result": "ambiguous"})
         return
 
     target_session = next(iter(sessions_in_window))
@@ -473,15 +472,16 @@ def _backward_correlate(rec: HAProxyRecord) -> None:
             updated += 1
         except _DDB.exceptions.ConditionalCheckFailedException:
             skipped_already_matched += 1
-            _log("backward_correlation_skipped_already_matched",
-                 session=target_session, sk=sk)
+            _log("backward_correlation_skipped_already_matched", session=target_session, sk=sk)
 
     if updated > 0:
-        _emit_metric("BackwardCorrelationOutcomes", 1.0,
-                     dimensions={"result": "matched_new"})
+        _emit_metric("BackwardCorrelationOutcomes", 1.0, dimensions={"result": "matched_new"})
     elif skipped_already_matched > 0:
-        _emit_metric("BackwardCorrelationOutcomes", 1.0,
-                     dimensions={"result": "matched_skipped_already_matched"})
+        _emit_metric(
+            "BackwardCorrelationOutcomes",
+            1.0,
+            dimensions={"result": "matched_skipped_already_matched"},
+        )
 
 
 def _process_haproxy_object(bucket: str, key: str) -> dict[str, int]:
@@ -499,8 +499,12 @@ def _process_haproxy_object(bucket: str, key: str) -> dict[str, int]:
         counts["parsed"] += 1
 
     if not items:
-        return {"objects_read": 1, "events_validated": 0, "events_written": 0,
-                "validation_errors": counts.get("parse_error", 0)}
+        return {
+            "objects_read": 1,
+            "events_validated": 0,
+            "events_written": 0,
+            "validation_errors": counts.get("parse_error", 0),
+        }
 
     written = _batch_write_with_retries(items)
 
@@ -539,7 +543,7 @@ def _lookup_session_prior_match(session_id: str) -> str | None:
         FilterExpression="correlation_status IN (:m, :mi)",
         ExpressionAttributeValues={
             ":pk": {"S": f"SESSION#{session_id}"},
-            ":m":  {"S": "matched"},
+            ":m": {"S": "matched"},
             ":mi": {"S": "matched_inherited"},
         },
         ProjectionExpression="src_ip",
@@ -622,8 +626,7 @@ def _process_cowrie_object(bucket: str, key: str) -> dict[str, int]:
                 correlation_status = "matched_inherited"
                 candidate_count = 1
                 candidate_ips = [inherited_ip]
-                _emit_metric("BackwardCorrelationOutcomes", 1.0,
-                             dimensions={"result": "inherited"})
+                _emit_metric("BackwardCorrelationOutcomes", 1.0, dimensions={"result": "inherited"})
             else:
                 status, candidates = _correlate(raw["timestamp"])
                 correlation_status = status
@@ -661,8 +664,12 @@ def _process_cowrie_object(bucket: str, key: str) -> dict[str, int]:
         counts["validated"] += 1
 
     if not stored:
-        return {"objects_read": 1, "events_validated": 0, "events_written": 0,
-                "validation_errors": counts.get("validation_error", 0)}
+        return {
+            "objects_read": 1,
+            "events_validated": 0,
+            "events_written": 0,
+            "validation_errors": counts.get("validation_error", 0),
+        }
 
     written = _batch_write_with_retries(stored)
     return {
@@ -690,8 +697,9 @@ def _process_object(bucket: str, key: str) -> dict[str, int]:
 
 def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     """Lambda entrypoint."""
-    totals = Counter({"objects_read": 0, "events_validated": 0,
-                      "events_written": 0, "validation_errors": 0})
+    totals = Counter(
+        {"objects_read": 0, "events_validated": 0, "events_written": 0, "validation_errors": 0}
+    )
     for record in event.get("Records", []):
         s3_record = record.get("s3", {})
         bucket = s3_record.get("bucket", {}).get("name")

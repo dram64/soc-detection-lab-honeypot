@@ -31,9 +31,7 @@ class SessionSummary:
             if value < 0:
                 raise ValueError(f"{name} must be non-negative; got {value}")
         if self.duration_seconds < 0:
-            raise ValueError(
-                f"duration_seconds must be non-negative; got {self.duration_seconds}"
-            )
+            raise ValueError(f"duration_seconds must be non-negative; got {self.duration_seconds}")
 
     @property
     def total_login_attempts(self) -> int:
@@ -57,16 +55,10 @@ def classify_session(summary: SessionSummary) -> Technique:
     ):
         return "credential_stuffing"
 
-    if (
-        summary.login_failed_count >= BRUTE_FORCE_MIN_FAILURES
-        and summary.unique_usernames == 1
-    ):
+    if summary.login_failed_count >= BRUTE_FORCE_MIN_FAILURES and summary.unique_usernames == 1:
         return "brute_force"
 
-    if (
-        summary.duration_seconds < SCANNER_MAX_DURATION_S
-        and summary.total_login_attempts == 0
-    ):
+    if summary.duration_seconds < SCANNER_MAX_DURATION_S and summary.total_login_attempts == 0:
         return "scanner"
 
     return "other"

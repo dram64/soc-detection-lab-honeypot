@@ -347,10 +347,12 @@ def test_haproxy_object_writes_haproxy_conn_items_under_minute_partition():
     _setup_ddb(ddb)
 
     records = [
-        _haproxy_record(time_iso="2026-05-07T00:55:01.948594+00:00",
-                        client_ip="104.174.33.78", client_port=8728),
-        _haproxy_record(time_iso="2026-05-07T00:55:30.123456+00:00",
-                        client_ip="194.59.206.2",  client_port=51000),
+        _haproxy_record(
+            time_iso="2026-05-07T00:55:01.948594+00:00", client_ip="104.174.33.78", client_port=8728
+        ),
+        _haproxy_record(
+            time_iso="2026-05-07T00:55:30.123456+00:00", client_ip="194.59.206.2", client_port=51000
+        ),
     ]
     key = "raw/haproxy/date=2026-05-07/host=droplet/haproxy-001.json.gz"
     _put_ndjson_object(s3, key, records)
@@ -367,8 +369,9 @@ def test_haproxy_object_writes_haproxy_conn_items_under_minute_partition():
     assert types == {"HAPROXY_CONN"}
 
 
-def _cowrie_event(*, ts: str, session: str, eventid: str, src_ip: str = "127.0.0.1",
-                  src_port: int = 50001) -> dict:
+def _cowrie_event(
+    *, ts: str, session: str, eventid: str, src_ip: str = "127.0.0.1", src_port: int = 50001
+) -> dict:
     """Minimal Cowrie session.connect-shaped event valid against the schema."""
     return {
         "eventid": eventid,
@@ -394,9 +397,15 @@ def test_cowrie_loopback_event_correlates_to_real_haproxy_ip_when_single_match()
     # Pre-stage a HAProxy entry 50ms before Cowrie's session.connect timestamp.
     haproxy_key = "raw/haproxy/date=2026-05-07/host=droplet/haproxy-001.json.gz"
     _put_ndjson_object(
-        s3, haproxy_key,
-        [_haproxy_record(time_iso="2026-05-07T00:55:01.900000+00:00",
-                         client_ip="203.0.113.42", client_port=44444)],
+        s3,
+        haproxy_key,
+        [
+            _haproxy_record(
+                time_iso="2026-05-07T00:55:01.900000+00:00",
+                client_ip="203.0.113.42",
+                client_port=44444,
+            )
+        ],
     )
 
     handler_mod = _import_handler()
@@ -467,12 +476,19 @@ def test_cowrie_loopback_event_marked_ambiguous_when_multiple_haproxy_in_window(
 
     haproxy_key = "raw/haproxy/date=2026-05-07/host=droplet/haproxy-multi.json.gz"
     _put_ndjson_object(
-        s3, haproxy_key,
+        s3,
+        haproxy_key,
         [
-            _haproxy_record(time_iso="2026-05-07T00:55:01.900000+00:00",
-                            client_ip="203.0.113.42", client_port=44444),
-            _haproxy_record(time_iso="2026-05-07T00:55:01.910000+00:00",
-                            client_ip="198.51.100.1", client_port=55555),
+            _haproxy_record(
+                time_iso="2026-05-07T00:55:01.900000+00:00",
+                client_ip="203.0.113.42",
+                client_port=44444,
+            ),
+            _haproxy_record(
+                time_iso="2026-05-07T00:55:01.910000+00:00",
+                client_ip="198.51.100.1",
+                client_port=55555,
+            ),
         ],
     )
 
@@ -616,9 +632,15 @@ def test_haproxy_backward_correlation_matches_pending_session():
     # 92ms before the Cowrie session.connect — same as the live test delta.
     haproxy_key = "raw/haproxy/date=2026-05-07/host=droplet/haproxy-back-corr.json.gz"
     _put_ndjson_object(
-        s3, haproxy_key,
-        [_haproxy_record(time_iso="2026-05-07T05:13:53.149191+00:00",
-                         client_ip="203.0.113.42", client_port=44444)],
+        s3,
+        haproxy_key,
+        [
+            _haproxy_record(
+                time_iso="2026-05-07T05:13:53.149191+00:00",
+                client_ip="203.0.113.42",
+                client_port=44444,
+            )
+        ],
     )
     handler_mod.handler(_s3_event(BUCKET, haproxy_key), context=None)
 
@@ -651,16 +673,28 @@ def test_haproxy_backward_correlation_skips_already_matched():
     # First HAProxy → first Cowrie: forward correlation succeeds.
     haproxy_key1 = "raw/haproxy/date=2026-05-07/host=droplet/h1.json.gz"
     _put_ndjson_object(
-        s3, haproxy_key1,
-        [_haproxy_record(time_iso="2026-05-07T05:13:53.100000+00:00",
-                         client_ip="198.51.100.1", client_port=11111)],
+        s3,
+        haproxy_key1,
+        [
+            _haproxy_record(
+                time_iso="2026-05-07T05:13:53.100000+00:00",
+                client_ip="198.51.100.1",
+                client_port=11111,
+            )
+        ],
     )
     cowrie_key = "raw/cowrie/date=2026-05-07/host=pi/c1.json.gz"
     _put_ndjson_object(
-        s3, cowrie_key,
-        [_cowrie_event(ts="2026-05-07T05:13:53.200000Z",
-                       session="already-matched", eventid="cowrie.session.connect",
-                       src_ip="127.0.0.1")],
+        s3,
+        cowrie_key,
+        [
+            _cowrie_event(
+                ts="2026-05-07T05:13:53.200000Z",
+                session="already-matched",
+                eventid="cowrie.session.connect",
+                src_ip="127.0.0.1",
+            )
+        ],
     )
 
     handler_mod = _import_handler()
@@ -683,9 +717,15 @@ def test_haproxy_backward_correlation_skips_already_matched():
     # ConditionalCheckFailedException, which we catch and log).
     haproxy_key2 = "raw/haproxy/date=2026-05-07/host=droplet/h2.json.gz"
     _put_ndjson_object(
-        s3, haproxy_key2,
-        [_haproxy_record(time_iso="2026-05-07T05:13:53.110000+00:00",
-                         client_ip="192.0.2.99", client_port=22222)],
+        s3,
+        haproxy_key2,
+        [
+            _haproxy_record(
+                time_iso="2026-05-07T05:13:53.110000+00:00",
+                client_ip="192.0.2.99",
+                client_port=22222,
+            )
+        ],
     )
     handler_mod.handler(_s3_event(BUCKET, haproxy_key2), context=None)
 
@@ -711,9 +751,15 @@ def test_haproxy_backward_correlation_no_candidates_no_ops():
     handler_mod = _import_handler()
     haproxy_key = "raw/haproxy/date=2026-05-07/host=droplet/empty-window.json.gz"
     _put_ndjson_object(
-        s3, haproxy_key,
-        [_haproxy_record(time_iso="2026-05-07T05:13:53.000000+00:00",
-                         client_ip="203.0.113.99", client_port=33333)],
+        s3,
+        haproxy_key,
+        [
+            _haproxy_record(
+                time_iso="2026-05-07T05:13:53.000000+00:00",
+                client_ip="203.0.113.99",
+                client_port=33333,
+            )
+        ],
     )
     summary = handler_mod.handler(_s3_event(BUCKET, haproxy_key), context=None)
     assert summary["events_written"] == 1
@@ -742,16 +788,28 @@ def test_forward_inheritance_uses_prior_matched_event_in_same_session():
     # matches the connect event.
     haproxy_key = "raw/haproxy/date=2026-05-07/host=droplet/h1.json.gz"
     _put_ndjson_object(
-        s3, haproxy_key,
-        [_haproxy_record(time_iso="2026-05-07T05:13:53.100000+00:00",
-                         client_ip="203.0.113.42", client_port=44444)],
+        s3,
+        haproxy_key,
+        [
+            _haproxy_record(
+                time_iso="2026-05-07T05:13:53.100000+00:00",
+                client_ip="203.0.113.42",
+                client_port=44444,
+            )
+        ],
     )
     cowrie_connect_key = "raw/cowrie/date=2026-05-07/host=pi/c-connect.json.gz"
     _put_ndjson_object(
-        s3, cowrie_connect_key,
-        [_cowrie_event(ts="2026-05-07T05:13:53.200000Z",
-                       session="late-batch-sess", eventid="cowrie.session.connect",
-                       src_ip="127.0.0.1")],
+        s3,
+        cowrie_connect_key,
+        [
+            _cowrie_event(
+                ts="2026-05-07T05:13:53.200000Z",
+                session="late-batch-sess",
+                eventid="cowrie.session.connect",
+                src_ip="127.0.0.1",
+            )
+        ],
     )
 
     handler_mod = _import_handler()
@@ -773,10 +831,16 @@ def test_forward_inheritance_uses_prior_matched_event_in_same_session():
     # way to attribute it to the real IP is per-session inheritance.
     late_key = "raw/cowrie/date=2026-05-07/host=pi/c-late.json.gz"
     _put_ndjson_object(
-        s3, late_key,
-        [_cowrie_event(ts="2026-05-07T05:14:23.500000Z",
-                       session="late-batch-sess", eventid="cowrie.session.params",
-                       src_ip="127.0.0.1")],
+        s3,
+        late_key,
+        [
+            _cowrie_event(
+                ts="2026-05-07T05:14:23.500000Z",
+                session="late-batch-sess",
+                eventid="cowrie.session.params",
+                src_ip="127.0.0.1",
+            )
+        ],
     )
     handler_mod.handler(_s3_event(BUCKET, late_key), context=None)
 

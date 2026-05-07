@@ -105,10 +105,14 @@ def test_main_upload_s3(monkeypatch):
 
     rc = main(
         [
-            "--events", "60",
-            "--days", "1",
-            "--seed", "5",
-            "--upload-s3", "dram-soc-honeypot-ingest",
+            "--events",
+            "60",
+            "--days",
+            "1",
+            "--seed",
+            "5",
+            "--upload-s3",
+            "dram-soc-honeypot-ingest",
         ]
     )
     assert rc == 0
@@ -133,11 +137,15 @@ def test_main_inject_ddb():
 
     rc = main(
         [
-            "--events", "60",
-            "--days", "1",
-            "--seed", "5",
+            "--events",
+            "60",
+            "--days",
+            "1",
+            "--seed",
+            "5",
             "--inject-ddb",
-            "--table", "dram-soc-honeypot",
+            "--table",
+            "dram-soc-honeypot",
         ]
     )
     assert rc == 0
