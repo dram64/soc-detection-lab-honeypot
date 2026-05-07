@@ -47,10 +47,10 @@ def test_unmarshal_unknown_type_returns_none():
 def test_unmarshal_image_round_trip():
     out = unmarshal_image(
         {
-            "pk":     {"S": "SESSION#abc"},
-            "count":  {"N": "42"},
+            "pk": {"S": "SESSION#abc"},
+            "count": {"N": "42"},
             "active": {"BOOL": True},
-            "miss":   {"NULL": True},
+            "miss": {"NULL": True},
         }
     )
     assert out == {"pk": "SESSION#abc", "count": 42, "active": True, "miss": None}

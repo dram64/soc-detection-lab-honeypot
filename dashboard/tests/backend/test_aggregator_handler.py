@@ -77,6 +77,7 @@ def _create_table(ddb):
 
 def _import_aggregator():
     import functions.aggregator.handler as h
+
     return reload(h)
 
 
@@ -90,6 +91,7 @@ def _stream_record(item: dict, *, event_name: str = "INSERT") -> dict:
     that build a payload of N records measure N distinct stream records
     (the dedup mechanism in Fix E would otherwise collapse them to one).
     """
+
     def _av(value):
         if value is None:
             return {"NULL": True}
@@ -414,10 +416,12 @@ def test_rank_rebuild_handles_dimension_with_few_values():
     assert table.query(KeyConditionExpression=Key("pk").eq("RANK#24H#username"))["Count"] == 3
 
     # Drop user2 entirely (delete its counter), bump user1.
-    table.delete_item(Key={
-        "pk": f"AGG#HOUR#{bucket}#username",
-        "sk": "VALUE#user2",
-    })
+    table.delete_item(
+        Key={
+            "pk": f"AGG#HOUR#{bucket}#username",
+            "sk": "VALUE#user2",
+        }
+    )
     table.update_item(
         Key={"pk": f"AGG#HOUR#{bucket}#username", "sk": "VALUE#user1"},
         UpdateExpression="SET #c = :c",
@@ -654,9 +658,9 @@ def test_same_event_id_replay_does_not_double_count():
     h.handler(payload, context=None)  # replay
     h.handler(payload, context=None)  # replay again
 
-    counter = table.get_item(
-        Key={"pk": "AGG#HOUR#2026-04-28T14#username", "sk": "VALUE#root"}
-    )["Item"]
+    counter = table.get_item(Key={"pk": "AGG#HOUR#2026-04-28T14#username", "sk": "VALUE#root"})[
+        "Item"
+    ]
     assert int(counter["count"]) == 1, (
         f"expected count=1 after 3 replays of same eventID; got {counter['count']}"
     )
@@ -687,6 +691,7 @@ def test_dedup_sentinel_written_with_ttl():
     assert sentinel["Item"]["type"] == "DEDUP_SENTINEL"
 
     import time as _time
+
     now = int(_time.time())
     ttl = int(sentinel["Item"]["ttl"])
     # TTL = +1h ± a few seconds of test runtime
@@ -721,9 +726,9 @@ def test_dedup_miss_path_increments_normally():
     }
     h.handler(payload, context=None)
 
-    counter = table.get_item(
-        Key={"pk": "AGG#HOUR#2026-04-28T14#username", "sk": "VALUE#root"}
-    )["Item"]
+    counter = table.get_item(Key={"pk": "AGG#HOUR#2026-04-28T14#username", "sk": "VALUE#root"})[
+        "Item"
+    ]
     assert int(counter["count"]) == 3
 
 
@@ -791,9 +796,9 @@ def test_stream_record_without_event_id_processes_defensively():
     rec.pop("eventID", None)
     h.handler({"Records": [rec]}, context=None)
 
-    counter = table.get_item(
-        Key={"pk": "AGG#HOUR#2026-04-28T14#username", "sk": "VALUE#root"}
-    )["Item"]
+    counter = table.get_item(Key={"pk": "AGG#HOUR#2026-04-28T14#username", "sk": "VALUE#root"})[
+        "Item"
+    ]
     assert int(counter["count"]) == 1
 
 
@@ -914,28 +919,45 @@ def test_command_input_event_increments_command_dimension():
     table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
 
     # Two `whoami` and one `uname -a` — verify aggregation by first token.
-    payload = _stream_payload([
-        _put_event(table, ts="2026-05-07T17:00:00.000000Z",
-                   session="s1", eventid="cowrie.command.input",
-                   src_ip="203.0.113.5", input="whoami"),
-        _put_event(table, ts="2026-05-07T17:00:01.000000Z",
-                   session="s2", eventid="cowrie.command.input",
-                   src_ip="203.0.113.6", input="whoami"),
-        _put_event(table, ts="2026-05-07T17:00:02.000000Z",
-                   session="s3", eventid="cowrie.command.input",
-                   src_ip="203.0.113.7", input="uname -a"),
-    ])
+    payload = _stream_payload(
+        [
+            _put_event(
+                table,
+                ts="2026-05-07T17:00:00.000000Z",
+                session="s1",
+                eventid="cowrie.command.input",
+                src_ip="203.0.113.5",
+                input="whoami",
+            ),
+            _put_event(
+                table,
+                ts="2026-05-07T17:00:01.000000Z",
+                session="s2",
+                eventid="cowrie.command.input",
+                src_ip="203.0.113.6",
+                input="whoami",
+            ),
+            _put_event(
+                table,
+                ts="2026-05-07T17:00:02.000000Z",
+                session="s3",
+                eventid="cowrie.command.input",
+                src_ip="203.0.113.7",
+                input="uname -a",
+            ),
+        ]
+    )
     h.handler(payload, context=None)
 
-    whoami = table.get_item(
-        Key={"pk": "AGG#HOUR#2026-05-07T17#command", "sk": "VALUE#whoami"}
-    ).get("Item")
+    whoami = table.get_item(Key={"pk": "AGG#HOUR#2026-05-07T17#command", "sk": "VALUE#whoami"}).get(
+        "Item"
+    )
     assert whoami is not None
     assert int(whoami["count"]) == 2
 
-    uname = table.get_item(
-        Key={"pk": "AGG#HOUR#2026-05-07T17#command", "sk": "VALUE#uname"}
-    ).get("Item")
+    uname = table.get_item(Key={"pk": "AGG#HOUR#2026-05-07T17#command", "sk": "VALUE#uname"}).get(
+        "Item"
+    )
     assert uname is not None
     assert int(uname["count"]) == 1
 
@@ -950,17 +972,25 @@ def test_command_dimension_only_emits_for_command_input():
     h = _import_aggregator()
     table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
 
-    payload = _stream_payload([
-        _put_event(table, ts="2026-05-07T17:00:00.000000Z",
-                   session="s1", eventid="cowrie.session.connect",
-                   src_ip="203.0.113.5", src_port=12345, dst_port=22,
-                   input="whoami"),  # field present but wrong eventid
-    ])
+    payload = _stream_payload(
+        [
+            _put_event(
+                table,
+                ts="2026-05-07T17:00:00.000000Z",
+                session="s1",
+                eventid="cowrie.session.connect",
+                src_ip="203.0.113.5",
+                src_port=12345,
+                dst_port=22,
+                input="whoami",
+            ),  # field present but wrong eventid
+        ]
+    )
     h.handler(payload, context=None)
 
-    item = table.get_item(
-        Key={"pk": "AGG#HOUR#2026-05-07T17#command", "sk": "VALUE#whoami"}
-    ).get("Item")
+    item = table.get_item(Key={"pk": "AGG#HOUR#2026-05-07T17#command", "sk": "VALUE#whoami"}).get(
+        "Item"
+    )
     assert item is None  # NOT incremented
 
 
@@ -971,14 +1001,26 @@ def test_command_dimension_skips_empty_input():
     h = _import_aggregator()
     table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
 
-    payload = _stream_payload([
-        _put_event(table, ts="2026-05-07T17:00:00.000000Z",
-                   session="s1", eventid="cowrie.command.input",
-                   src_ip="203.0.113.5", input=""),
-        _put_event(table, ts="2026-05-07T17:00:01.000000Z",
-                   session="s2", eventid="cowrie.command.input",
-                   src_ip="203.0.113.6", input="   "),
-    ])
+    payload = _stream_payload(
+        [
+            _put_event(
+                table,
+                ts="2026-05-07T17:00:00.000000Z",
+                session="s1",
+                eventid="cowrie.command.input",
+                src_ip="203.0.113.5",
+                input="",
+            ),
+            _put_event(
+                table,
+                ts="2026-05-07T17:00:01.000000Z",
+                session="s2",
+                eventid="cowrie.command.input",
+                src_ip="203.0.113.6",
+                input="   ",
+            ),
+        ]
+    )
     h.handler(payload, context=None)
 
     # Scan the command partition — should be empty.
@@ -997,17 +1039,37 @@ def test_direct_tcpip_request_increments_proxy_target_port():
     h = _import_aggregator()
     table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
 
-    payload = _stream_payload([
-        _put_event(table, ts="2026-05-07T18:00:00.000000Z",
-                   session="s1", eventid="cowrie.direct-tcpip.request",
-                   src_ip="203.0.113.5", dst_ip="141.101.90.1", dst_port=3478),
-        _put_event(table, ts="2026-05-07T18:00:01.000000Z",
-                   session="s2", eventid="cowrie.direct-tcpip.request",
-                   src_ip="203.0.113.6", dst_ip="8.8.8.8", dst_port=3478),
-        _put_event(table, ts="2026-05-07T18:00:02.000000Z",
-                   session="s3", eventid="cowrie.direct-tcpip.data",
-                   src_ip="203.0.113.7", dst_ip="1.2.3.4", dst_port=1080),
-    ])
+    payload = _stream_payload(
+        [
+            _put_event(
+                table,
+                ts="2026-05-07T18:00:00.000000Z",
+                session="s1",
+                eventid="cowrie.direct-tcpip.request",
+                src_ip="203.0.113.5",
+                dst_ip="141.101.90.1",
+                dst_port=3478,
+            ),
+            _put_event(
+                table,
+                ts="2026-05-07T18:00:01.000000Z",
+                session="s2",
+                eventid="cowrie.direct-tcpip.request",
+                src_ip="203.0.113.6",
+                dst_ip="8.8.8.8",
+                dst_port=3478,
+            ),
+            _put_event(
+                table,
+                ts="2026-05-07T18:00:02.000000Z",
+                session="s3",
+                eventid="cowrie.direct-tcpip.data",
+                src_ip="203.0.113.7",
+                dst_ip="1.2.3.4",
+                dst_port=1080,
+            ),
+        ]
+    )
     h.handler(payload, context=None)
 
     stun = table.get_item(
@@ -1031,11 +1093,19 @@ def test_proxy_target_port_dimension_only_emits_for_direct_tcpip_events():
     h = _import_aggregator()
     table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
 
-    payload = _stream_payload([
-        _put_event(table, ts="2026-05-07T19:00:00.000000Z",
-                   session="s1", eventid="cowrie.session.connect",
-                   src_ip="203.0.113.5", src_port=12345, dst_port=2223),
-    ])
+    payload = _stream_payload(
+        [
+            _put_event(
+                table,
+                ts="2026-05-07T19:00:00.000000Z",
+                session="s1",
+                eventid="cowrie.session.connect",
+                src_ip="203.0.113.5",
+                src_port=12345,
+                dst_port=2223,
+            ),
+        ]
+    )
     h.handler(payload, context=None)
 
     item = table.get_item(

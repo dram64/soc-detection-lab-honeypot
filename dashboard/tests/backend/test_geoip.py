@@ -24,6 +24,7 @@ class FakeCountryReader:
         self.calls.append(ip)
         if ip not in self._mapping:
             from functions.shared.geoip import AddressNotFoundError
+
             raise AddressNotFoundError(ip)
         record = self._mapping[ip]
         # Mimic geoip2.records.Country shape
@@ -44,6 +45,7 @@ class FakeAsnReader:
     def asn(self, ip: str):
         if ip not in self._mapping:
             from functions.shared.geoip import AddressNotFoundError
+
             raise AddressNotFoundError(ip)
         record = self._mapping[ip]
         return type(

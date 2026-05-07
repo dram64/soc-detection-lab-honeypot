@@ -192,9 +192,7 @@ def test_every_session_ends_with_closed(small_event_corpus):
     # Some sessions may be cut off at the events budget; check the first 90% are closed properly.
     sessions = list(by_session.values())
     closed_count = sum(
-        1
-        for events in sessions
-        if any(e["eventid"] == "cowrie.session.closed" for e in events)
+        1 for events in sessions if any(e["eventid"] == "cowrie.session.closed" for e in events)
     )
     assert closed_count >= 0.85 * len(sessions)
 
@@ -226,9 +224,7 @@ def test_cohort_distribution_within_tolerance(asn_pools, usernames, passwords):
         elif "cowrie.login.success" in eventids:
             cohort_counts["credential_stuffing"] += 1
         elif "cowrie.login.failed" in eventids:
-            usernames_used = {
-                e["username"] for e in session_events if "username" in e
-            }
+            usernames_used = {e["username"] for e in session_events if "username" in e}
             if len(usernames_used) == 1:
                 cohort_counts["brute_force"] += 1
             else:
@@ -288,10 +284,14 @@ def test_main_writes_files(tmp_path):
     out_dir = tmp_path / "out"
     rc = main(
         [
-            "--events", "200",
-            "--days", "1",
-            "--seed", "11",
-            "--out", str(out_dir),
+            "--events",
+            "200",
+            "--days",
+            "1",
+            "--seed",
+            "11",
+            "--out",
+            str(out_dir),
         ]
     )
     assert rc == 0

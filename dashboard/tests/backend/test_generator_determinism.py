@@ -27,10 +27,14 @@ def test_explicit_anchor_is_byte_identical(tmp_path: Path) -> None:
     a = tmp_path / "run-a"
     b = tmp_path / "run-b"
     common = [
-        "--events", "500",
-        "--days", "1",
-        "--seed", "1001",
-        "--anchor-time", "2026-04-28T00:00:00Z",
+        "--events",
+        "500",
+        "--days",
+        "1",
+        "--seed",
+        "1001",
+        "--anchor-time",
+        "2026-04-28T00:00:00Z",
     ]
     assert main([*common, "--out", str(a)]) == 0
     assert main([*common, "--out", str(b)]) == 0
@@ -60,16 +64,38 @@ def test_different_anchor_diverges(tmp_path: Path) -> None:
     a = tmp_path / "run-a"
     b = tmp_path / "run-b"
     seed = ["--seed", "1001"]
-    assert main([
-        "--events", "200", "--days", "1", *seed,
-        "--anchor-time", "2026-04-28T00:00:00Z",
-        "--out", str(a),
-    ]) == 0
-    assert main([
-        "--events", "200", "--days", "1", *seed,
-        "--anchor-time", "2026-04-29T00:00:00Z",
-        "--out", str(b),
-    ]) == 0
+    assert (
+        main(
+            [
+                "--events",
+                "200",
+                "--days",
+                "1",
+                *seed,
+                "--anchor-time",
+                "2026-04-28T00:00:00Z",
+                "--out",
+                str(a),
+            ]
+        )
+        == 0
+    )
+    assert (
+        main(
+            [
+                "--events",
+                "200",
+                "--days",
+                "1",
+                *seed,
+                "--anchor-time",
+                "2026-04-29T00:00:00Z",
+                "--out",
+                str(b),
+            ]
+        )
+        == 0
+    )
     # Outputs must differ; the timestamps are anchored to a different day.
     assert _hash_dir(a) != _hash_dir(b)
 
@@ -97,24 +123,40 @@ def test_resolve_anchor_no_seed_uses_now() -> None:
 def test_anchor_must_have_tzinfo(tmp_path: Path) -> None:
     """ISO 8601 without UTC offset is rejected by argparse."""
     with pytest.raises(SystemExit):
-        main([
-            "--events", "100", "--days", "1", "--seed", "1",
-            "--anchor-time", "2026-04-28T00:00:00",  # no offset
-            "--out", str(tmp_path),
-        ])
+        main(
+            [
+                "--events",
+                "100",
+                "--days",
+                "1",
+                "--seed",
+                "1",
+                "--anchor-time",
+                "2026-04-28T00:00:00",  # no offset
+                "--out",
+                str(tmp_path),
+            ]
+        )
 
 
 def test_explicit_anchor_drives_event_timestamps(tmp_path: Path) -> None:
     """Sanity-check that timestamps in the gz output land within the
     [anchor - days, anchor + small slack] window."""
     out = tmp_path / "run"
-    main([
-        "--events", "200",
-        "--days", "1",
-        "--seed", "11",
-        "--anchor-time", "2026-04-28T00:00:00Z",
-        "--out", str(out),
-    ])
+    main(
+        [
+            "--events",
+            "200",
+            "--days",
+            "1",
+            "--seed",
+            "11",
+            "--anchor-time",
+            "2026-04-28T00:00:00Z",
+            "--out",
+            str(out),
+        ]
+    )
     earliest = datetime(2026, 4, 26, 23, 59, tzinfo=UTC)
     latest = datetime(2026, 4, 28, 0, 30, tzinfo=UTC)
     for gz in out.glob("*.json.gz"):

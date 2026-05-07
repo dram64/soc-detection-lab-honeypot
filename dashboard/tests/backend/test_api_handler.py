@@ -56,6 +56,7 @@ def _create_table(ddb):
 
 def _import_handler():
     import functions.api.handler as h
+
     return reload(h)
 
 
@@ -67,8 +68,7 @@ def _event(route_key: str, *, query=None, path=None) -> dict:
     }
 
 
-def _put_event(table, *, ts: str, session: str, eventid: str,
-               src_ip: str = "192.0.2.5", **extra):
+def _put_event(table, *, ts: str, session: str, eventid: str, src_ip: str = "192.0.2.5", **extra):
     item = {
         "pk": f"SESSION#{session}",
         "sk": f"{ts}#{eventid}",
@@ -107,8 +107,9 @@ def _put_rank(table, *, window: str, dim: str, value: str, count: int):
     )
 
 
-def _put_summary(table, *, day: str, total_events: int, unique_ips: int = 1,
-                 unique_sessions: int = 1, **extra):
+def _put_summary(
+    table, *, day: str, total_events: int, unique_ips: int = 1, unique_sessions: int = 1, **extra
+):
     table.put_item(
         Item={
             "pk": "SUMMARY#DAY",
@@ -279,12 +280,9 @@ def test_top_usernames_returns_top_n():
     table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
     h = _import_handler()
     for i in range(30):
-        _put_rank(table, window="24H", dim="username",
-                  value=f"user{i:02d}", count=100 - i)
+        _put_rank(table, window="24H", dim="username", value=f"user{i:02d}", count=100 - i)
     resp = h.handler(
-        _event("GET /api/top/{dimension}",
-               query={"limit": "5"},
-               path={"dimension": "usernames"}),
+        _event("GET /api/top/{dimension}", query={"limit": "5"}, path={"dimension": "usernames"}),
         context=None,
     )
     assert resp["statusCode"] == 200
@@ -302,8 +300,7 @@ def test_top_passwords_uses_password_dimension():
     h = _import_handler()
     _put_rank(table, window="24H", dim="password", value="123456", count=999)
     resp = h.handler(
-        _event("GET /api/top/{dimension}",
-               path={"dimension": "passwords"}),
+        _event("GET /api/top/{dimension}", path={"dimension": "passwords"}),
         context=None,
     )
     assert resp["statusCode"] == 200
@@ -369,9 +366,9 @@ def test_top_invalid_limit_returns_400():
     _create_table(ddb)
     h = _import_handler()
     resp = h.handler(
-        _event("GET /api/top/{dimension}",
-               query={"limit": "9999"},
-               path={"dimension": "usernames"}),
+        _event(
+            "GET /api/top/{dimension}", query={"limit": "9999"}, path={"dimension": "usernames"}
+        ),
         context=None,
     )
     assert resp["statusCode"] == 400
@@ -427,12 +424,8 @@ def test_events_password_raw_never_appears():
     resp = h.handler(_event("GET /api/events"), context=None)
     assert resp["statusCode"] == 200
     body = resp["body"]  # raw JSON string
-    assert "password_raw" not in body, (
-        "password_raw field name leaked in /api/events response"
-    )
-    assert secret not in body, (
-        "password_raw VALUE leaked in /api/events response"
-    )
+    assert "password_raw" not in body, "password_raw field name leaked in /api/events response"
+    assert secret not in body, "password_raw VALUE leaked in /api/events response"
 
 
 @mock_aws
@@ -457,8 +450,7 @@ def test_events_pagination_via_before():
     assert body1["next_before"] is not None
 
     page2 = h.handler(
-        _event("GET /api/events",
-               query={"limit": "3", "before": body1["next_before"]}),
+        _event("GET /api/events", query={"limit": "3", "before": body1["next_before"]}),
         context=None,
     )
     body2 = json.loads(page2["body"])
@@ -525,10 +517,14 @@ def test_session_returns_all_session_events_in_order():
     table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
     h = _import_handler()
     base_ts = "2026-04-29T15:00:"
-    for i, eid in enumerate(["cowrie.session.connect",
-                             "cowrie.login.failed",
-                             "cowrie.login.failed",
-                             "cowrie.session.closed"]):
+    for i, eid in enumerate(
+        [
+            "cowrie.session.connect",
+            "cowrie.login.failed",
+            "cowrie.login.failed",
+            "cowrie.session.closed",
+        ]
+    ):
         ts = f"{base_ts}{i:02d}.000000Z"
         extra = {"username": "root", "password": "123456"} if "login" in eid else {}
         if eid == "cowrie.session.closed":
@@ -598,7 +594,7 @@ def test_unknown_route_returns_404():
     assert resp["statusCode"] == 404
 
 
-#.5 CORS
+# .5 CORS
 
 
 def _event_with_origin(route_key: str, origin: str | None) -> dict:
@@ -663,6 +659,8 @@ def test_cors_single_origin_omits_vary_header(monkeypatch):
     ddb = boto3.client("dynamodb", region_name="us-east-1")
     _create_table(ddb)
     h = _import_handler()
-    resp = h.handler(_event_with_origin("GET /api/healthz", "https://dashboard.dram-soc.org"), context=None)
+    resp = h.handler(
+        _event_with_origin("GET /api/healthz", "https://dashboard.dram-soc.org"), context=None
+    )
     assert resp["headers"]["Access-Control-Allow-Origin"] == "https://dashboard.dram-soc.org"
     assert "Vary" not in resp["headers"]

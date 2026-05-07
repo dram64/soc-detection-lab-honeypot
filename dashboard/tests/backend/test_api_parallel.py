@@ -39,6 +39,7 @@ def _create_table(ddb):
 
 def _import_handler():
     import functions.api.handler as h
+
     return reload(h)
 
 
@@ -251,8 +252,10 @@ def test_summary_only_two_getitems():
         query_count["n"] += 1
         return real_query(*args, **kwargs)
 
-    with patch.object(h._TABLE, "get_item", side_effect=counted_get), \
-         patch.object(h._TABLE, "query", side_effect=counted_query):
+    with (
+        patch.object(h._TABLE, "get_item", side_effect=counted_get),
+        patch.object(h._TABLE, "query", side_effect=counted_query),
+    ):
         resp = h.handler(_event("GET /api/summary"), context=None)
 
     assert resp["statusCode"] == 200

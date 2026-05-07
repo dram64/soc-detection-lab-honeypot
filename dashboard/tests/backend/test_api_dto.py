@@ -151,6 +151,10 @@ def test_no_api_dto_class_declares_password_raw():
     leakers: list[str] = []
     for name in dir(api_dto):
         obj = getattr(api_dto, name)
-        if isinstance(obj, type) and issubclass(obj, BaseModel) and "password_raw" in obj.model_fields:
+        if (
+            isinstance(obj, type)
+            and issubclass(obj, BaseModel)
+            and "password_raw" in obj.model_fields
+        ):
             leakers.append(name)
     assert leakers == [], f"DTOs declaring password_raw: {leakers}"

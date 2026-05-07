@@ -114,9 +114,7 @@ class CowrieEvent(BaseModel):
                     raise ValueError("cowrie.command.input requires input")
             case "cowrie.session.file_download":
                 if self.url is None or self.shasum is None:
-                    raise ValueError(
-                        "cowrie.session.file_download requires url + shasum"
-                    )
+                    raise ValueError("cowrie.session.file_download requires url + shasum")
             case "cowrie.session.closed":
                 if self.duration is None:
                     raise ValueError("cowrie.session.closed requires duration")
@@ -128,9 +126,7 @@ class CowrieEvent(BaseModel):
                     raise ValueError("cowrie.client.kex requires hassh")
             case "cowrie.session.connect":
                 if self.src_port is None or self.dst_port is None:
-                    raise ValueError(
-                        "cowrie.session.connect requires src_port + dst_port"
-                    )
+                    raise ValueError("cowrie.session.connect requires src_port + dst_port")
 
 
 __all__ = ["CowrieEvent", "EventId"]

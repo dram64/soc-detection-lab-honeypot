@@ -328,7 +328,18 @@ def _iter_files(paths: list[Path], includes: set[str]) -> list[Path]:
                 # Hard-exclude rules
                 parts = f.parts
                 if any(
-                    seg in {"node_modules", ".venv", ".terraform", "dist", "build", "__pycache__", ".git", "coverage", "frontend-apex"}
+                    seg
+                    in {
+                        "node_modules",
+                        ".venv",
+                        ".terraform",
+                        "dist",
+                        "build",
+                        "__pycache__",
+                        ".git",
+                        "coverage",
+                        "frontend-apex",
+                    }
                     for seg in parts
                 ):
                     continue
@@ -350,8 +361,9 @@ def main() -> int:
     parser.add_argument("paths", nargs="+", type=Path)
     parser.add_argument("--apply", action="store_true", help="write changes (default: dry-run)")
     parser.add_argument("--dry-run", action="store_true", help="print diffs (default)")
-    parser.add_argument("--ext", default=".py,.ts,.tsx,.js,.jsx,.tf",
-                        help="comma-separated extensions to include")
+    parser.add_argument(
+        "--ext", default=".py,.ts,.tsx,.js,.jsx,.tf", help="comma-separated extensions to include"
+    )
     args = parser.parse_args()
 
     apply = args.apply and not args.dry_run
