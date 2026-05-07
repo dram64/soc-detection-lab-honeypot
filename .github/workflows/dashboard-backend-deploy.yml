@@ -53,6 +53,17 @@ jobs:
         with:
           python-version: '3.13'
 
+      # Phase 11B Step 4 amendment: package_lambdas.py only builds the
+      # geolite2 layer if .mmdb files are present. CI doesn't ship them
+      # (license terms; see download_geolite2.sh header). Download here
+      # so the layer build succeeds and source_code_hash matches the
+      # local-build state. Uses MAXMIND_LICENSE_KEY repo secret.
+      - name: Download GeoLite2 .mmdb databases
+        working-directory: dashboard/functions/layers/geolite2
+        env:
+          MAXMIND_LICENSE_KEY: ${{ secrets.MAXMIND_LICENSE_KEY }}
+        run: bash ./download_geolite2.sh
+
       - name: Build Lambda zips
         working-directory: dashboard
         run: python scripts/package_lambdas.py
