@@ -67,6 +67,10 @@ class HealthResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
     status: Literal["ok"]
     version: str
+    # ADR-010: surface load-bearing config so debugging doesn't require
+    # AWS console access. `correlation_window_us` is the ingest Lambda's
+    # timestamp-window for matching Cowrie ↔ HAProxy entries.
+    correlation_window_us: int | None = None
 
 
 class SummaryResponse(BaseModel):

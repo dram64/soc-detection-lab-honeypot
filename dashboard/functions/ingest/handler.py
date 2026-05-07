@@ -49,10 +49,15 @@ def _log(event: str, /, **kwargs: Any) -> None:
 TABLE_NAME = os.environ.get("DDB_TABLE", "dram-soc-honeypot")
 RAW_TTL_DAYS = int(os.environ.get("RAW_TTL_DAYS", "90"))
 SENSOR_NAME = os.environ.get("SENSOR_NAME", "honeypot")
-# Correlation window in microseconds. Tightened from a more permissive
-# default per the operator's call: SSH handshake tail latency rarely
-# exceeds 200ms in practice (ADR-010 §Decision).
-CORRELATION_WINDOW_US = int(os.environ.get("CORRELATION_WINDOW_US", "200000"))
+# Correlation window in microseconds. Initial Phase 10 hypothesis was
+# 200ms (ADR-010 §Decision); empirical observation of real bot-scanner
+# traffic from RO/RU showed handshake-completion latency clustering at
+# 234–275ms, missing the 200ms window for ~100% of recent sessions.
+# Widened to 500ms based on production data (ADR-010 §Empirical
+# window-tuning). BackwardCorrelationOutcomes{result=ambiguous} is
+# the metric to watch — sustained >5% rate would indicate the window
+# is now too wide and concurrent-arrival cross-attribution is risky.
+CORRELATION_WINDOW_US = int(os.environ.get("CORRELATION_WINDOW_US", "500000"))
 # Lower bound of the window: HAProxy logs the connection acceptance, then
 # the bytes traverse the SSH tunnel before Cowrie's session.connect fires.
 # A 1ms floor avoids matching same-microsecond entries that are almost

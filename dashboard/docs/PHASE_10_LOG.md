@@ -172,6 +172,16 @@ Distinct status `matched_inherited` (not `matched`) preserves empirical visibili
 
 Edge cases (chain-attribution, cross-attacker session-id collisions, race with concurrent backward pass, non-arriving HAProxy entry) are documented in the BUG 2 Gate-1.5 surface and verified with 3 new pytest cases in `test_ingest_handler.py`.
 
+### Hotfix 9 — Empirical window-tuning + healthz config exposure
+
+Within hours of Hotfix 8 deploying, three real bot-scanner sessions arrived with handshake-completion latencies of 234–275ms — past the 200ms `CORRELATION_WINDOW_US`. With no primary match on the connect event, forward inheritance had nothing to inherit from. Every event of every recent session was `correlation_status=missed`.
+
+The Gate 1 window was 200ms based on theoretical handshake latency; production data clustered at 250ms ± 25ms. Widened to **500ms** with comfortable headroom for the international-bot tail, with `BackwardCorrelationOutcomes{result=ambiguous}` as the metric to watch for false-positive concurrent attribution if the window proves too wide. ADR-010 §Empirical window-tuning captures the decision.
+
+Same hotfix exposes `correlation_window_us` on `/api/healthz` so future tuning doesn't require AWS console access — `curl https://mlncxsr5a9.execute-api.us-east-1.amazonaws.com/api/healthz` returns the deployed value.
+
+The phase-4-dev `version` label on `/api/healthz` was noted as a separate cleanup item (cosmetic, defer to a focused PR).
+
 ## Open follow-ups
 
 ### Phase 10.5 — Deterministic SSH-relay correlation (gated on data)

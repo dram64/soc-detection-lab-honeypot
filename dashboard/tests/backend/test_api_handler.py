@@ -138,9 +138,35 @@ def test_healthz_returns_ok_with_version():
     resp = h.handler(_event("GET /api/healthz"), context=None)
     assert resp["statusCode"] == 200
     body = json.loads(resp["body"])
-    assert body == {"status": "ok", "version": "test-sha-abc123"}
+    assert body["status"] == "ok"
+    assert body["version"] == "test-sha-abc123"
     # CORS headers present
     assert resp["headers"]["Access-Control-Allow-Origin"] == "https://dashboard.dram-soc.org"
+
+
+@mock_aws
+def test_healthz_exposes_correlation_window_us(monkeypatch):
+    """ADR-010: surface load-bearing config on healthz so debugging
+    doesn't require AWS console access."""
+    monkeypatch.setenv("CORRELATION_WINDOW_US", "750000")
+    ddb = boto3.client("dynamodb", region_name="us-east-1")
+    _create_table(ddb)
+    h = _import_handler()
+    resp = h.handler(_event("GET /api/healthz"), context=None)
+    body = json.loads(resp["body"])
+    assert body["correlation_window_us"] == 750000
+
+
+@mock_aws
+def test_healthz_correlation_window_us_defaults_to_500ms_when_unset(monkeypatch):
+    monkeypatch.delenv("CORRELATION_WINDOW_US", raising=False)
+    ddb = boto3.client("dynamodb", region_name="us-east-1")
+    _create_table(ddb)
+    h = _import_handler()
+    resp = h.handler(_event("GET /api/healthz"), context=None)
+    body = json.loads(resp["body"])
+    # 500ms = 500,000us. Empirical-tuning default; ADR-010.
+    assert body["correlation_window_us"] == 500000
 
 
 @mock_aws

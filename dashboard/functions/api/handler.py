@@ -188,7 +188,17 @@ def _run_parallel(
 
 
 def _handle_healthz() -> dict[str, Any]:
-    body = HealthResponse(status="ok", version=GIT_SHA).model_dump()
+    # CORRELATION_WINDOW_US is read from the ingest Lambda's environment
+    # at the API Lambda's cold start — both Lambdas read the same env
+    # var name, so this surfaces the value the API Lambda was deployed
+    # with. If the two Lambdas drift, the dashboard reports the API
+    # Lambda's view (which is what affects the response shape).
+    correlation_window_us = int(os.environ.get("CORRELATION_WINDOW_US", "500000"))
+    body = HealthResponse(
+        status="ok",
+        version=GIT_SHA,
+        correlation_window_us=correlation_window_us,
+    ).model_dump()
     return _resp(200, body)
 
 

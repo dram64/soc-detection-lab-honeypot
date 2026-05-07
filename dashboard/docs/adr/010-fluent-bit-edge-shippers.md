@@ -65,6 +65,26 @@ This supersedes the "150-line Python `cowrie-shipper`" specification in ADR-002 
 - Two static AWS access keys live on the edge hosts. Rotation cadence: 90 days. Mitigated by per-host IAM scoping (PutObject on a single prefix).
 - Timestamp correlation has a measurable false-merge risk under concurrent connections. A public SSH honeypot is among the highest-concurrency targets on the internet — bot-scanner traffic can produce multiple connections within a 200ms window. We accept ~15–30% ambiguous-status events as a starting point and instrument the candidate-count distribution to revisit with hard data after one week of real traffic.
 
+## Empirical window-tuning — 200ms → 500ms (Phase 10 hotfix)
+
+Gate 1's window choice was 200ms based on theoretical SSH-handshake-completion latency. Production observation contradicted that hypothesis within hours of going live:
+
+| Session | Cowrie connect ts | HAProxy ts | Delta |
+|---|---|---|---|
+| `f7140597b8ed` (RO bot) | 17:54:37.194593Z | 17:54:36.950184+00:00 | +244.4ms |
+| `77d9dde8be44` (RO bot, 5 login attempts) | 17:54:47.024714Z | 17:54:46.749336+00:00 | +275.4ms |
+| `85119c07321d` (RO bot) | 17:57:48.272924Z | 17:57:48.039184+00:00 | +233.7ms |
+
+Three out of three real bot-scanner sessions clustered at **234–275ms**, just past the 200ms threshold. **All three connect events fell outside the window**; with no primary match, forward inheritance (Hotfix 8) had nothing to inherit from. Result: every event of every recent session was `correlation_status=missed`.
+
+Test session `ddc63aaac987` from Phase 10 verification (residential US client, 92ms delta) had been the only data point until then — it didn't surface the tail because residential cable round-trips faster than international bot-scanner traffic across an autossh tunnel.
+
+**Decision:** widen `CORRELATION_WINDOW_US` from `200_000` to `500_000` (200ms → 500ms). Forward and backward windows widen together (same env var). The widening trades window-tightness for window-coverage — `BackwardCorrelationOutcomes{result=ambiguous}` is the metric to watch; sustained >5% rate would indicate the window is now too wide and concurrent-arrival cross-attribution risk is real.
+
+500ms covers the realistic handshake-latency tail for international bot scanners + autossh re-socketing with comfortable headroom. The Phase 10.5 deterministic-SSH-relay path (below) remains the eventual fix that eliminates the timestamp-window tradeoff entirely.
+
+This empirical-tuning loop is itself a portfolio artifact: the engineering story is "shipped with a tight hypothesis, real attacker traffic showed the hypothesis was wrong, measured and widened" — cleaner than "widened from the start without justification."
+
 ## Phase 10.5 — Deterministic correlation via custom Pi-side SSH relay
 
 If the measured candidate-count distribution shows >10% ambiguity over a 7-day window of real attack traffic, replace `autossh` on the Pi with a small custom SSH client (paramiko or asyncssh) that:
