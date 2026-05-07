@@ -210,6 +210,12 @@ data "aws_iam_policy_document" "deploy" {
       "s3:GetBucketCORS",
       "s3:PutBucketCORS",
       "s3:GetBucketAcl",
+      # Phase 11B Step 4 amendment: terraform's AWS provider unconditionally
+      # queries GetBucketWebsite on every aws_s3_bucket refresh, even when
+      # the bucket has no website config. Put added for symmetry in case a
+      # future change wants to set one.
+      "s3:GetBucketWebsite",
+      "s3:PutBucketWebsite",
     ]
     # Bucket-level only — note the absence of `/*` resource entries here.
     resources = [
@@ -382,6 +388,18 @@ data "aws_iam_policy_document" "deploy" {
     resources = [
       "arn:aws:iam::${var.account_id}:oidc-provider/token.actions.githubusercontent.com",
     ]
+  }
+
+  # Phase 11B Step 4 amendment: ListOpenIDConnectProviders is the API the
+  # `data "aws_iam_openid_connect_provider"` block calls to look up the
+  # provider by URL. List APIs across the account-wide collection don't
+  # accept resource-level scoping (same can't-be-scoped pattern as
+  # CloudFront/ACM/SNS/SQS list carve-outs above).
+  statement {
+    sid       = "IamListOidcProviders"
+    effect    = "Allow"
+    actions   = ["iam:ListOpenIDConnectProviders"]
+    resources = ["*"]
   }
 
   ###########################################################################
@@ -666,12 +684,22 @@ data "aws_iam_policy_document" "deploy" {
       "ssm:GetParameter",
       "ssm:GetParameters",
       "ssm:PutParameter",
-      "ssm:DescribeParameters",
       "ssm:ListTagsForResource",
       "ssm:AddTagsToResource",
       "ssm:RemoveTagsFromResource",
     ]
     resources = ["arn:aws:ssm:${var.aws_region}:${var.account_id}:parameter/${var.name_prefix}/*"]
+  }
+
+  # Phase 11B Step 4 amendment: DescribeParameters is a region-wide list
+  # API that doesn't accept resource-level scoping. Same can't-be-scoped
+  # pattern as the AcmListAll / SnsListAll / SqsListAll / LogsDescribeAll
+  # carve-outs. Terraform calls this on every aws_ssm_parameter refresh.
+  statement {
+    sid       = "SsmDescribeAll"
+    effect    = "Allow"
+    actions   = ["ssm:DescribeParameters"]
+    resources = ["*"]
   }
 }
 
