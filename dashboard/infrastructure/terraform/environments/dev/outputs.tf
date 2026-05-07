@@ -71,19 +71,12 @@ output "acm_validation_record" {
 
 ###############################################################################
 # Phase 10 — edge shippers (Pi + droplet).
+#
+# Phase 11B-1 + ADR-011: fluentbit_*_credentials outputs moved to
+# stacks/edge-shippers-credentials/. Credentials are NOT surfaced via
+# terraform output anymore; rotate via the runbook (aws iam create-
+# access-key directly) so the secret never lands in any terraform state.
 ###############################################################################
-
-output "fluentbit_pi_credentials" {
-  description = "Pi-side fluent-bit credentials. Copy to /etc/fluent-bit/aws-credentials on the Pi (mode 0600)."
-  value       = module.edge_shippers.fluentbit_pi_credentials
-  sensitive   = true
-}
-
-output "fluentbit_droplet_credentials" {
-  description = "Droplet-side fluent-bit credentials. Copy to /etc/fluent-bit/aws-credentials on the droplet (mode 0600)."
-  value       = module.edge_shippers.fluentbit_droplet_credentials
-  sensitive   = true
-}
 
 output "edge_alarm_topic_arn" {
   description = "SNS topic for Pi/droplet heartbeat alarms. Subscribe an email after first apply."
@@ -92,4 +85,13 @@ output "edge_alarm_topic_arn" {
 
 output "maxmind_ssm_parameter_name" {
   value = module.edge_shippers.maxmind_ssm_parameter_name
+}
+
+###############################################################################
+# Phase 11B-1 — GitHub Actions OIDC deploy role.
+###############################################################################
+
+output "github_deploy_role_arn" {
+  description = "ARN to use as AWS_ROLE_ARN in the Phase 11B-2 GitHub Actions workflows."
+  value       = module.github_deploy.role_arn
 }

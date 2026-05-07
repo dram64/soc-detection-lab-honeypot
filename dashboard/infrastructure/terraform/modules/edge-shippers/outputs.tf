@@ -1,30 +1,6 @@
-output "fluentbit_pi_user_name" {
-  value = aws_iam_user.fluentbit_pi.name
-}
-
-output "fluentbit_pi_credentials" {
-  description = "Pi-side fluent-bit AWS credentials. Copy onto the Pi at /etc/fluent-bit/aws-credentials (mode 0600). Format ready for the AWS shared-credentials file."
-  value       = <<-EOT
-    [default]
-    aws_access_key_id = ${aws_iam_access_key.fluentbit_pi.id}
-    aws_secret_access_key = ${aws_iam_access_key.fluentbit_pi.secret}
-  EOT
-  sensitive   = true
-}
-
-output "fluentbit_droplet_user_name" {
-  value = aws_iam_user.fluentbit_droplet.name
-}
-
-output "fluentbit_droplet_credentials" {
-  description = "Droplet-side fluent-bit AWS credentials. Copy onto the droplet at /etc/fluent-bit/aws-credentials (mode 0600)."
-  value       = <<-EOT
-    [default]
-    aws_access_key_id = ${aws_iam_access_key.fluentbit_droplet.id}
-    aws_secret_access_key = ${aws_iam_access_key.fluentbit_droplet.secret}
-  EOT
-  sensitive   = true
-}
+# Phase 11B-1 + ADR-011: IAM user + access-key outputs moved to
+# stacks/edge-shippers-credentials/. This module no longer surfaces
+# any credential values; it owns only CI-deployable infrastructure.
 
 output "maxmind_ssm_parameter_name" {
   description = "SSM Parameter Store path holding the MaxMind license key. Read from the deployer machine via `aws ssm get-parameter --name <this> --with-decryption`."

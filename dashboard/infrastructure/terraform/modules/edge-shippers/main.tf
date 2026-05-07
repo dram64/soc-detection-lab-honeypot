@@ -18,62 +18,16 @@ locals {
 }
 
 ###############################################################################
-# Pi-side IAM user.
+# IAM users + access keys + user policies for the Pi and droplet shippers
+# moved to stacks/edge-shippers-credentials/ in Phase 11B-1 per ADR-011.
+# This module keeps the SNS topic, heartbeat alarms, metric filters, and the
+# MaxMind SSM parameter — all CI-deployable. The IAM user lifecycle is
+# human-managed only.
+#
+# `local.pi_resource_arn` and `local.droplet_resource_arn` remain above as
+# inert constants in case a future change wants to reference the same
+# scoping; they cost nothing to leave in place.
 ###############################################################################
-
-resource "aws_iam_user" "fluentbit_pi" {
-  name = "${var.name_prefix}-fluentbit-pi"
-  path = "/edge/"
-  tags = merge(var.tags, { Role = "edge-shipper", Host = "pi" })
-}
-
-resource "aws_iam_access_key" "fluentbit_pi" {
-  user = aws_iam_user.fluentbit_pi.name
-}
-
-data "aws_iam_policy_document" "fluentbit_pi" {
-  statement {
-    sid       = "PiPutCowriePrefix"
-    effect    = "Allow"
-    actions   = ["s3:PutObject"]
-    resources = [local.pi_resource_arn]
-  }
-}
-
-resource "aws_iam_user_policy" "fluentbit_pi" {
-  name   = "${var.name_prefix}-fluentbit-pi-s3"
-  user   = aws_iam_user.fluentbit_pi.name
-  policy = data.aws_iam_policy_document.fluentbit_pi.json
-}
-
-###############################################################################
-# Droplet-side IAM user.
-###############################################################################
-
-resource "aws_iam_user" "fluentbit_droplet" {
-  name = "${var.name_prefix}-fluentbit-droplet"
-  path = "/edge/"
-  tags = merge(var.tags, { Role = "edge-shipper", Host = "droplet" })
-}
-
-resource "aws_iam_access_key" "fluentbit_droplet" {
-  user = aws_iam_user.fluentbit_droplet.name
-}
-
-data "aws_iam_policy_document" "fluentbit_droplet" {
-  statement {
-    sid       = "DropletPutHaproxyPrefix"
-    effect    = "Allow"
-    actions   = ["s3:PutObject"]
-    resources = [local.droplet_resource_arn]
-  }
-}
-
-resource "aws_iam_user_policy" "fluentbit_droplet" {
-  name   = "${var.name_prefix}-fluentbit-droplet-s3"
-  user   = aws_iam_user.fluentbit_droplet.name
-  policy = data.aws_iam_policy_document.fluentbit_droplet.json
-}
 
 ###############################################################################
 # MaxMind GeoLite2 license key — SSM Parameter Store SecureString.

@@ -73,3 +73,26 @@ module "edge_shippers" {
 
   tags = local.common_tags
 }
+
+###############################################################################
+# Phase 11B-1: GitHub Actions OIDC deploy role.
+#
+# Permits workflows in github.com/dram64/soc-detection-lab-honeypot to
+# assume an AWS role and apply terraform / update Lambda code / deploy
+# the frontend bundle. Trust policy is a literal copy of Diamond IQ's
+# working module (one repo string changed); deploy permissions are
+# scoped to dram-soc-* ARN patterns. ADR-011 explains the human-vs-CI
+# permission boundary — IAM users live in the separate
+# stacks/edge-shippers-credentials/ stack, not here.
+###############################################################################
+
+data "aws_caller_identity" "current" {}
+
+module "github_deploy" {
+  source = "../../modules/github-deploy"
+
+  account_id = data.aws_caller_identity.current.account_id
+  aws_region = var.aws_region
+
+  tags = local.common_tags
+}

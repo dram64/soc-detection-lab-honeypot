@@ -10,6 +10,14 @@
 ssl/
 certs/
 
+# Force-include the edge-shippers credentials terraform stack. The
+# directory is named for what it MANAGES (IAM users + user policies);
+# it holds zero secret material — per ADR-011, access keys live
+# entirely outside terraform state. The .tf files are configuration
+# the team needs to maintain in version control.
+!dashboard/infrastructure/terraform/stacks/edge-shippers-credentials/
+!dashboard/infrastructure/terraform/stacks/edge-shippers-credentials/**
+
 # Docker volumes (if mounted locally)
 data/
 logs/
