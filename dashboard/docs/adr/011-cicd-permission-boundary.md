@@ -67,3 +67,41 @@ The `aws_iam_access_key` resources are **not** in this stack either — terrafor
 - **Phase 11B-2** — the GitHub Actions workflows assume the `dram-soc-github-deploy` role. The role's permissions are fixed by this ADR; if a workflow finds a missing grant during the first real deploy, fix it in `modules/github-deploy/main.tf` (with a corresponding ADR amendment if the gap is a meaningful expansion of CI's blast radius).
 - **Future fluent-bit edge users** (e.g., a third sensor in Phase 13+) need to be added in `stacks/edge-shippers-credentials/`, then their access key minted manually. The CI deploy role does NOT need updating.
 - **Tightening the trust policy from `repo:<repo>:*` to `repo:<repo>:ref:refs/heads/main`** (only `main` branch can assume) is a worth-doing tightening once the workflows are stable and PR-from-fork attack surface is irrelevant. Tracked as a future-work item, not blocking this ADR.
+
+## Amendment — Phase 11B Step 4 (2026-05-07): S3 wildcards + role-policy bootstrap pattern
+
+Phase 11B Step 4's first backend deploys (workflow_dispatch retries against the role created by this ADR) revealed two operational realities the original design didn't anticipate. Documenting them here to cement the patterns for future maintainers.
+
+### S3 bucket-attribute wildcards
+
+Terraform's AWS provider unconditionally queries a long tail of bucket-attribute APIs on every `aws_s3_bucket` refresh: `GetBucketVersioning`, `GetBucketPolicy`, `GetBucketTagging`, `GetBucketPublicAccessBlock`, `GetBucketOwnershipControls`, `GetBucketNotification`, `GetBucketCORS`, `GetBucketAcl`, `GetBucketWebsite`, `GetBucketAccelerateConfiguration`, `GetBucketLogging`, `GetReplicationConfiguration`, `GetBucketObjectLockConfiguration`, `GetIntelligentTieringConfiguration`, etc. — and adds new ones over provider versions.
+
+Phase 11B-1's original policy enumerated a subset of these explicitly. PR #2 (Phase 11B Step 4 amendment #1) added two more (`GetBucketWebsite` + `PutBucketWebsite`). The next refresh hit `GetBucketAccelerateConfiguration`. The whack-a-mole pattern would continue indefinitely.
+
+This amendment replaces the explicit enumeration with `s3:GetBucket*` and `s3:PutBucket*` wildcards in `S3ManageProjectBucketsLevel`. Security envelope:
+
+- `s3:GetObject` is a **separate namespace** and is NOT covered by `s3:GetBucket*`. The role still cannot read object content — the "no object reads on `raw/*` in `honeypot-ingest`" property from this ADR's original design is intact.
+- Resource scoping unchanged: only `dram-soc-honeypot-ingest` and `dram-soc-dashboard-frontend`.
+- `S3FrontendBundleObjects` SID (object-level Get/Put/Delete on the dashboard-frontend bucket) is unchanged — the asymmetric "object-level only on the frontend bundle, never on the ingest bucket" boundary stays intact.
+
+Future-proof against terraform provider adding new bucket-attribute reads.
+
+### Role-policy bootstrap pattern (chicken-and-egg)
+
+The deploy role's policy explicitly **excludes** `iam:PutRolePolicy` on its own role — by design (this ADR's core boundary: CI cannot widen its own permissions). A side effect surfaced in Phase 11B Step 4: any policy update to `dram-soc-github-deploy` cannot be applied by CI from inside the role being updated, because terraform's plan refresh requires the new permissions to read state, but those permissions only land via apply.
+
+The pattern that resolves this:
+
+1. Land the policy change in code (PR + merge to `main`).
+2. From the maintainer workstation (`dramir-admin` or equivalent admin identity), run a targeted apply:
+    ```
+    cd dashboard/infrastructure/terraform/environments/dev
+    terraform apply -target='module.github_deploy.aws_iam_role_policy.deploy' -auto-approve
+    ```
+3. CI's next workflow run (backend-deploy or tf-plan) refreshes successfully against the now-updated policy.
+
+This is a **deliberate consequence** of this ADR's CI-cannot-update-its-own-policy boundary, not an accidental gap. The original Phase 11B-1 deploy used the same workstation-bootstrap pattern (the role had to exist before CI could use it). The Step 4 retry sequence used it for policy updates.
+
+When to apply this pattern: any change to `modules/github-deploy/main.tf`'s policy document (new statements, action wildcards, scope tightening, etc.). The bootstrap step is documented in [edge-credential-rotation.md](../runbooks/edge-credential-rotation.md) alongside the other manual-bootstrap operations the maintainer owns.
+
+When NOT to apply: changes to dashboard application infrastructure (Lambda code, DynamoDB tables, etc.) that don't touch the deploy role's policy — those go through CI normally.
