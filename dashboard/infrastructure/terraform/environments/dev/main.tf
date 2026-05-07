@@ -66,7 +66,6 @@ module "edge_shippers" {
   source = "../../modules/edge-shippers"
 
   name_prefix           = var.name_prefix
-  ingest_bucket_arn     = module.ingest.ingest_bucket_arn
   ingest_log_group_name = module.ingest.ingest_log_group_name
   maxmind_license_key   = var.maxmind_license_key
 

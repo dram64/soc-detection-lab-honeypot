@@ -4,11 +4,6 @@ variable "name_prefix" {
   default     = "dram-soc"
 }
 
-variable "ingest_bucket_arn" {
-  description = "ARN of the ingest bucket (used to construct prefix-scoped resource ARNs)."
-  type        = string
-}
-
 variable "ingest_log_group_name" {
   description = "CloudWatch log group of the ingest Lambda. Used by the heartbeat metric filters that watch for `object_processed` log lines per source."
   type        = string
