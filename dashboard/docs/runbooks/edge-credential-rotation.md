@@ -98,3 +98,34 @@ Steps to rotate:
 3. The next scheduled GeoIP-layer refresh (Phase 9 work, or the manual `download_geolite2.sh` run) will pick up the new key from SSM. There is no fluent-bit / Lambda restart required — neither service reads the SSM parameter directly.
 
 Record the rotation date in PHASE_10_LOG.md "Credential rotations" along with the per-host fluent-bit key rotations.
+
+---
+
+## Role-policy bootstrap (Phase 11B Step 4 amendment)
+
+The `dram-soc-github-deploy` IAM role's policy is managed by terraform (`modules/github-deploy/main.tf`) but applied by CI from inside the very role being updated. Per [ADR-011](../adr/011-cicd-permission-boundary.md), CI explicitly **cannot** update its own policy via its own runs — the role lacks `iam:PutRolePolicy` on itself, by design.
+
+Any change to the deploy role's policy document (new statements, action wildcards, scope tightening, etc.) requires a one-time manual apply from the maintainer workstation BEFORE CI can use the new permissions. Without this bootstrap step, CI's next backend-deploy run will fail at `terraform plan` with `AccessDenied` errors on whichever new permissions the change introduced.
+
+Steps after merging a policy-changing PR to `main`:
+
+1. Pull the merged change locally:
+   ```
+   git checkout main && git pull origin main
+   ```
+2. From the maintainer workstation, with admin AWS credentials (`dramir-admin` or equivalent), run a targeted apply on JUST the role-policy resource:
+   ```
+   cd dashboard/infrastructure/terraform/environments/dev
+   terraform apply -target='module.github_deploy.aws_iam_role_policy.deploy' -auto-approve
+   ```
+3. Verify the new statements / actions are live on the role:
+   ```
+   aws iam get-role-policy \
+       --role-name dram-soc-github-deploy \
+       --policy-name dram-soc-github-deploy-policy \
+       --output text
+   ```
+   Grep for the SID names or action strings the policy change introduced.
+4. Re-trigger the CI workflow that was blocked (e.g., `gh workflow run dashboard-backend-deploy.yml --field reason="<context>"`).
+
+Same pattern was used for the original Phase 11B-1 role create (the role had to exist before CI could assume it) and twice during the Phase 11B Step 4 retry sequence (PR #2 IAM amendments + PR #3 S3 wildcard amendment). It is the documented escape hatch for policy bootstrapping; not a workaround.
