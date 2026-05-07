@@ -1,0 +1,11 @@
+{
+  "eventid": "cowrie.client.version",
+  "message": "Remote SSH version: SSH-2.0-Fingerprintx-SSH2",
+  "protocol": "ssh",
+  "sensor": "honeypot",
+  "session": "886c3f6f818a",
+  "src_ip": "127.0.0.1",
+  "timestamp": "2026-05-07T18:44:00.091855Z",
+  "uuid": "c3ccafbe-40f0-11f1-8f67-88a29e085d67",
+  "version": "SSH-2.0-Fingerprintx-SSH2"
+}

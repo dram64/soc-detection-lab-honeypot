@@ -1,0 +1,11 @@
+{
+  "duration": "0.0",
+  "eventid": "cowrie.session.closed",
+  "message": "Connection lost after 0.0 seconds",
+  "protocol": "ssh",
+  "sensor": "honeypot",
+  "session": "65ead91039ac",
+  "src_ip": "127.0.0.1",
+  "timestamp": "2026-05-07T18:47:51.579872Z",
+  "uuid": "c3ccafbe-40f0-11f1-8f67-88a29e085d67"
+}

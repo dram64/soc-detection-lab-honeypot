@@ -895,3 +895,150 @@ def test_rank_rebuild_skips_buckets_with_no_value_attribute():
 
     out = h._handle_rank_rebuild(now=fixed_now)
     assert out["24H#username"] == 1  # only the valid one ranked
+
+
+# ---------------------------------------------------------------------------
+# Phase 11A: synthetic per-eventid dimensions (command, proxy_target_port)
+# ---------------------------------------------------------------------------
+
+
+@mock_aws
+def test_command_input_event_increments_command_dimension():
+    """cowrie.command.input events emit a `command` counter keyed on the
+    FIRST whitespace-separated token of `input` — bounding cardinality
+    against bot-scanner probe traffic where `input` contents are short
+    and a small handful of values dominate."""
+    ddb = boto3.client("dynamodb", region_name="us-east-1")
+    _create_table(ddb)
+    h = _import_aggregator()
+    table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
+
+    # Two `whoami` and one `uname -a` — verify aggregation by first token.
+    payload = _stream_payload([
+        _put_event(table, ts="2026-05-07T17:00:00.000000Z",
+                   session="s1", eventid="cowrie.command.input",
+                   src_ip="203.0.113.5", input="whoami"),
+        _put_event(table, ts="2026-05-07T17:00:01.000000Z",
+                   session="s2", eventid="cowrie.command.input",
+                   src_ip="203.0.113.6", input="whoami"),
+        _put_event(table, ts="2026-05-07T17:00:02.000000Z",
+                   session="s3", eventid="cowrie.command.input",
+                   src_ip="203.0.113.7", input="uname -a"),
+    ])
+    h.handler(payload, context=None)
+
+    whoami = table.get_item(
+        Key={"pk": "AGG#HOUR#2026-05-07T17#command", "sk": "VALUE#whoami"}
+    ).get("Item")
+    assert whoami is not None
+    assert int(whoami["count"]) == 2
+
+    uname = table.get_item(
+        Key={"pk": "AGG#HOUR#2026-05-07T17#command", "sk": "VALUE#uname"}
+    ).get("Item")
+    assert uname is not None
+    assert int(uname["count"]) == 1
+
+
+@mock_aws
+def test_command_dimension_only_emits_for_command_input():
+    """A non-command-input event with an `input` field (defensive — can
+    happen if Cowrie ever leaks the field) must NOT increment the
+    command dimension."""
+    ddb = boto3.client("dynamodb", region_name="us-east-1")
+    _create_table(ddb)
+    h = _import_aggregator()
+    table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
+
+    payload = _stream_payload([
+        _put_event(table, ts="2026-05-07T17:00:00.000000Z",
+                   session="s1", eventid="cowrie.session.connect",
+                   src_ip="203.0.113.5", src_port=12345, dst_port=22,
+                   input="whoami"),  # field present but wrong eventid
+    ])
+    h.handler(payload, context=None)
+
+    item = table.get_item(
+        Key={"pk": "AGG#HOUR#2026-05-07T17#command", "sk": "VALUE#whoami"}
+    ).get("Item")
+    assert item is None  # NOT incremented
+
+
+@mock_aws
+def test_command_dimension_skips_empty_input():
+    ddb = boto3.client("dynamodb", region_name="us-east-1")
+    _create_table(ddb)
+    h = _import_aggregator()
+    table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
+
+    payload = _stream_payload([
+        _put_event(table, ts="2026-05-07T17:00:00.000000Z",
+                   session="s1", eventid="cowrie.command.input",
+                   src_ip="203.0.113.5", input=""),
+        _put_event(table, ts="2026-05-07T17:00:01.000000Z",
+                   session="s2", eventid="cowrie.command.input",
+                   src_ip="203.0.113.6", input="   "),
+    ])
+    h.handler(payload, context=None)
+
+    # Scan the command partition — should be empty.
+    resp = table.query(KeyConditionExpression=Key("pk").eq("AGG#HOUR#2026-05-07T17#command"))
+    assert resp.get("Items", []) == []
+
+
+@mock_aws
+def test_direct_tcpip_request_increments_proxy_target_port():
+    """cowrie.direct-tcpip.request and .data events emit a
+    `proxy_target_port` counter keyed on `dst_port` — surfaces what
+    services attackers are trying to proxy through (3478=STUN,
+    1080=SOCKS, 5060=SIP are common)."""
+    ddb = boto3.client("dynamodb", region_name="us-east-1")
+    _create_table(ddb)
+    h = _import_aggregator()
+    table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
+
+    payload = _stream_payload([
+        _put_event(table, ts="2026-05-07T18:00:00.000000Z",
+                   session="s1", eventid="cowrie.direct-tcpip.request",
+                   src_ip="203.0.113.5", dst_ip="141.101.90.1", dst_port=3478),
+        _put_event(table, ts="2026-05-07T18:00:01.000000Z",
+                   session="s2", eventid="cowrie.direct-tcpip.request",
+                   src_ip="203.0.113.6", dst_ip="8.8.8.8", dst_port=3478),
+        _put_event(table, ts="2026-05-07T18:00:02.000000Z",
+                   session="s3", eventid="cowrie.direct-tcpip.data",
+                   src_ip="203.0.113.7", dst_ip="1.2.3.4", dst_port=1080),
+    ])
+    h.handler(payload, context=None)
+
+    stun = table.get_item(
+        Key={"pk": "AGG#HOUR#2026-05-07T18#proxy_target_port", "sk": "VALUE#3478"}
+    ).get("Item")
+    assert stun is not None and int(stun["count"]) == 2
+
+    socks = table.get_item(
+        Key={"pk": "AGG#HOUR#2026-05-07T18#proxy_target_port", "sk": "VALUE#1080"}
+    ).get("Item")
+    assert socks is not None and int(socks["count"]) == 1
+
+
+@mock_aws
+def test_proxy_target_port_dimension_only_emits_for_direct_tcpip_events():
+    """A regular session.connect with dst_port=22 must NOT increment the
+    proxy_target_port dimension — that conflates Cowrie's own listener
+    port with attacker proxy-abuse targets."""
+    ddb = boto3.client("dynamodb", region_name="us-east-1")
+    _create_table(ddb)
+    h = _import_aggregator()
+    table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
+
+    payload = _stream_payload([
+        _put_event(table, ts="2026-05-07T19:00:00.000000Z",
+                   session="s1", eventid="cowrie.session.connect",
+                   src_ip="203.0.113.5", src_port=12345, dst_port=2223),
+    ])
+    h.handler(payload, context=None)
+
+    item = table.get_item(
+        Key={"pk": "AGG#HOUR#2026-05-07T19#proxy_target_port", "sk": "VALUE#2223"}
+    ).get("Item")
+    assert item is None

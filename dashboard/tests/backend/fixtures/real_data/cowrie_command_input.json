@@ -1,0 +1,11 @@
+{
+  "eventid": "cowrie.command.input",
+  "input": "/bin/./uname -s -v -n -r -m",
+  "message": "CMD: /bin/./uname -s -v -n -r -m",
+  "protocol": "ssh",
+  "sensor": "honeypot",
+  "session": "211987b0e348",
+  "src_ip": "127.0.0.1",
+  "timestamp": "2026-05-07T18:23:42.068576Z",
+  "uuid": "c3ccafbe-40f0-11f1-8f67-88a29e085d67"
+}

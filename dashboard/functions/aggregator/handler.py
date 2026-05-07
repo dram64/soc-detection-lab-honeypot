@@ -103,6 +103,11 @@ _RANKED_DIMENSIONS: tuple[Dimension, ...] = (
     "country",
     "asn",
     "technique",
+    # Phase 11A: rank-rebuild includes the new synthetic dimensions so
+    # Phase 12's frontend widgets can `/api/top/{command,proxy_target_port}`
+    # without an aggregator change. Aggregate now, surface later.
+    "command",
+    "proxy_target_port",
 )
 
 
@@ -210,6 +215,38 @@ def _process_event_item(item: dict[str, Any]) -> int:
         # Counter values are strings in DDB; coerce here.
         _increment_counter(bucket=bucket, dimension=dim, value=str(value), delta=1)
         touched += 1
+
+    # Phase 11A: synthetic per-eventid dimensions. These don't fit the
+    # generic `_PER_EVENT_DIMENSIONS` loop because they apply only to
+    # specific eventid types AND the counter value is derived (not a
+    # raw field copy).
+    eid = item.get("eventid")
+    if eid == "cowrie.command.input":
+        # Phase 11A intentional decision: aggregate by FIRST whitespace
+        # token only. Full attack input is preserved at the EVENT# row
+        # for forensics (queryable by session_id); the aggregation
+        # surface uses the first token to keep cardinality bounded
+        # (bot scanners run a small probe set like `whoami`, `uname`,
+        # `cat`, `wget`) and the signal visible in top-N rollups. Don't
+        # widen this to the full input string without separately
+        # weighing the AGG#HOUR# blow-up risk.
+        cmd = (item.get("input") or "").strip().split()
+        if cmd:
+            _increment_counter(
+                bucket=bucket, dimension="command", value=cmd[0], delta=1
+            )
+            touched += 1
+    elif eid in {"cowrie.direct-tcpip.request", "cowrie.direct-tcpip.data"}:
+        # Proxy-abuse attempts. Counting `dst_port` surfaces what services
+        # attackers are trying to reach through the honeypot (3478=STUN,
+        # 5060=SIP, 1080=SOCKS proxy probes are common). Phase 12 will add
+        # a dashboard widget; aggregation lands now.
+        port = item.get("dst_port")
+        if port is not None:
+            _increment_counter(
+                bucket=bucket, dimension="proxy_target_port", value=str(port), delta=1
+            )
+            touched += 1
 
     # technique is per-session, computed on session.closed only
     if item.get("eventid") == "cowrie.session.closed":

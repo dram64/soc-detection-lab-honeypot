@@ -1,0 +1,13 @@
+{
+  "dst_ip": "141.101.90.1",
+  "dst_port": 3478,
+  "eventid": "cowrie.direct-tcpip.request",
+  "message": "direct-tcp connection request to 141.101.90.1:3478 from 0.0.0.0:0",
+  "protocol": "ssh",
+  "sensor": "honeypot",
+  "session": "c6b44a9c28f2",
+  "src_ip": "127.0.0.1",
+  "src_port": 0,
+  "timestamp": "2026-05-07T15:21:28.157182Z",
+  "uuid": "c3ccafbe-40f0-11f1-8f67-88a29e085d67"
+}

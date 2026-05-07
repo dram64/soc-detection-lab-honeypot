@@ -1,0 +1,13 @@
+{
+  "dst_ip": "127.0.0.1",
+  "dst_port": 2223,
+  "eventid": "cowrie.session.connect",
+  "message": "New connection: 127.0.0.1:39214 (127.0.0.1:2223) [session: 65ead91039ac]",
+  "protocol": "ssh",
+  "sensor": "honeypot",
+  "session": "65ead91039ac",
+  "src_ip": "127.0.0.1",
+  "src_port": 39214,
+  "timestamp": "2026-05-07T18:47:51.563634Z",
+  "uuid": "c3ccafbe-40f0-11f1-8f67-88a29e085d67"
+}

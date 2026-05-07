@@ -1,0 +1,15 @@
+{
+  "duplicate": true,
+  "duration": "0.3",
+  "eventid": "cowrie.log.closed",
+  "message": "Closing TTY Log: var/lib/cowrie/tty/876deb10d4cf5b5c092011cec255ceaeaef66174cc3b5964b8eb53b60d9cab81 after 0.3 seconds",
+  "protocol": "ssh",
+  "sensor": "honeypot",
+  "session": "211987b0e348",
+  "shasum": "876deb10d4cf5b5c092011cec255ceaeaef66174cc3b5964b8eb53b60d9cab81",
+  "size": 69,
+  "src_ip": "127.0.0.1",
+  "timestamp": "2026-05-07T18:23:42.386227Z",
+  "ttylog": "var/lib/cowrie/tty/876deb10d4cf5b5c092011cec255ceaeaef66174cc3b5964b8eb53b60d9cab81",
+  "uuid": "c3ccafbe-40f0-11f1-8f67-88a29e085d67"
+}

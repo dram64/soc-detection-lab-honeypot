@@ -38,7 +38,10 @@ class StoredEvent(BaseModel):
     dst_port: int | None = None
     protocol: str | None = None
     sensor_uuid: str | None = None
-    message: str | None = None
+    # Phase 11A: cowrie.session.params occasionally ships `message: []`
+    # (a list, not a string). Mirror CowrieEvent.message — accept both
+    # so the ingest handler can pass it through to DDB without coercion.
+    message: str | list | None = None
 
     username: str | None = None
     password: str | None = None
@@ -87,7 +90,8 @@ class PublicEvent(BaseModel):
     dst_ip: str | None = None
     dst_port: int | None = None
     protocol: str | None = None
-    message: str | None = None
+    # See StoredEvent.message — accept list shape from cowrie.session.params.
+    message: str | list | None = None
 
     username: str | None = None
     password: str | None = None  # dictionary-classified or <filtered:len=N>

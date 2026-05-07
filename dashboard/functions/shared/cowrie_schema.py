@@ -28,7 +28,23 @@ class CowrieEvent(BaseModel):
         validate the combinations in CowrieEventModel.check_fields.
     """
 
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
+    # Phase 11A: extra="ignore" instead of "forbid". Cowrie 2.x evolves
+    # event shapes per point release (cowrie.client.kex grew hasshAlgorithms
+    # and langCS; cowrie.log.closed carries ttylog/size/duplicate;
+    # cowrie.session.params carries arch). The schema's real safety net is
+    # the field-level validators below (timestamp format, IP format, port
+    # range, eventid pattern) — those still reject malformed values.
+    # Allowing unknown fields to flow through prevents Cowrie's evolution
+    # from silently dropping entire batches at the parser.
+    #
+    # IMPORTANT for future maintainers: "ignore" means "unknown fields
+    # pass through silently" — NOT "no validation." The per-field
+    # validators (timestamp format, IP format, port range, eventid
+    # pattern) and the post-init `check_fields()` cross-field invariants
+    # still apply with full force. If you find yourself wanting to relax
+    # one of those, write a separate ADR — don't infer from this policy
+    # that loose-extra means loose-everywhere.
+    model_config = ConfigDict(extra="ignore", str_strip_whitespace=False)
 
     eventid: EventId
     timestamp: str
@@ -41,7 +57,10 @@ class CowrieEvent(BaseModel):
     src_port: int | None = Field(default=None, ge=0, le=65535)
     dst_ip: str | None = None
     dst_port: int | None = Field(default=None, ge=0, le=65535)
-    message: str | None = None
+    # Phase 11A: cowrie.session.params occasionally ships `message: []`
+    # (an empty list rather than the usual human-readable string). Accept
+    # both shapes; downstream consumers just render as text.
+    message: str | list | None = None
 
     username: str | None = None
     password: str | None = None

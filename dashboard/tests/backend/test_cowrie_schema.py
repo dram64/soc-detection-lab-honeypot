@@ -94,16 +94,26 @@ def test_invalid_ip_rejected() -> None:
         )
 
 
-def test_extra_fields_rejected() -> None:
-    with pytest.raises(ValidationError):
-        CowrieEvent(
-            eventid="cowrie.session.connect",
-            timestamp="2026-04-27T23:19:26.097161Z",
-            src_ip="192.0.2.5",
-            session="abcd1234",
-            sensor="honeypot",
-            unknown_field="should fail",  # type: ignore[call-arg]
-        )
+def test_extra_fields_silently_dropped() -> None:
+    """Phase 11A: switched extra='forbid' to 'ignore' so Cowrie 2.x's
+    per-version field churn (hasshAlgorithms, langCS, ttylog, arch, ...)
+    doesn't drop entire batches at the parser. The schema's safety net
+    moved from `extra` to the field-level validators below (timestamp
+    format, IP format, port range, eventid pattern). Unknown fields
+    drop silently — the parser only surfaces what downstream consumers
+    declared as model attributes.
+    """
+    event = CowrieEvent(
+        eventid="cowrie.session.connect",
+        timestamp="2026-04-27T23:19:26.097161Z",
+        src_ip="192.0.2.5",
+        src_port=12345,
+        dst_port=2222,
+        session="abcd1234",
+        sensor="honeypot",
+        unknown_field="should be silently dropped",  # type: ignore[call-arg]
+    )
+    assert not hasattr(event, "unknown_field")
 
 
 def test_unknown_eventid_under_cowrie_namespace_accepted() -> None:

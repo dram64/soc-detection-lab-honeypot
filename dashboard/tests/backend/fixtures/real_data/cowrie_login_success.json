@@ -1,0 +1,12 @@
+{
+  "eventid": "cowrie.login.success",
+  "message": "login attempt [root/!@#$%^] succeeded",
+  "password": "!@#$%^",
+  "protocol": "ssh",
+  "sensor": "honeypot",
+  "session": "211987b0e348",
+  "src_ip": "127.0.0.1",
+  "timestamp": "2026-05-07T18:23:41.388616Z",
+  "username": "root",
+  "uuid": "c3ccafbe-40f0-11f1-8f67-88a29e085d67"
+}
