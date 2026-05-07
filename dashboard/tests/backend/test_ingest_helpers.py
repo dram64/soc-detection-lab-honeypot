@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from functions.ingest.handler import _to_ddb_attr, _chunked, _ingest_id, _ttl_for
+from functions.ingest.handler import _chunked, _ingest_id, _to_ddb_attr, _ttl_for
 
 
 def test_to_ddb_attr_string():

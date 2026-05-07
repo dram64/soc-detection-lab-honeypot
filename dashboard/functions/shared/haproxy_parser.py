@@ -54,7 +54,7 @@ Look-up shape (driven by the Lambda correlation):
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 
@@ -88,9 +88,9 @@ def parse_record(raw: dict[str, Any]) -> HAProxyRecord | None:
         # keep the stored ts byte-stable across writers.
         dt = datetime.fromisoformat(time_str)
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.replace(tzinfo=UTC)
         else:
-            dt = dt.astimezone(timezone.utc)
+            dt = dt.astimezone(UTC)
         ts_iso = dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{dt.microsecond:06d}+00:00"
         ts_us = int(dt.timestamp() * 1_000_000)
 
@@ -111,7 +111,7 @@ def parse_record(raw: dict[str, Any]) -> HAProxyRecord | None:
 
 def to_ddb_item(rec: HAProxyRecord, *, ttl_days: int = 90) -> dict[str, Any]:
     """Build the DynamoDB item for the HAProxy connection record."""
-    expires = datetime.fromtimestamp(rec.ts_us / 1_000_000, tz=timezone.utc) + timedelta(days=ttl_days)
+    expires = datetime.fromtimestamp(rec.ts_us / 1_000_000, tz=UTC) + timedelta(days=ttl_days)
     return {
         "pk": f"HAPROXY#{rec.bucket}",
         "sk": f"{rec.ts}#{rec.client_port}",
@@ -137,7 +137,7 @@ def cowrie_ts_to_us(cowrie_ts: str) -> int:
         cowrie_ts = cowrie_ts[:-1] + "+00:00"
     dt = datetime.fromisoformat(cowrie_ts)
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
     return int(dt.timestamp() * 1_000_000)
 
 
@@ -149,8 +149,8 @@ def buckets_for_window(cowrie_ts_us: int, window_us: int = 200_000) -> list[str]
     """
     start_us = cowrie_ts_us - window_us
     end_us = cowrie_ts_us
-    start_dt = datetime.fromtimestamp(start_us / 1_000_000, tz=timezone.utc)
-    end_dt = datetime.fromtimestamp(end_us / 1_000_000, tz=timezone.utc)
+    start_dt = datetime.fromtimestamp(start_us / 1_000_000, tz=UTC)
+    end_dt = datetime.fromtimestamp(end_us / 1_000_000, tz=UTC)
     start_bucket = start_dt.strftime("%Y-%m-%dT%H:%M")
     end_bucket = end_dt.strftime("%Y-%m-%dT%H:%M")
     if start_bucket == end_bucket:

@@ -93,11 +93,11 @@ def classify_event(
 
 
 __all__ = [
+    "BRUTE_FORCE_MIN_FAILURES",
+    "CREDENTIAL_STUFFING_MIN_USERNAMES",
+    "SCANNER_MAX_DURATION_S",
     "SessionSummary",
     "Technique",
-    "classify_session",
     "classify_event",
-    "SCANNER_MAX_DURATION_S",
-    "CREDENTIAL_STUFFING_MIN_USERNAMES",
-    "BRUTE_FORCE_MIN_FAILURES",
+    "classify_session",
 ]

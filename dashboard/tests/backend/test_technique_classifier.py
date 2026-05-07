@@ -18,8 +18,8 @@ import pytest
 
 from functions.shared.technique_classifier import (
     SessionSummary,
-    classify_session,
     classify_event,
+    classify_session,
 )
 
 

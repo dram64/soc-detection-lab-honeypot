@@ -144,8 +144,9 @@ def test_no_api_dto_class_declares_password_raw():
     """Defensive: walk every response model in api_dto and confirm none
     declares a `password_raw` field. A future programmer who forgets the
     boundary still gets caught here."""
-    import functions.shared.api_dto as api_dto
     from pydantic import BaseModel
+
+    import functions.shared.api_dto as api_dto
 
     leakers: list[str] = []
     for name in dir(api_dto):

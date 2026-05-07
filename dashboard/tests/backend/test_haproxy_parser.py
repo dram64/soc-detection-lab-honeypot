@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
 from functions.shared.haproxy_parser import (
-    HAProxyRecord,
     buckets_for_window,
     cowrie_ts_to_us,
     parse_record,
@@ -41,7 +40,7 @@ def test_parse_record_extracts_microsecond_timestamp():
     assert rec.frontend_port == 22
     # ts_us is microseconds-since-epoch
     expected = int(
-        datetime(2026, 5, 7, 0, 55, 1, 948594, tzinfo=timezone.utc).timestamp() * 1_000_000
+        datetime(2026, 5, 7, 0, 55, 1, 948594, tzinfo=UTC).timestamp() * 1_000_000
     )
     assert rec.ts_us == expected
 

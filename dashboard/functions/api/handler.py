@@ -4,9 +4,10 @@ import json
 import logging
 import os
 from collections import defaultdict
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timedelta, timezone
-from typing import Any, Callable
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import boto3
 from boto3.dynamodb.conditions import Key
@@ -79,7 +80,7 @@ _DDB_QUERY_EXECUTOR = ThreadPoolExecutor(max_workers=10)
 
 
 def _now_utc() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _select_origin(request_origin: str | None) -> str:
@@ -178,7 +179,7 @@ def _run_parallel(
         item = futures[fut]
         try:
             successes.append(fut.result())
-        except Exception as exc:  # noqa: BLE001 — one bad query shouldn't fail all
+        except Exception as exc:
             failures.append((item, exc))
             _log(label, error=type(exc).__name__, item=str(item))
     return successes, failures

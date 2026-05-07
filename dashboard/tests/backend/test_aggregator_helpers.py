@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
-import pytest
+from datetime import UTC, datetime
 
 from functions.aggregator.handler import (
     _hour_bucket,
@@ -23,18 +21,18 @@ def test_hour_bucket_strips_to_hour():
 
 def test_hourly_ttl_is_60_days_after_bucket():
     ttl = _hourly_ttl("2026-04-28T14")
-    expected = datetime(2026, 6, 27, 14, tzinfo=timezone.utc).timestamp()
+    expected = datetime(2026, 6, 27, 14, tzinfo=UTC).timestamp()
     assert ttl == int(expected)
 
 
 def test_rank_ttl_is_in_the_future():
-    now = int(datetime.now(timezone.utc).timestamp())
+    now = int(datetime.now(UTC).timestamp())
     assert _rank_ttl() > now
 
 
 def test_summary_ttl_is_far_future():
     ttl = _summary_ttl("2026-04-28")
-    now = int(datetime.now(timezone.utc).timestamp())
+    now = int(datetime.now(UTC).timestamp())
     assert ttl > now + (300 * 86400)
 
 

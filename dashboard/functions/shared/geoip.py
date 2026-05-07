@@ -41,12 +41,12 @@ class GeoIPLookup:
 
 
 class _CountryReaderProto(Protocol):
-    def country(self, ip: str): ...  # noqa: D401, ANN201
+    def country(self, ip: str): ...
     def close(self) -> None: ...
 
 
 class _AsnReaderProto(Protocol):
-    def asn(self, ip: str): ...  # noqa: D401, ANN201
+    def asn(self, ip: str): ...
     def close(self) -> None: ...
 
 
@@ -62,7 +62,7 @@ def _open_real_readers(
 
     # Re-export geoip2's AddressNotFoundError as the module-local one so
     # exception handling is consistent regardless of source.
-    global AddressNotFoundError  # noqa: PLW0603
+    global AddressNotFoundError
     AddressNotFoundError = geoip2.errors.AddressNotFoundError  # type: ignore[misc]
 
     country_reader = geoip2.database.Reader(str(country_path))
@@ -99,7 +99,7 @@ class GeoIPEnricher:
         *,
         country_path: Path | None = None,
         asn_path: Path | None = None,
-    ) -> "GeoIPEnricher":
+    ) -> GeoIPEnricher:
         country_path = country_path or Path("/opt/geolite2/GeoLite2-Country.mmdb")
         asn_path = asn_path or Path("/opt/geolite2/GeoLite2-ASN.mmdb")
         country_reader, asn_reader = _open_real_readers(country_path, asn_path)
@@ -140,10 +140,10 @@ class GeoIPEnricher:
             return
         try:
             self._country_reader.close()
-        except Exception:  # noqa: BLE001 — best-effort cleanup
+        except Exception:
             pass
         try:
             self._asn_reader.close()
-        except Exception:  # noqa: BLE001
+        except Exception:
             pass
         self._closed = True

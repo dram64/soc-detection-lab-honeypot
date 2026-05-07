@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import gzip
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from importlib import reload
-from pathlib import Path
 
 import boto3
 import pytest
@@ -17,7 +16,6 @@ from tools.synthetic_data_generator import (
     _load_lines,
     generate_events,
 )
-
 
 BUCKET = "dram-soc-honeypot-ingest"
 TABLE = "dram-soc-honeypot"
@@ -40,7 +38,7 @@ def synthetic_events():
     asn_pools = _load_asn_pools(DATA_DIR / "asn_pools.json")
     usernames = _load_lines(DATA_DIR / "usernames.txt")
     passwords = _load_lines(DATA_DIR / "passwords.txt")
-    fixed_now = datetime(2026, 4, 27, 12, 0, tzinfo=timezone.utc)
+    fixed_now = datetime(2026, 4, 27, 12, 0, tzinfo=UTC)
     return list(
         generate_events(
             target_events=120,
