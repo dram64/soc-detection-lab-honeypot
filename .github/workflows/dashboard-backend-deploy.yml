@@ -1,0 +1,120 @@
+name: dashboard-backend-deploy
+
+# Phase 11B-2 PART 1: workflow_dispatch ONLY. Diamond IQ paid for the
+# lesson on auto-trigger in their Phase 8.5 — terraform plan exited 1
+# with no diagnostic in the visible step log on every PR push, masking
+# real diffs and burning trust. Re-evaluate flip to push-to-main after
+# 5+ clean manual deploys (Phase 11C, tracked in PROJECT_PLAN.md).
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Why are you running this manual deploy?'
+        required: false
+        default: 'manual run'
+
+permissions:
+  id-token: write
+  contents: read
+
+# Serialize deploys; cancelling an in-flight terraform apply mid-run is unsafe.
+concurrency:
+  group: dashboard-backend-deploy
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ROLE_ARN: arn:aws:iam::334856751632:role/dram-soc-github-deploy
+  TF_VAR_maxmind_license_key: ${{ secrets.MAXMIND_LICENSE_KEY }}
+  TF_VAR_git_sha: ${{ github.sha }}
+  TF_VAR_allowed_origins: '["https://dashboard.dram-soc.org","https://dram-soc.org","https://www.dram-soc.org"]'
+
+jobs:
+  deploy:
+    name: Build zips + terraform apply
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          role-session-name: backend-deploy-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Sanity check assumed identity
+        run: aws sts get-caller-identity
+
+      - name: Setup Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: '3.13'
+
+      - name: Build Lambda zips
+        working-directory: dashboard
+        run: python scripts/package_lambdas.py
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: ~1.7
+          terraform_wrapper: false
+
+      - name: Set zip path env vars (absolute, post-build)
+        run: |
+          echo "TF_VAR_ingest_zip_path=${{ github.workspace }}/dashboard/infrastructure/terraform/modules/ingest/build/ingest.zip" >> "$GITHUB_ENV"
+          echo "TF_VAR_aggregator_zip_path=${{ github.workspace }}/dashboard/infrastructure/terraform/modules/aggregator/build/aggregator.zip" >> "$GITHUB_ENV"
+          echo "TF_VAR_api_zip_path=${{ github.workspace }}/dashboard/infrastructure/terraform/modules/api/build/api.zip" >> "$GITHUB_ENV"
+          echo "TF_VAR_geolite2_layer_zip_path=${{ github.workspace }}/dashboard/infrastructure/terraform/modules/ingest/build/geolite2-layer.zip" >> "$GITHUB_ENV"
+
+      - name: terraform init
+        working-directory: dashboard/infrastructure/terraform/environments/dev
+        run: terraform init -input=false
+
+      - name: terraform plan
+        working-directory: dashboard/infrastructure/terraform/environments/dev
+        run: terraform plan -input=false -out=tfplan -no-color
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: tfplan-${{ github.run_id }}
+          path: dashboard/infrastructure/terraform/environments/dev/tfplan
+          retention-days: 14
+
+      - name: terraform apply
+        working-directory: dashboard/infrastructure/terraform/environments/dev
+        run: terraform apply -input=false -auto-approve tfplan
+
+      - name: Capture outputs
+        id: tf
+        working-directory: dashboard/infrastructure/terraform/environments/dev
+        run: |
+          {
+            echo "api_endpoint=$(terraform output -raw api_endpoint)"
+            echo "ingest_function=$(terraform output -raw ingest_function_name)"
+            echo "aggregator_function=$(terraform output -raw aggregator_function_name)"
+            echo "api_function=$(terraform output -raw api_function_name)"
+            echo "honeypot_table=$(terraform output -raw honeypot_table_name)"
+            echo "frontend_bucket=$(terraform output -raw frontend_bucket_name)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write deploy summary
+        run: |
+          {
+            echo "## Backend deploy summary"
+            echo
+            echo "| Output | Value |"
+            echo "| --- | --- |"
+            echo "| Reason | ${{ inputs.reason }} |"
+            echo "| Commit | \`${{ github.sha }}\` |"
+            echo "| API endpoint | \`${{ steps.tf.outputs.api_endpoint }}\` |"
+            echo "| Honeypot table | \`${{ steps.tf.outputs.honeypot_table }}\` |"
+            echo "| Ingest Lambda | \`${{ steps.tf.outputs.ingest_function }}\` |"
+            echo "| Aggregator Lambda | \`${{ steps.tf.outputs.aggregator_function }}\` |"
+            echo "| API Lambda | \`${{ steps.tf.outputs.api_function }}\` |"
+            echo "| Frontend bucket | \`${{ steps.tf.outputs.frontend_bucket }}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"

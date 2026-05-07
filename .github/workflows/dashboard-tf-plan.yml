@@ -1,0 +1,118 @@
+name: dashboard-tf-plan
+
+# Posts terraform plan output as a PR comment on any change under
+# dashboard/infrastructure/**. Read-mostly — assumes the
+# dram-soc-github-deploy role and runs `terraform plan` from
+# environments/dev/. Plan needs read APIs for state refresh, so it uses
+# the same role as apply (the role is read-or-write; permission boundary
+# is enforced by IAM, not by which workflow assumes it).
+#
+# Net-new vs Diamond IQ. OIDC + role + checkout copied verbatim from
+# Diamond IQ's deploy.yml; the github-script comment-post is the only
+# new mechanism.
+#
+# PR-from-fork attack surface: GitHub Actions does NOT mint OIDC tokens
+# for forked-PR workflows by default, and the trust policy on
+# dram-soc-github-deploy is StringLike repo:dram64/soc-detection-lab-honeypot:*
+# which would reject a forked repo's OIDC sub anyway. Risk is bounded.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dashboard/infrastructure/**'
+      - '.github/workflows/dashboard-tf-plan.yml'
+
+permissions:
+  id-token: write       # OIDC for AssumeRoleWithWebIdentity
+  contents: read
+  pull-requests: write  # post the plan as a PR comment
+
+concurrency:
+  group: dashboard-tf-plan-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ROLE_ARN: arn:aws:iam::334856751632:role/dram-soc-github-deploy
+  TF_VAR_maxmind_license_key: ${{ secrets.MAXMIND_LICENSE_KEY }}
+  TF_VAR_git_sha: ${{ github.sha }}
+  # JSON-encoded list — terraform parses TF_VAR_<list-var> as JSON when it begins with `[`.
+  TF_VAR_allowed_origins: '["https://dashboard.dram-soc.org","https://dram-soc.org","https://www.dram-soc.org"]'
+
+jobs:
+  plan:
+    name: Terraform plan
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          role-session-name: tf-plan-pr-${{ github.event.pull_request.number }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Sanity check assumed identity
+        run: aws sts get-caller-identity
+
+      - name: Setup Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: '3.13'
+
+      - name: Build Lambda zips (so archive_file data sources resolve)
+        working-directory: dashboard
+        run: python scripts/package_lambdas.py
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: ~1.7
+          terraform_wrapper: false
+
+      - name: Set zip path env vars (absolute, post-build)
+        run: |
+          echo "TF_VAR_ingest_zip_path=${{ github.workspace }}/dashboard/infrastructure/terraform/modules/ingest/build/ingest.zip" >> "$GITHUB_ENV"
+          echo "TF_VAR_aggregator_zip_path=${{ github.workspace }}/dashboard/infrastructure/terraform/modules/aggregator/build/aggregator.zip" >> "$GITHUB_ENV"
+          echo "TF_VAR_api_zip_path=${{ github.workspace }}/dashboard/infrastructure/terraform/modules/api/build/api.zip" >> "$GITHUB_ENV"
+          echo "TF_VAR_geolite2_layer_zip_path=${{ github.workspace }}/dashboard/infrastructure/terraform/modules/ingest/build/geolite2-layer.zip" >> "$GITHUB_ENV"
+
+      - name: terraform init
+        working-directory: dashboard/infrastructure/terraform/environments/dev
+        run: terraform init -input=false
+
+      - name: terraform plan
+        id: plan
+        working-directory: dashboard/infrastructure/terraform/environments/dev
+        run: |
+          set +e
+          terraform plan -input=false -no-color -out=tfplan 2>&1 | tee plan.out
+          echo "exitcode=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+          exit ${PIPESTATUS[0]}
+
+      - name: Post plan as PR comment
+        if: always()
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'dashboard/infrastructure/terraform/environments/dev/plan.out';
+            let body;
+            try {
+              const raw = fs.readFileSync(path, 'utf8');
+              const truncated = raw.length > 60000
+                ? raw.slice(0, 60000) + '\n\n... (truncated; see workflow run for full output)'
+                : raw;
+              body = `## Terraform plan (\`environments/dev\`)\n\n<details><summary>Click to expand</summary>\n\n\`\`\`hcl\n${truncated}\n\`\`\`\n\n</details>`;
+            } catch (e) {
+              body = `## Terraform plan failed before producing output\n\nSee the workflow run logs for diagnosis.`;
+            }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body,
+            });

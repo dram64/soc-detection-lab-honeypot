@@ -1,0 +1,118 @@
+name: dashboard-frontend-deploy
+
+# Pushes the React/Vite SPA bundle to S3 and invalidates the CloudFront
+# distribution serving dashboard.dram-soc.org. The Terraform-managed
+# modules/hosting/ owns the bucket + distribution; this workflow is the
+# *application* deploy.
+#
+# Triggered only on changes under dashboard/web/** or to this workflow.
+# Backend changes (Lambda code, Terraform infra) route through
+# dashboard-backend-deploy.yml.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dashboard/web/**'
+      - '.github/workflows/dashboard-frontend-deploy.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: dashboard-frontend-deploy
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ROLE_ARN: arn:aws:iam::334856751632:role/dram-soc-github-deploy
+  S3_BUCKET: dram-soc-dashboard-frontend
+  CF_ALIAS_HOST: dashboard.dram-soc.org
+  # CONFIRM: SOC-specific Vite env vars. These are placeholders mirroring
+  # Diamond IQ's set; verify against dashboard/web/src/ before first run.
+  VITE_API_URL: https://CONFIRM-FROM-API-OUTPUT.execute-api.us-east-1.amazonaws.com
+  VITE_HIDE_DEMO_BADGES: 'false'
+
+jobs:
+  deploy:
+    name: Build + S3 sync + CloudFront invalidate
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          role-session-name: frontend-deploy-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Sanity check assumed identity
+        run: aws sts get-caller-identity
+
+      - name: Setup Node
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: dashboard/web/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: dashboard/web
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: dashboard/web
+        env:
+          VITE_API_URL: ${{ env.VITE_API_URL }}
+          VITE_HIDE_DEMO_BADGES: ${{ env.VITE_HIDE_DEMO_BADGES }}
+        run: npm run build
+
+      - name: Resolve CloudFront distribution id (by alias)
+        id: cf
+        run: |
+          DIST_ID=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Aliases.Items != null && contains(Aliases.Items, '${{ env.CF_ALIAS_HOST }}')].Id | [0]" \
+            --output text)
+          if [ -z "$DIST_ID" ] || [ "$DIST_ID" = "None" ]; then
+            echo "::error::Could not resolve CloudFront distribution id for ${{ env.CF_ALIAS_HOST }}"
+            exit 1
+          fi
+          echo "distribution_id=$DIST_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Sync to S3 (--delete to remove orphans; index.html separately)
+        working-directory: dashboard/web
+        run: |
+          aws s3 sync dist/ "s3://${{ env.S3_BUCKET }}/" \
+            --delete \
+            --exact-timestamps \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "index.html"
+          aws s3 cp dist/index.html "s3://${{ env.S3_BUCKET }}/index.html" \
+            --cache-control "public, max-age=60, must-revalidate" \
+            --content-type "text/html"
+
+      - name: Invalidate CloudFront cache
+        id: invalidate
+        run: |
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id ${{ steps.cf.outputs.distribution_id }} \
+            --paths '/*' \
+            --query 'Invalidation.Id' --output text)
+          echo "invalidation_id=$INVALIDATION_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Write deploy summary
+        run: |
+          {
+            echo "## Frontend deploy summary"
+            echo
+            echo "| Output | Value |"
+            echo "| --- | --- |"
+            echo "| Live URL | https://${{ env.CF_ALIAS_HOST }} |"
+            echo "| S3 bucket | \`${{ env.S3_BUCKET }}\` |"
+            echo "| Distribution | \`${{ steps.cf.outputs.distribution_id }}\` |"
+            echo "| Invalidation | \`${{ steps.invalidate.outputs.invalidation_id }}\` |"
+            echo "| Commit | \`${{ github.sha }}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
