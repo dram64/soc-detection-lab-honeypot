@@ -185,37 +185,36 @@ data "aws_iam_policy_document" "deploy" {
   statement {
     sid    = "S3ManageProjectBucketsLevel"
     effect = "Allow"
+    # Phase 11B Step 4 amendment #2 (post-PR-#2-retry): replaced the
+    # explicit Get*/Put* bucket-attribute enumeration with s3:GetBucket*
+    # / s3:PutBucket* wildcards. terraform's AWS provider queries a long
+    # tail of bucket-attribute APIs on every aws_s3_bucket refresh
+    # (Versioning, Policy, Tagging, PublicAccessBlock, Ownership,
+    # Notification, CORS, Acl, Website, AccelerateConfiguration, Logging,
+    # Replication, ObjectLockConfiguration, IntelligentTiering, etc.).
+    # PR #2 enumerated only Website; the next refresh hit Accelerate;
+    # the pattern would continue indefinitely.
+    #
+    # Security envelope preserved: s3:GetObject is a SEPARATE namespace
+    # and is NOT covered by s3:GetBucket*. ADR-011's "no object reads on
+    # raw/* in honeypot-ingest" property is intact — the role still
+    # cannot read attacker-uploaded payloads.
+    #
+    # Resource scoping unchanged: only the 2 project buckets.
     actions = [
       "s3:CreateBucket",
       "s3:DeleteBucket",
       "s3:ListBucket",
-      "s3:GetBucketLocation",
-      "s3:GetBucketVersioning",
-      "s3:PutBucketVersioning",
-      "s3:GetBucketPolicy",
-      "s3:PutBucketPolicy",
       "s3:DeleteBucketPolicy",
-      "s3:GetBucketTagging",
-      "s3:PutBucketTagging",
-      "s3:GetBucketPublicAccessBlock",
-      "s3:PutBucketPublicAccessBlock",
-      "s3:GetBucketOwnershipControls",
-      "s3:PutBucketOwnershipControls",
+      # Outside the GetBucket* / PutBucket* namespaces — kept explicit:
+      "s3:GetBucketLocation",
       "s3:GetEncryptionConfiguration",
       "s3:PutEncryptionConfiguration",
       "s3:GetLifecycleConfiguration",
       "s3:PutLifecycleConfiguration",
-      "s3:GetBucketNotification",
-      "s3:PutBucketNotification",
-      "s3:GetBucketCORS",
-      "s3:PutBucketCORS",
-      "s3:GetBucketAcl",
-      # Phase 11B Step 4 amendment: terraform's AWS provider unconditionally
-      # queries GetBucketWebsite on every aws_s3_bucket refresh, even when
-      # the bucket has no website config. Put added for symmetry in case a
-      # future change wants to set one.
-      "s3:GetBucketWebsite",
-      "s3:PutBucketWebsite",
+      # Wildcards covering all current + future bucket-attribute reads/writes:
+      "s3:GetBucket*",
+      "s3:PutBucket*",
     ]
     # Bucket-level only — note the absence of `/*` resource entries here.
     resources = [
