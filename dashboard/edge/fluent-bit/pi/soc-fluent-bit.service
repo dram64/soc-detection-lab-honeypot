@@ -1,0 +1,27 @@
+[Unit]
+Description=fluent-bit (SOC honeypot — Cowrie shipper)
+Documentation=https://docs.fluentbit.io
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=fluent-bit
+Group=fluent-bit
+Environment=AWS_SHARED_CREDENTIALS_FILE=/etc/fluent-bit/aws-credentials
+ExecStart=/opt/fluent-bit/bin/fluent-bit -c /etc/fluent-bit/fluent-bit.conf
+Restart=always
+RestartSec=5
+LimitNOFILE=65536
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadWritePaths=/var/lib/fluent-bit /var/log
+
+[Install]
+WantedBy=multi-user.target

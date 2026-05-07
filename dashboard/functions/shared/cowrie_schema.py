@@ -7,16 +7,15 @@ from ipaddress import ip_address
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-EventId = Literal[
-    "cowrie.session.connect",
-    "cowrie.client.version",
-    "cowrie.client.kex",
-    "cowrie.login.success",
-    "cowrie.login.failed",
-    "cowrie.command.input",
-    "cowrie.session.file_download",
-    "cowrie.session.closed",
-]
+# Cowrie 2.x emits a long tail of event types beyond the original PROJECT_PLAN
+# §4 set (e.g. cowrie.session.params, cowrie.log.closed, cowrie.client.var,
+# cowrie.client.fingerprint, cowrie.command.success, etc.). Enumerating them
+# all is brittle — every Cowrie point release adds something. Constrain by
+# pattern instead: any string under the cowrie.* namespace, no whitespace.
+# The downstream aggregator + dashboard only care about a known subset
+# (login.success/failed, command.input, session.file_download); unknown
+# types still write through and are simply not categorized in rollups.
+EventId = Annotated[str, Field(pattern=r"^cowrie\.[A-Za-z0-9_.-]+$", min_length=8)]
 
 
 class CowrieEvent(BaseModel):

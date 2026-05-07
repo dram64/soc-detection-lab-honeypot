@@ -106,10 +106,26 @@ def test_extra_fields_rejected() -> None:
         )
 
 
-def test_unknown_eventid_rejected() -> None:
+def test_unknown_eventid_under_cowrie_namespace_accepted() -> None:
+    # Phase 10: EventId loosened from a closed Literal to a `cowrie.*`
+    # pattern so new Cowrie point-release event types (e.g.
+    # cowrie.session.params, cowrie.log.closed) flow through the ingest
+    # without manual schema bumps. Downstream rollups still only count
+    # the known subset.
+    ev = CowrieEvent(
+        eventid="cowrie.unknown.bogus",
+        timestamp="2026-04-27T23:19:26.097161Z",
+        src_ip="192.0.2.5",
+        session="abcd1234",
+        sensor="honeypot",
+    )
+    assert ev.eventid == "cowrie.unknown.bogus"
+
+
+def test_eventid_outside_cowrie_namespace_rejected() -> None:
     with pytest.raises(ValidationError):
         CowrieEvent(
-            eventid="cowrie.unknown.bogus",  # type: ignore[arg-type]
+            eventid="apache.access",  # not under cowrie.* — fail
             timestamp="2026-04-27T23:19:26.097161Z",
             src_ip="192.0.2.5",
             session="abcd1234",

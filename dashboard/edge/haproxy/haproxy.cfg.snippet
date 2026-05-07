@@ -1,0 +1,62 @@
+###############################################################################
+# HAProxy config snippet — apply on the DigitalOcean droplet to make the
+# frontend log line correlation-friendly per ADR-010.
+#
+# Two changes from the deployed Phase 10 baseline:
+#
+#   1. `option logasap` in the frontend block — flush the log line at
+#      connection acceptance instead of at session close. Without this, the
+#      log entry doesn't appear until the SSH session ends (can be minutes
+#      after Cowrie's session.connect event); the correlation window in the
+#      Lambda would never align.
+#
+#   2. A custom `log-format` that emits a stable key=value layout the
+#      droplet-side fluent-bit parser (parsers.conf) consumes.
+#
+# The microsecond timestamp the Lambda correlates on is the LEADING rsyslog
+# timestamp at the start of each line (e.g. `2026-05-07T00:55:01.948594+00:00`),
+# not a HAProxy-internal token. HAProxy's own log-format tokens only reach
+# millisecond precision (%ms); rsyslog's RSYSLOG_FileFormat template gives
+# us microsecond precision for free, which is the load-bearing primitive
+# under ADR-010 §Decision.
+#
+# Confirm rsyslog uses the high-precision template (default on modern
+# distros). On Debian/Ubuntu, /etc/rsyslog.conf should contain:
+#   $ActionFileDefaultTemplate RSYSLOG_FileFormat
+# NOT RSYSLOG_TraditionalFileFormat, which is second-precision only.
+#
+# Apply:
+#   sudo cp dashboard/edge/haproxy/haproxy.cfg.snippet \
+#       /etc/haproxy/haproxy.cfg                       # or merge by hand
+#   sudo haproxy -c -f /etc/haproxy/haproxy.cfg        # syntax check
+#   sudo systemctl reload haproxy                      # zero-downtime reload
+###############################################################################
+
+global
+    log /dev/log local0 info
+    log /dev/log local1 notice
+
+defaults
+    log global
+    mode tcp
+    option tcplog
+    timeout connect 5s
+    timeout client  1h
+    timeout server  1h
+
+frontend ssh-honeypot
+    bind *:22
+    mode tcp
+    # Flush the log at accept, not at close. The microsecond timestamp at
+    # line head is what the Lambda's correlation window matches against
+    # Cowrie's session.connect event. ADR-010.
+    option logasap
+    # Custom log-format. Field order matches the regex in
+    # dashboard/edge/fluent-bit/droplet/parsers.conf — DO NOT reorder
+    # without updating the parser.
+    log-format "client=%ci:%cp frontend_port=%fp duration=%Tt bytes_uploaded=%U bytes_downloaded=%B status=%ts"
+    default_backend cowrie-tunnel
+
+backend cowrie-tunnel
+    mode tcp
+    server cowrie 127.0.0.1:2225

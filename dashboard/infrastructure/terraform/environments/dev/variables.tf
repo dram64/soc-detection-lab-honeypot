@@ -73,3 +73,10 @@ variable "billing_alarm_threshold_usd" {
   type        = number
   default     = 10
 }
+
+variable "maxmind_license_key" {
+  description = "MaxMind GeoLite2 license key. Pass via TF_VAR_maxmind_license_key. Stored in SSM Parameter Store SecureString by the edge-shippers module. Empty string is acceptable for `terraform plan` runs without the key — refresh the SSM value out-of-band before relying on it."
+  type        = string
+  default     = ""
+  sensitive   = true
+}

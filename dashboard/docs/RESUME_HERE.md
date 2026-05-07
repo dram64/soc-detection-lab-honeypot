@@ -8,7 +8,7 @@ If you have 60 seconds, read just §1 and §6.
 
 ## §1 — Current state
 
-- **Project status:** Portfolio-ready. Phases 1–8.5 shipped and approved. Phases 9–11 pending.
+- **Project status:** Portfolio-ready. Phases 1–8.5 shipped. **Phase 10 SHIPPED LIVE** (real attacker traffic flowing, MaxMind GeoIP enriched, bidirectional correlation working). Phase 9 / 10.5 / 11 still pending.
 - **Live URLs:**
   - Apex front door: <https://dram-soc.org> · <https://www.dram-soc.org> (Phase 8.5)
   - Dashboard: <https://dashboard.dram-soc.org> (Phase 8)
@@ -70,11 +70,21 @@ EOF
 
 After that, `git status` should be clean. **Don't push** until you've reviewed the staged tree (it's ~3 weeks of unreviewed work).
 
-## §6 — Next phase: Phase 9 — observability + cost guards
+## §6 — Phase 10 SHIPPED. Next: 10.5 (gated) or 9 (observability) or 11 (real-data tuning)
 
-(Phase 8.5 shipped 2026-04-30; see `dashboard/docs/PHASE_8_5_LOG.md`. The original Phase 8.5 prompt is preserved below for reference / audit.)
+- Pi (192.168.1.253) runs Cowrie 2.9.17; DigitalOcean droplet (209.38.129.19) terminates public SSH on port 22 via HAProxy and reverse-tunnels to Cowrie. fluent-bit on both edges ships gzipped batches to S3 every ~60s.
+- Ingest Lambda does **bidirectional timestamp-window correlation** (200ms tight window, microsecond precision). Forward in `_process_cowrie_object`; backward in `_process_haproxy_object`. Conditional UpdateItem prevents last-writer-wins races. EMF metric `BackwardCorrelationOutcomes` measures per-outcome rates so Phase 10.5 (deterministic SSH-relay replacing autossh) can be gated on real-world ambiguity data.
+- MaxMind GeoLite2 layer is attached. country/asn/asn_org enriched on both forward and backward correlation paths.
+- Verified end-to-end with test session `ddc63aaac987` (real attacker IP `104.174.33.78`, Charter Communications US ASN 20001) — see `dashboard/docs/PHASE_10_LOG.md`.
 
----
+### Phase 10.5 (gated)
+Replace autossh with custom SSH client that surfaces `forwarded-tcpip` originator info to Cowrie's local-side log. Triggered when `BackwardCorrelationOutcomes{result=ambiguous}` > 10% over 7 days of real traffic. Spec in ADR-010 §Phase 10.5. ~1–2 days.
+
+### Phase 9 — observability + cost guards (deferrable)
+CloudWatch dashboard + viral-traffic runbook + heartbeat alarm now active. Add a scheduled MaxMind layer refresher to remove the per-deploy churn (PHASE_10_LOG follow-up).
+
+### Phase 11 — real-data tuning buffer
+3–5 days post-cutover. Tune password dictionary against real attacker-traffic distribution (PROJECT_PLAN v1.0).
 
 ## §6.bak — Phase 8.5 — apex landing page (DONE)
 
@@ -161,7 +171,7 @@ cd dashboard/infrastructure/terraform/environments/dev && terraform output
 
 ## §10 — Pointers
 
-- Per-phase logs: `dashboard/docs/PHASE_{1..8}_LOG.md`
+- Per-phase logs: `dashboard/docs/PHASE_{1..8,8_5,10}_LOG.md`
 - Capstone narrative: `dashboard/docs/ENGINEERING_NARRATIVE.md`
 - Full design: `dashboard/docs/PROJECT_PLAN.md`
 - ADRs: `dashboard/docs/adr/` — read 005 (password) and 007 (Cloudflare WAF) before any infra change

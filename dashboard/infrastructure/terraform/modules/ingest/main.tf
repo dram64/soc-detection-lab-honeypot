@@ -116,6 +116,10 @@ data "aws_iam_policy_document" "ingest_inline" {
       "dynamodb:BatchWriteItem",
       "dynamodb:PutItem",
       "dynamodb:Query",
+      # UpdateItem is needed for the Phase 10 backward correlation pass
+      # (handler._backward_correlate). The conditional update is the
+      # bidirectional half of timestamp-window correlation per ADR-010.
+      "dynamodb:UpdateItem",
     ]
     resources = [
       var.honeypot_table_arn,

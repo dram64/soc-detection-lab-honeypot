@@ -68,3 +68,28 @@ output "acm_validation_record" {
   description = "Add this CNAME in Cloudflare DNS-only (grey cloud) to validate the ACM cert."
   value       = module.hosting.acm_validation_record
 }
+
+###############################################################################
+# Phase 10 — edge shippers (Pi + droplet).
+###############################################################################
+
+output "fluentbit_pi_credentials" {
+  description = "Pi-side fluent-bit credentials. Copy to /etc/fluent-bit/aws-credentials on the Pi (mode 0600)."
+  value       = module.edge_shippers.fluentbit_pi_credentials
+  sensitive   = true
+}
+
+output "fluentbit_droplet_credentials" {
+  description = "Droplet-side fluent-bit credentials. Copy to /etc/fluent-bit/aws-credentials on the droplet (mode 0600)."
+  value       = module.edge_shippers.fluentbit_droplet_credentials
+  sensitive   = true
+}
+
+output "edge_alarm_topic_arn" {
+  description = "SNS topic for Pi/droplet heartbeat alarms. Subscribe an email after first apply."
+  value       = module.edge_shippers.edge_alarm_topic_arn
+}
+
+output "maxmind_ssm_parameter_name" {
+  value = module.edge_shippers.maxmind_ssm_parameter_name
+}

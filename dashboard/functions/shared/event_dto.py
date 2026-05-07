@@ -57,6 +57,14 @@ class StoredEvent(BaseModel):
     asn: int | None = None
     asn_org: str | None = None
 
+    # Correlation status from the HAProxy join (ADR-010).
+    # matched   : src_ip rewritten to the real attacker IP from HAProxy
+    # missed    : no HAProxy candidate in the time window; src_ip kept as-is
+    # ambiguous : >1 HAProxy candidate; src_ip kept as-is, candidates listed
+    correlation_status: str | None = None
+    correlation_candidate_count: int | None = None
+    correlation_candidate_ips: list[str] | None = None
+
 
 class PublicEvent(BaseModel):
     """The shape of a single event as returned by the API (e.g. /api/events).
@@ -92,6 +100,10 @@ class PublicEvent(BaseModel):
     country: str | None = None
     asn: int | None = None
     asn_org: str | None = None
+
+    # Surfaced to the dashboard so it can render the three-state correlation
+    # honestly (matched IP / `127.0.0.1 (correlation ambiguous)` / `127.0.0.1 (no match)`).
+    correlation_status: str | None = None
 
     @classmethod
     def from_stored(cls, stored: StoredEvent) -> "PublicEvent":
