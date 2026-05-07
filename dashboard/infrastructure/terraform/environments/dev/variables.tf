@@ -57,9 +57,9 @@ variable "allowed_origins" {
 }
 
 variable "git_sha" {
-  description = "Git SHA surfaced via /api/healthz."
+  description = "Git SHA / phase label surfaced via /api/healthz. Bumped per shipping phase; cosmetic only."
   type        = string
-  default     = "phase-4-dev"
+  default     = "phase-10"
 }
 
 variable "domain_name" {
