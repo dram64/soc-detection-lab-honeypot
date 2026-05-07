@@ -20,7 +20,7 @@ class FakeCountryReader:
         self._mapping = mapping
         self.calls: list[str] = []
 
-    def country(self, ip: str):  # noqa: D401 — mimics maxminddb-geoip2 API
+    def country(self, ip: str):
         self.calls.append(ip)
         if ip not in self._mapping:
             from functions.shared.geoip import AddressNotFoundError

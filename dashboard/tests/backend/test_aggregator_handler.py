@@ -8,7 +8,7 @@ Covers the three dispatch paths:
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from importlib import reload
 
@@ -289,7 +289,7 @@ def test_rank_rebuild_emits_descending_top_n():
     h = _import_aggregator()
     table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
 
-    fixed_now = datetime(2026, 4, 28, 14, 30, tzinfo=timezone.utc)
+    fixed_now = datetime(2026, 4, 28, 14, 30, tzinfo=UTC)
     bucket = fixed_now.strftime("%Y-%m-%dT%H")
 
     # Seed AGG#HOUR# counters for 30 distinct usernames at varying counts.
@@ -338,7 +338,7 @@ def test_rank_rebuild_no_duplicates_when_counts_change():
     h = _import_aggregator()
     table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
 
-    fixed_now = datetime(2026, 4, 28, 14, 30, tzinfo=timezone.utc)
+    fixed_now = datetime(2026, 4, 28, 14, 30, tzinfo=UTC)
     bucket = fixed_now.strftime("%Y-%m-%dT%H")
 
     def _seed_counter(value: str, count: int) -> None:
@@ -393,7 +393,7 @@ def test_rank_rebuild_handles_dimension_with_few_values():
     h = _import_aggregator()
     table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
 
-    fixed_now = datetime(2026, 4, 28, 14, 30, tzinfo=timezone.utc)
+    fixed_now = datetime(2026, 4, 28, 14, 30, tzinfo=UTC)
     bucket = fixed_now.strftime("%Y-%m-%dT%H")
 
     # Seed only 3 values, then rebuild.
@@ -440,7 +440,7 @@ def test_rank_rebuild_idempotent():
     h = _import_aggregator()
     table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
 
-    fixed_now = datetime(2026, 4, 28, 14, 30, tzinfo=timezone.utc)
+    fixed_now = datetime(2026, 4, 28, 14, 30, tzinfo=UTC)
     bucket = fixed_now.strftime("%Y-%m-%dT%H")
     table.put_item(
         Item={
@@ -490,7 +490,7 @@ def test_daily_summary_aggregates_yesterday():
     h = _import_aggregator()
     table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
 
-    fixed_now = datetime(2026, 4, 29, 0, 5, tzinfo=timezone.utc)
+    fixed_now = datetime(2026, 4, 29, 0, 5, tzinfo=UTC)
     yesterday = "2026-04-28"
 
     _put_event(
@@ -561,7 +561,7 @@ def test_today_summary_aggregates_today_not_yesterday():
     h = _import_aggregator()
     table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
 
-    fixed_now = datetime(2026, 5, 7, 12, 30, tzinfo=timezone.utc)
+    fixed_now = datetime(2026, 5, 7, 12, 30, tzinfo=UTC)
     today = "2026-05-07"
     yesterday = "2026-05-06"
 
@@ -736,7 +736,7 @@ def test_dedup_does_not_apply_to_eventbridge_actions():
     h = _import_aggregator()
     table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
 
-    fixed_now = datetime(2026, 4, 28, 14, 30, tzinfo=timezone.utc)
+    fixed_now = datetime(2026, 4, 28, 14, 30, tzinfo=UTC)
     bucket = fixed_now.strftime("%Y-%m-%dT%H")
     table.put_item(
         Item={
@@ -871,7 +871,7 @@ def test_rank_rebuild_skips_buckets_with_no_value_attribute():
     h = _import_aggregator()
     table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
 
-    fixed_now = datetime(2026, 4, 28, 14, 30, tzinfo=timezone.utc)
+    fixed_now = datetime(2026, 4, 28, 14, 30, tzinfo=UTC)
     bucket = fixed_now.strftime("%Y-%m-%dT%H")
     # One valid + one corrupt counter.
     table.put_item(

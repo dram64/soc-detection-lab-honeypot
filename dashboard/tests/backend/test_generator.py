@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import gzip
 import json
+import random
 from collections import Counter
-from datetime import datetime, timezone
-from pathlib import Path
+from datetime import UTC, datetime
+from ipaddress import IPv4Network
 
 import pytest
 
@@ -23,8 +24,6 @@ from tools.synthetic_data_generator import (
     main,
     write_per_day_files,
 )
-from ipaddress import IPv4Network
-import random
 
 
 @pytest.fixture(scope="session")
@@ -44,7 +43,7 @@ def passwords():
 
 @pytest.fixture(scope="session")
 def small_event_corpus(asn_pools, usernames, passwords):
-    fixed_now = datetime(2026, 4, 27, 23, 30, tzinfo=timezone.utc)
+    fixed_now = datetime(2026, 4, 27, 23, 30, tzinfo=UTC)
     return list(
         generate_events(
             target_events=1000,
@@ -117,7 +116,7 @@ def test_pick_cohort_covers_all():
 
 
 def test_generator_determinism(asn_pools, usernames, passwords):
-    fixed_now = datetime(2026, 4, 27, 12, 0, tzinfo=timezone.utc)
+    fixed_now = datetime(2026, 4, 27, 12, 0, tzinfo=UTC)
     a = list(
         generate_events(
             target_events=200,
@@ -202,7 +201,7 @@ def test_every_session_ends_with_closed(small_event_corpus):
 
 def test_cohort_distribution_within_tolerance(asn_pools, usernames, passwords):
     """Generate enough events that cohort proportions stabilize."""
-    fixed_now = datetime(2026, 4, 27, 12, 0, tzinfo=timezone.utc)
+    fixed_now = datetime(2026, 4, 27, 12, 0, tzinfo=UTC)
     events = list(
         generate_events(
             target_events=20_000,
@@ -248,7 +247,7 @@ def test_cohort_distribution_within_tolerance(asn_pools, usernames, passwords):
 
 
 def test_timestamps_within_window(asn_pools, usernames, passwords):
-    fixed_now = datetime(2026, 4, 27, 12, 0, tzinfo=timezone.utc)
+    fixed_now = datetime(2026, 4, 27, 12, 0, tzinfo=UTC)
     events = list(
         generate_events(
             target_events=500,

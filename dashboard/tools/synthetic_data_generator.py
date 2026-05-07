@@ -7,13 +7,13 @@ import json
 import math
 import random
 import sys
-import uuid
+from collections.abc import Iterator
 from dataclasses import dataclass
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from ipaddress import IPv4Network, ip_address
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 THIS_DIR = Path(__file__).resolve().parent
 REPO_ROOT = THIS_DIR.parent.parent
@@ -21,7 +21,6 @@ DATA_DIR = THIS_DIR / "data"
 
 # Make functions/shared importable when run as a script
 sys.path.insert(0, str(REPO_ROOT / "dashboard"))
-from functions.shared.cowrie_schema import CowrieEvent  # noqa: E402
 
 SENSOR_NAME = "honeypot"
 SENSOR_UUID = "c3ccafbe-40f0-11f1-8f67-88a29e085d67"
@@ -167,7 +166,7 @@ def _ip_in(rng: random.Random, network: IPv4Network) -> str:
 
 def _format_ts(dt: datetime) -> str:
     # Cowrie writes ISO 8601 with microseconds + 'Z'
-    return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.") + f"{dt.microsecond:06d}Z"
+    return dt.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%S.") + f"{dt.microsecond:06d}Z"
 
 
 def _hassh(rng: random.Random) -> str:
@@ -470,7 +469,7 @@ def generate_events(
     timestamped monotonically.
     """
     rng = random.Random(seed)
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     emitted = 0
 
     while emitted < target_events:
@@ -599,7 +598,7 @@ def inject_to_dynamodb(
     with table.batch_writer() as batch:
         for event in events:
             ingest_id = hashlib.sha1(
-                f"{event['session']}|{event['timestamp']}|{event['eventid']}".encode("utf-8")
+                f"{event['session']}|{event['timestamp']}|{event['eventid']}".encode()
             ).hexdigest()
             item: dict[str, Any] = {
                 "pk": f"SESSION#{event['session']}",
@@ -623,7 +622,7 @@ def _parse_anchor(value: str) -> datetime:
         raise argparse.ArgumentTypeError(
             "--anchor-time must include a UTC offset (e.g. 2026-04-28T00:00:00Z)"
         )
-    return parsed.astimezone(timezone.utc)
+    return parsed.astimezone(UTC)
 
 
 def resolve_anchor(
@@ -639,8 +638,8 @@ def resolve_anchor(
     if anchor_time is not None:
         return anchor_time
     if seed_supplied:
-        return datetime.combine(date.today(), time.min, tzinfo=timezone.utc)
-    return datetime.now(timezone.utc)
+        return datetime.combine(date.today(), time.min, tzinfo=UTC)
+    return datetime.now(UTC)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

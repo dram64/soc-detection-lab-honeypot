@@ -9,8 +9,9 @@ import os
 import time
 import urllib.parse
 from collections import Counter
-from datetime import datetime, timedelta, timezone
-from typing import Any, Iterable
+from collections.abc import Iterable
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import boto3
 from botocore.exceptions import ClientError
@@ -23,7 +24,11 @@ from functions.shared.haproxy_parser import (
     HAProxyRecord,
     buckets_for_window,
     cowrie_ts_to_us,
+)
+from functions.shared.haproxy_parser import (
     parse_record as parse_haproxy_record,
+)
+from functions.shared.haproxy_parser import (
     to_ddb_item as haproxy_to_ddb_item,
 )
 from functions.shared.password_classifier import (
@@ -72,7 +77,7 @@ _DICTIONARY = load_dictionary()
 def _get_enricher() -> GeoIPEnricher | None:
     try:
         return GeoIPEnricher.from_layer()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         _log("geoip_layer_unavailable", error=type(exc).__name__)
         return None
 
@@ -84,7 +89,7 @@ _ENRICHER = _get_enricher()
 
 def _ingest_id(event: dict[str, Any]) -> str:
     return hashlib.sha1(
-        f"{event['session']}|{event['timestamp']}|{event['eventid']}".encode("utf-8")
+        f"{event['session']}|{event['timestamp']}|{event['eventid']}".encode()
     ).hexdigest()
 
 
@@ -341,7 +346,7 @@ def _backward_correlate(rec: HAProxyRecord) -> None:
     even if this HAProxy record would have been a different (or "better")
     candidate. The skip is logged + counted so we can observe race rates.
     """
-    haproxy_dt = datetime.fromtimestamp(rec.ts_us / 1_000_000, tz=timezone.utc)
+    haproxy_dt = datetime.fromtimestamp(rec.ts_us / 1_000_000, tz=UTC)
     lo_dt = haproxy_dt + timedelta(microseconds=CORRELATION_MIN_DELTA_US)
     hi_dt = haproxy_dt + timedelta(microseconds=CORRELATION_WINDOW_US)
 

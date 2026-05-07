@@ -43,8 +43,9 @@ import json
 import logging
 import os
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
-from typing import Any, Iterable
+from collections.abc import Iterable
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import boto3
 from boto3.dynamodb.conditions import Key
@@ -122,7 +123,7 @@ def _hour_bucket(ts: str) -> str:
 
 
 def _now_utc() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _hourly_ttl(bucket: str) -> int:
@@ -154,7 +155,7 @@ def _claim_event_id(event_id: str) -> bool:
     that replay successfully-processed records when later records in the
     same batch fail. See module docstring.
     """
-    ttl = int(datetime.now(timezone.utc).timestamp()) + DEDUP_TTL_SECONDS
+    ttl = int(datetime.now(UTC).timestamp()) + DEDUP_TTL_SECONDS
     try:
         _TABLE.put_item(
             Item={
@@ -321,7 +322,7 @@ def _handle_stream_records(records: Iterable[dict[str, Any]]) -> dict[str, int]:
             touched = _process_event_item(item)
             counts["processed"] += 1
             counts["dimensions_touched"] += touched
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             counts["errors"] += 1
             _log(
                 "stream_record_error",

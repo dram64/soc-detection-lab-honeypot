@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 
 class StoredEvent(BaseModel):
@@ -110,7 +110,7 @@ class PublicEvent(BaseModel):
     correlation_status: str | None = None
 
     @classmethod
-    def from_stored(cls, stored: StoredEvent) -> "PublicEvent":
+    def from_stored(cls, stored: StoredEvent) -> PublicEvent:
         """Project a StoredEvent down to the public DTO.
 
         password_raw is dropped on the floor here. This is the only sanctioned

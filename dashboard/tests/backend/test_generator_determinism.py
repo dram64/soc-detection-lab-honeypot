@@ -3,7 +3,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -75,22 +75,22 @@ def test_different_anchor_diverges(tmp_path: Path) -> None:
 
 
 def test_resolve_anchor_explicit_wins() -> None:
-    explicit = datetime(2026, 4, 28, 12, 0, tzinfo=timezone.utc)
+    explicit = datetime(2026, 4, 28, 12, 0, tzinfo=UTC)
     out = resolve_anchor(seed_supplied=True, anchor_time=explicit)
     assert out == explicit
 
 
 def test_resolve_anchor_seed_uses_midnight_today() -> None:
     out = resolve_anchor(seed_supplied=True, anchor_time=None)
-    assert out.tzinfo == timezone.utc
+    assert out.tzinfo == UTC
     assert (out.hour, out.minute, out.second, out.microsecond) == (0, 0, 0, 0)
 
 
 def test_resolve_anchor_no_seed_uses_now() -> None:
     """Without --seed and without --anchor-time, fall back to wall-clock now()."""
-    before = datetime.now(timezone.utc)
+    before = datetime.now(UTC)
     out = resolve_anchor(seed_supplied=False, anchor_time=None)
-    after = datetime.now(timezone.utc)
+    after = datetime.now(UTC)
     assert before <= out <= after
 
 
@@ -115,8 +115,8 @@ def test_explicit_anchor_drives_event_timestamps(tmp_path: Path) -> None:
         "--anchor-time", "2026-04-28T00:00:00Z",
         "--out", str(out),
     ])
-    earliest = datetime(2026, 4, 26, 23, 59, tzinfo=timezone.utc)
-    latest = datetime(2026, 4, 28, 0, 30, tzinfo=timezone.utc)
+    earliest = datetime(2026, 4, 26, 23, 59, tzinfo=UTC)
+    latest = datetime(2026, 4, 28, 0, 30, tzinfo=UTC)
     for gz in out.glob("*.json.gz"):
         with gzip.open(gz, "rt", encoding="utf-8") as fh:
             for line in fh:
