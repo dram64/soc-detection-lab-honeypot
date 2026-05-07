@@ -9,24 +9,12 @@
 # Reference: ADR-010 (supersedes part of ADR-002).
 ###############################################################################
 
-locals {
-  pi_prefix      = "raw/cowrie/"
-  droplet_prefix = "raw/haproxy/"
-
-  pi_resource_arn      = "${var.ingest_bucket_arn}/${local.pi_prefix}*"
-  droplet_resource_arn = "${var.ingest_bucket_arn}/${local.droplet_prefix}*"
-}
-
 ###############################################################################
 # IAM users + access keys + user policies for the Pi and droplet shippers
 # moved to stacks/edge-shippers-credentials/ in Phase 11B-1 per ADR-011.
 # This module keeps the SNS topic, heartbeat alarms, metric filters, and the
 # MaxMind SSM parameter — all CI-deployable. The IAM user lifecycle is
 # human-managed only.
-#
-# `local.pi_resource_arn` and `local.droplet_resource_arn` remain above as
-# inert constants in case a future change wants to reference the same
-# scoping; they cost nothing to leave in place.
 ###############################################################################
 
 ###############################################################################

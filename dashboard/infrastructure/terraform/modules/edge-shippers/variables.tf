@@ -4,11 +4,6 @@ variable "name_prefix" {
   default     = "dram-soc"
 }
 
-variable "ingest_bucket_name" {
-  description = "Existing S3 bucket the Pi + droplet ship into. Per-prefix scoping is enforced via the IAM policies in this module."
-  type        = string
-}
-
 variable "ingest_bucket_arn" {
   description = "ARN of the ingest bucket (used to construct prefix-scoped resource ARNs)."
   type        = string

@@ -1,11 +1,9 @@
 locals {
-  function_name      = "${var.name_prefix}-ingest"
-  bucket_name        = "${var.name_prefix}-honeypot-ingest"
-  dlq_name           = "${var.name_prefix}-ingest-dlq"
-  layer_name         = "${var.name_prefix}-geolite2"
-  log_group_name     = "/aws/lambda/${local.function_name}"
-  package_path       = "${path.module}/build/ingest.zip"
-  layer_package_path = "${path.module}/build/geolite2-layer.zip"
+  function_name  = "${var.name_prefix}-ingest"
+  bucket_name    = "${var.name_prefix}-honeypot-ingest"
+  dlq_name       = "${var.name_prefix}-ingest-dlq"
+  layer_name     = "${var.name_prefix}-geolite2"
+  log_group_name = "/aws/lambda/${local.function_name}"
 }
 
 ###############################################################################

@@ -40,12 +40,6 @@ variable "api_zip_path" {
   default     = "../../modules/api/build/api.zip"
 }
 
-variable "allowed_origin" {
-  description = "DEPRECATED in Phase 8.5 — use allowed_origins."
-  type        = string
-  default     = "https://dashboard.dram-soc.org"
-}
-
 variable "allowed_origins" {
   description = "CORS allow-list for the API. Phase 8.5: dashboard subdomain + apex + www."
   type        = list(string)
