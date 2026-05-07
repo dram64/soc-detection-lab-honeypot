@@ -5,7 +5,7 @@
 **Repo:** https://github.com/dram64/soc-detection-lab (sub-path `dashboard/`)
 **Public URL (target):** https://dashboard.dram-soc.org
 **AWS account:** 334856751632 (us-east-1)
-**Plan version:** 1.5 — 2026-04-29 (Phase 4 latency bars reality-checked)
+**Plan version:** 1.6 — 2026-05-07 (Phase 11B-2 CI/CD scaffolding shipped)
 **Status:** Phases 1–4 in flight
 
 ---
@@ -937,6 +937,9 @@ Explicitly NOT building first time:
 ---
 
 ## Changelog
+
+**v1.6 (2026-05-07, Phase 11B-2 CI/CD scaffolding shipped):**
+- §11 Phase 11B: GitHub Actions deploy role (Phase 11B-1, SHA 6aa5357) + 4 workflow files (Phase 11B-2, SHA 7b2180f) now live on main. The backend-deploy workflow stays `workflow_dispatch`-only until Phase 11C unblocks (after 5+ clean manual deploys), per ADR-011's CI/CD permission boundary.
 
 **v1.5 (2026-04-29, Phase 4 latency bars reality-checked):**
 - §11 Phase 4 acceptance: **revised the warm-latency bars to match measured reality after Bug 1 + Bug 2 fixes**. Original spec was "warm p95 < 100 ms" across the board; that proved unachievable on the two fan-out endpoints (timeline, breakdown) at 256 MB Lambda + Python boto3 overhead, even with documented-thread-safe Client + 25-conn pool + 10-worker executor. New bars distinguish per-endpoint class: lightweight reads stay at < 100 ms (measured 2–82 ms); /api/summary loosened from < 30 ms to < 50 ms (measured 36–41 ms after the Bug 1 architectural fan-out fix took it from 702 ms → ~40 ms); /api/timeline + /api/breakdown set at < 600 ms (measured 423–493 ms after parallelization). Cold start bar moved to < 1500 ms with explicit "Pydantic + boto3 floor" documentation. The architectural fixes (Bug 1: stop fanning out across 30 SUMMARY#DAY rows when one rollup answers the question; Bug 2: switch parallel paths to thread-safe Client + bumped pool) landed and are verified. The remaining floor is Python+boto3 mechanics, not a design problem; CloudFront caching in Phase 8 will hide it for real users at 30–60 s TTL on /api/*. Continued optimization (memory bump to 1024 MB or pre-aggregating a SUMMARY#HOUR rollup) deferred indefinitely as diminishing returns until Phase 11 real-data analysis says otherwise.
