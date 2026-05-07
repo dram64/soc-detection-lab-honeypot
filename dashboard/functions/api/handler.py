@@ -70,7 +70,7 @@ _TABLE = _DDB_RESOURCE.Table(TABLE_NAME)
 
 # Module-level executor so we don't pay thread-pool construction cost per
 # request. boto3 Client is documented thread-safe; running ~24 DDB Queries
-# in parallel collapses fan-out latency from sequential ~24×O(20ms) to
+# in parallel collapses fan-out latency from sequential ~24xO(20ms) to
 # wall-clock ~one-query (the slowest). The Client (not Resource) is what's
 # called from inside the executor — see module docstring.
 _DDB_QUERY_EXECUTOR = ThreadPoolExecutor(max_workers=10)

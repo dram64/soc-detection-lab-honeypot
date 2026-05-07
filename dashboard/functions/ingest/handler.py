@@ -57,7 +57,7 @@ SENSOR_NAME = os.environ.get("SENSOR_NAME", "honeypot")
 # Correlation window in microseconds. Initial Phase 10 hypothesis was
 # 200ms (ADR-010 §Decision); empirical observation of real bot-scanner
 # traffic from RO/RU showed handshake-completion latency clustering at
-# 234–275ms, missing the 200ms window for ~100% of recent sessions.
+# 234-275ms, missing the 200ms window for ~100% of recent sessions.
 # Widened to 500ms based on production data (ADR-010 §Empirical
 # window-tuning). BackwardCorrelationOutcomes{result=ambiguous} is
 # the metric to watch — sustained >5% rate would indicate the window

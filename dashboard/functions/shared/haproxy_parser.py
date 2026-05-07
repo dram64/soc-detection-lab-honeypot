@@ -87,10 +87,7 @@ def parse_record(raw: dict[str, Any]) -> HAProxyRecord | None:
         # both as of 3.11, but we strip the explicit-numeric form to "Z" to
         # keep the stored ts byte-stable across writers.
         dt = datetime.fromisoformat(time_str)
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=UTC)
-        else:
-            dt = dt.astimezone(UTC)
+        dt = dt.replace(tzinfo=UTC) if dt.tzinfo is None else dt.astimezone(UTC)
         ts_iso = dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{dt.microsecond:06d}+00:00"
         ts_us = int(dt.timestamp() * 1_000_000)
 

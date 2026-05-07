@@ -7,6 +7,7 @@ from importlib import reload
 
 import boto3
 import pytest
+from botocore.exceptions import ClientError
 from moto import mock_aws
 
 # tools is importable courtesy of conftest.py / sys.path setup
@@ -207,7 +208,10 @@ def test_unrecoverable_object_failure_raises(synthetic_events):
     _setup_ddb(ddb)
 
     handler_mod = _import_handler()
-    with pytest.raises(Exception):
+    # Missing S3 key → boto3 GetObject raises ClientError (NoSuchKey).
+    # The handler intentionally does NOT catch — Lambda's destination
+    # config routes the failure to the DLQ.
+    with pytest.raises(ClientError):
         handler_mod.handler(
             _s3_event(BUCKET, "raw/2026/04/27/12/never-uploaded.json.gz"),
             context=None,

@@ -462,10 +462,7 @@ def _handle_daily_summary(now: datetime | None = None, *, target: str = "yesterd
         write wins; the 00:05 cron locks in yesterday's final value.
     """
     now = now or _now_utc()
-    if target == "today":
-        target_dt = now.date()
-    else:
-        target_dt = (now - timedelta(days=1)).date()
+    target_dt = now.date() if target == "today" else (now - timedelta(days=1)).date()
     day = target_dt.isoformat()
     gsi2pk = f"DAY#{day}"
 

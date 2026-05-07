@@ -70,7 +70,10 @@ def test_classify_is_case_sensitive(dictionary):
 
 
 def test_classify_non_match_with_unicode(dictionary):
-    needle = "пароль123"  # Russian for "password" + digits — not in our dictionary
+    # Cyrillic chars in the literal are intentional — this test verifies the
+    # classifier correctly handles non-Latin-script passwords. Replacing them
+    # with visually-similar Latin chars defeats the test's purpose.
+    needle = "пароль123"  # Russian for "password" + digits — not in our dictionary  # noqa: RUF001
     public, raw = classify_password(needle, dictionary)
     assert public.startswith("<filtered:len=")
     assert raw == needle
