@@ -412,11 +412,23 @@ def _handle_rank_rebuild(now: datetime | None = None) -> dict[str, int]:
 # ---------------------------------------------------------------------------
 
 
-def _handle_daily_summary(now: datetime | None = None) -> dict[str, Any]:
-    """Walk yesterday's events via GSI2 and write the SUMMARY#DAY item."""
+def _handle_daily_summary(now: datetime | None = None, *, target: str = "yesterday") -> dict[str, Any]:
+    """Walk a day's events via GSI2 and write the SUMMARY#DAY item.
+
+    `target`:
+      - "yesterday" (default) — original 00:05 UTC cron behavior. Writes
+        the canonical end-of-day rollup once the day is complete.
+      - "today" — Phase 10 BUG 1 follow-up. Called by a 5-minute cron
+        so /api/summary's GetItem on SUMMARY#DAY/<today> returns
+        non-stale totals between the rollover crons. Same key, latest
+        write wins; the 00:05 cron locks in yesterday's final value.
+    """
     now = now or _now_utc()
-    yesterday_dt = (now - timedelta(days=1)).date()
-    day = yesterday_dt.isoformat()
+    if target == "today":
+        target_dt = now.date()
+    else:
+        target_dt = (now - timedelta(days=1)).date()
+    day = target_dt.isoformat()
     gsi2pk = f"DAY#{day}"
 
     total_events = 0
@@ -501,6 +513,15 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     if action == "daily_summary":
         result = _handle_daily_summary()
         _log("daily_summary_summary", day=result["day"],
+             total_events=result["total_events"])
+        return {"day": result["day"], "total_events": result["total_events"]}
+
+    if action == "today_summary":
+        # Phase 10 BUG 1 follow-up. Runs every 5 min so today's
+        # SUMMARY#DAY rollup is near-real-time. Overwrites the same key
+        # the 00:05 daily cron eventually finalizes.
+        result = _handle_daily_summary(target="today")
+        _log("today_summary_summary", day=result["day"],
              total_events=result["total_events"])
         return {"day": result["day"], "total_events": result["total_events"]}
 

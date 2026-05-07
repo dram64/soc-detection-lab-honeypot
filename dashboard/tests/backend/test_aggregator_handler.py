@@ -552,6 +552,62 @@ def test_daily_summary_dispatch_via_handler_action():
 
 
 @mock_aws
+def test_today_summary_aggregates_today_not_yesterday():
+    """Phase 10 BUG 1 follow-up. The 5-min cron writes today's
+    SUMMARY#DAY (not yesterday's) so /api/summary returns near-real-
+    time totals."""
+    ddb = boto3.client("dynamodb", region_name="us-east-1")
+    _create_table(ddb)
+    h = _import_aggregator()
+    table = boto3.resource("dynamodb", region_name="us-east-1").Table(TABLE)
+
+    fixed_now = datetime(2026, 5, 7, 12, 30, tzinfo=timezone.utc)
+    today = "2026-05-07"
+    yesterday = "2026-05-06"
+
+    _put_event(
+        table,
+        ts=f"{today}T05:00:00.000000Z",
+        session="t1",
+        eventid="cowrie.login.failed",
+        src_ip="198.51.100.1",
+    )
+    _put_event(
+        table,
+        ts=f"{today}T11:00:00.000000Z",
+        session="t2",
+        eventid="cowrie.session.connect",
+        src_ip="203.0.113.42",
+    )
+    # Yesterday data exists too — must NOT count toward today's rollup.
+    _put_event(
+        table,
+        ts=f"{yesterday}T14:00:00.000000Z",
+        session="y1",
+        eventid="cowrie.login.failed",
+        src_ip="192.0.2.99",
+    )
+
+    item = h._handle_daily_summary(now=fixed_now, target="today")
+    assert item["day"] == today
+    assert item["total_events"] == 2
+    assert item["unique_sessions"] == 2
+    assert item["unique_ips"] == 2
+
+
+@mock_aws
+def test_today_summary_dispatch_via_handler_action():
+    """The new today_summary action triggers _handle_daily_summary
+    with target='today' and writes today's SUMMARY#DAY row."""
+    ddb = boto3.client("dynamodb", region_name="us-east-1")
+    _create_table(ddb)
+    h = _import_aggregator()
+    result = h.handler({"action": "today_summary"}, context=None)
+    today_iso = h._now_utc().date().isoformat()
+    assert result["day"] == today_iso
+
+
+@mock_aws
 def test_unknown_action_is_noop():
     ddb = boto3.client("dynamodb", region_name="us-east-1")
     _create_table(ddb)

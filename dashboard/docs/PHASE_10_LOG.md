@@ -182,6 +182,20 @@ Same hotfix exposes `correlation_window_us` on `/api/healthz` so future tuning d
 
 The phase-4-dev `version` label on `/api/healthz` was noted as a separate cleanup item (cosmetic, defer to a focused PR).
 
+### Hotfix 10 — 5-min today_summary cron (BUG 1 follow-up)
+
+The dashboard's top counters (Total events, Last 24h, Last 1h, Unique IPs) showed zero all day despite 21k+ EVENT items in DDB. Root cause: `/api/summary` reads `SUMMARY#DAY/<today>` as a single GetItem (the Phase 4 v1.5 fan-out fix), but `_handle_daily_summary` only ran at 00:05 UTC and only wrote yesterday's rollup. Today's row literally didn't exist until tomorrow's cron.
+
+**Fix (B option from the BUG 1 surface):** keep the canonical 00:05 UTC daily cron unchanged (writes yesterday's final value). Add a NEW `rate(5 minutes)` EventBridge rule firing `{"action": "today_summary"}`. The aggregator's `_handle_daily_summary` grew a `target` kwarg (`"yesterday"` default, `"today"` for the new path) and the handler dispatches the new action. Same SUMMARY#DAY key, latest-write-wins. 288 invocations/day at on-demand pricing is rounding error.
+
+This pairs with Hotfix 8 + 9 — without the inheritance fix, today's SUMMARY#DAY would have included `127.0.0.1` as a "country" for stuck-missed events. With both fixes, the rollup reflects real attribution.
+
+2 new pytest cases cover today-vs-yesterday correctness and the new dispatch action.
+
+## Backlog (cosmetic / non-blocking)
+
+- **`phase-4-dev` GIT_SHA label** on `/api/healthz` is a stale Phase 4 default (`var.git_sha` in environments/dev/variables.tf). Update to a current value (e.g. `phase-10-final`) in a focused cleanup PR — not folded into Phase 10 hotfixes per the operator's call to keep cosmetic-label PRs separate.
+
 ## Open follow-ups
 
 ### Phase 10.5 — Deterministic SSH-relay correlation (gated on data)

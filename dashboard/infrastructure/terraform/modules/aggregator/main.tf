@@ -218,6 +218,43 @@ resource "aws_lambda_permission" "daily_summary" {
 }
 
 ###############################################################################
+# Phase 10 BUG 1 follow-up — today_summary cron (every 5 minutes).
+#
+# /api/summary reads SUMMARY#DAY/<today> as a single GetItem (Phase 4 v1.5
+# fan-out fix). Without a frequent writer, today's row stays absent until
+# the 00:05 daily cron writes yesterday's value, so the dashboard's
+# counters show 0 all day.
+#
+# This cron writes today's SUMMARY#DAY every 5 minutes. Same key, latest-
+# write-wins; the 00:05 daily cron locks in yesterday's final snapshot.
+# 288 invocations/day at on-demand pricing is rounding error against the
+# alternative (real-time aggregation in the API path, which would undo
+# the v1.5 fan-out fix).
+###############################################################################
+
+resource "aws_cloudwatch_event_rule" "today_summary" {
+  name                = "${var.name_prefix}-today-summary"
+  description         = "Refresh today's SUMMARY#DAY rollup every 5 min so dashboard counters are near-real-time"
+  schedule_expression = "rate(5 minutes)"
+  tags                = var.tags
+}
+
+resource "aws_cloudwatch_event_target" "today_summary" {
+  rule      = aws_cloudwatch_event_rule.today_summary.name
+  target_id = "aggregator-today-summary"
+  arn       = aws_lambda_function.aggregator.arn
+  input     = jsonencode({ action = "today_summary" })
+}
+
+resource "aws_lambda_permission" "today_summary" {
+  statement_id  = "AllowExecutionFromEventBridgeTodaySummary"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.aggregator.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.today_summary.arn
+}
+
+###############################################################################
 # Alarms.
 ###############################################################################
 
