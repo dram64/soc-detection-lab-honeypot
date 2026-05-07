@@ -18,6 +18,7 @@ module to exercise the public API via fakes.
 
 from __future__ import annotations
 
+import contextlib
 from dataclasses import dataclass
 from functools import lru_cache
 from ipaddress import ip_address
@@ -138,12 +139,8 @@ class GeoIPEnricher:
     def close(self) -> None:
         if self._closed:
             return
-        try:
+        with contextlib.suppress(Exception):
             self._country_reader.close()
-        except Exception:
-            pass
-        try:
+        with contextlib.suppress(Exception):
             self._asn_reader.close()
-        except Exception:
-            pass
         self._closed = True

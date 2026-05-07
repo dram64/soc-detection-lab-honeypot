@@ -30,6 +30,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import difflib
 import re
 import sys
@@ -63,14 +64,19 @@ INLINE_PARENTHETICAL_RE = re.compile(
 # Trailing phase asides preceded by ; or — like "; see ADR 015" or
 # "— Phase 8.5 amendment". Conservative: must consume the leading
 # punctuation + whitespace.
+# Regex character class intentionally matches em-dash and en-dash chars
+# alongside semicolon and hyphen; this script's purpose is to normalize
+# those chars in comments. Replacing them defeats the matching.
 TRAILING_ASIDE_RE = re.compile(
-    r"\s*[;—–\-]+\s*(?:see\s+)?(?:Phase|PHASE_|Track|Bug|PART|Treatment|ADR[-\s]?\d|design-preview|post-park)\b[^.\n]*"
+    r"\s*[;—–\-]+\s*(?:see\s+)?(?:Phase|PHASE_|Track|Bug|PART|Treatment|ADR[-\s]?\d|design-preview|post-park)\b[^.\n]*"  # noqa: RUF001
 )
 
 # Phase prefixes that are siblings of other text. Match "Phase 8.5: " or
 # "Phase 8.5 — " at the start of a comment body (after the comment marker).
+# Char class matches em-dash + en-dash deliberately; same rationale as
+# TRAILING_ASIDE_RE above.
 PHASE_PREFIX_RE = re.compile(
-    r"^(\s*(?://|#|--)\s*)(?:Phase\s*\d+(?:\.\d+)?[A-Za-z]?|PHASE_\d+(?:_\d+)?|Track\s*\d+|Bug\s*\d+|PART\s*\d+|Treatment\s+[A-Z])\s*[:—–\-]\s*",
+    r"^(\s*(?://|#|--)\s*)(?:Phase\s*\d+(?:\.\d+)?[A-Za-z]?|PHASE_\d+(?:_\d+)?|Track\s*\d+|Bug\s*\d+|PART\s*\d+|Treatment\s+[A-Z])\s*[:—–\-]\s*",  # noqa: RUF001
     flags=re.IGNORECASE,
 )
 
@@ -338,10 +344,8 @@ def _iter_files(paths: list[Path], includes: set[str]) -> list[Path]:
 
 def main() -> int:
     # Windows default stdout codec is cp1252; diffs may contain unicode (→ etc.)
-    try:
+    with contextlib.suppress(Exception):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
     parser = argparse.ArgumentParser()
     parser.add_argument("paths", nargs="+", type=Path)
     parser.add_argument("--apply", action="store_true", help="write changes (default: dry-run)")

@@ -297,8 +297,8 @@ def _build_session(
     """Generate a realistic event sequence for one session.
 
     Cohort-specific rules:
-      brute_force: 1 IP, 10–200 attempts, single dictionary user, all fail
-      credential_stuffing: 1 IP, 5–30 attempts, many usernames per IP, 0–2 succeed
+      brute_force: 1 IP, 10-200 attempts, single dictionary user, all fail
+      credential_stuffing: 1 IP, 5-30 attempts, many usernames per IP, 0-2 succeed
       scanner: connect + version + immediate disconnect (< 2s)
       interesting: login succeeds, runs commands, drops a fake binary
     """
@@ -465,7 +465,7 @@ def generate_events(
     """Yield Cowrie events until at least `target_events` have been emitted.
 
     Generation is session-driven: pick a cohort, build a session, yield its
-    events. Sessions span 1–300 seconds; events within a session are
+    events. Sessions span 1-300 seconds; events within a session are
     timestamped monotonically.
     """
     rng = random.Random(seed)

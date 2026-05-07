@@ -125,8 +125,8 @@ def test_timeline_runs_queries_in_parallel():
     assert resp["statusCode"] == 200
     body = json.loads(resp["body"])
     assert len(body["buckets"]) == 24
-    # 24 × 50ms sequential would be 1.2s. Parallel with max_workers=10
-    # tops out around (24/10) × 50ms = 120ms + overhead.
+    # 24 x 50ms sequential would be 1.2s. Parallel with max_workers=10
+    # tops out around (24/10) x 50ms = 120ms + overhead.
     assert elapsed < 0.5, f"timeline took {elapsed:.3f}s; parallelization not effective"
 
 
