@@ -19,18 +19,8 @@ certs/
 !dashboard/infrastructure/terraform/stacks/edge-shippers-credentials/**
 
 # Docker volumes (if mounted locally)
-data/
 logs/
 volumes/
-
-# Force-include the password-classifier dictionary subdir. The data/
-# pattern above is meant for Docker-volume contexts but accidentally
-# matches dashboard/functions/shared/data/, which holds a committed
-# build artefact (password_dictionary.txt — see build_dictionary.py
-# docstring). Phase 11C-style cleanup will tighten the data/ pattern
-# to docker-volume-only contexts.
-!dashboard/functions/shared/data/
-!dashboard/functions/shared/data/**
 
 # Logs
 *.log

@@ -1,0 +1,44 @@
+{
+  "_comment": "Synthetic country/ASN distribution approximating published Cowrie honeypot operator reports (Trustwave, SANS ISC, Akamai SIRT). Top 15 countries by share: CN 28%, US 12%, RU 8%, BR 6%, IN 5%, VN 4%, KR 4%, DE 3%, TR 3%, ID 3%, TW 2%, HK 2%, FR 2%, GB 2%, plus an Other ~16% bucket sampled from NL/SE/JP/MX/EG/ZA. Real GeoIP enrichment via MaxMind GeoLite2 lands in Phase 9; this synthetic distribution gives the dashboard live-shaped country and ASN data in the meantime. Weights are direct percentages so the synthetic generator's output mirrors the documented distribution.",
+  "pools": [
+    { "asn": 37963, "asn_org": "Alibaba (US) Technology", "country": "CN", "weight": 12, "cidrs": ["47.74.0.0/16", "47.88.0.0/16", "47.245.0.0/16"] },
+    { "asn": 132203, "asn_org": "Tencent Cloud",          "country": "CN", "weight": 9,  "cidrs": ["43.128.0.0/16", "43.129.0.0/16", "129.226.0.0/16"] },
+    { "asn": 4134,  "asn_org": "Chinanet",                "country": "CN", "weight": 7,  "cidrs": ["218.0.0.0/11", "61.128.0.0/10"] },
+
+    { "asn": 14061, "asn_org": "DigitalOcean LLC",        "country": "US", "weight": 6,  "cidrs": ["68.183.0.0/16", "157.245.0.0/16", "165.227.0.0/16"] },
+    { "asn": 16509, "asn_org": "Amazon.com Inc.",         "country": "US", "weight": 4,  "cidrs": ["3.84.0.0/16", "3.86.0.0/16", "54.166.0.0/16"] },
+    { "asn": 7922,  "asn_org": "Comcast Cable",           "country": "US", "weight": 2,  "cidrs": ["73.0.0.0/8"] },
+
+    { "asn": 9009,  "asn_org": "M247 Europe SRL",         "country": "RU", "weight": 5,  "cidrs": ["146.70.0.0/16", "185.156.72.0/22"] },
+    { "asn": 39572, "asn_org": "AdvancedHosters",         "country": "RU", "weight": 3,  "cidrs": ["91.241.19.0/24", "185.143.0.0/16"] },
+
+    { "asn": 28573, "asn_org": "Claro NXT Telecom.",      "country": "BR", "weight": 6,  "cidrs": ["179.176.0.0/16", "186.213.0.0/16"] },
+
+    { "asn": 9498,  "asn_org": "Bharti Airtel Ltd",       "country": "IN", "weight": 5,  "cidrs": ["122.176.0.0/16", "182.71.0.0/16"] },
+
+    { "asn": 7552,  "asn_org": "Viettel Group",           "country": "VN", "weight": 4,  "cidrs": ["27.64.0.0/12", "115.74.0.0/15"] },
+
+    { "asn": 4766,  "asn_org": "Korea Telecom",           "country": "KR", "weight": 4,  "cidrs": ["1.208.0.0/12", "211.36.0.0/14"] },
+
+    { "asn": 24940, "asn_org": "Hetzner Online GmbH",     "country": "DE", "weight": 3,  "cidrs": ["116.202.0.0/16", "138.201.0.0/16", "176.9.0.0/16"] },
+
+    { "asn": 9121,  "asn_org": "Turk Telekom",            "country": "TR", "weight": 3,  "cidrs": ["88.230.0.0/15", "78.171.0.0/16"] },
+
+    { "asn": 7713,  "asn_org": "Telekomunikasi Indonesia","country": "ID", "weight": 3,  "cidrs": ["180.243.0.0/16", "114.4.0.0/16"] },
+
+    { "asn": 3462,  "asn_org": "HiNet (Chunghwa Telecom)", "country": "TW", "weight": 2,  "cidrs": ["1.160.0.0/12", "211.20.0.0/14"] },
+
+    { "asn": 4515,  "asn_org": "PCCW IMSBiz",             "country": "HK", "weight": 2,  "cidrs": ["202.130.0.0/16"] },
+
+    { "asn": 16276, "asn_org": "OVH SAS",                 "country": "FR", "weight": 2,  "cidrs": ["51.38.0.0/16", "51.75.0.0/16", "151.80.0.0/16"] },
+
+    { "asn": 2856,  "asn_org": "British Telecom",         "country": "GB", "weight": 2,  "cidrs": ["86.0.0.0/8"] },
+
+    { "asn": 49981, "asn_org": "WorldStream B.V.",        "country": "NL", "weight": 4,  "cidrs": ["185.93.180.0/22", "85.17.0.0/16"] },
+    { "asn": 8473,  "asn_org": "Bahnhof AB",              "country": "SE", "weight": 3,  "cidrs": ["79.136.0.0/13"] },
+    { "asn": 2497,  "asn_org": "IIJ",                     "country": "JP", "weight": 3,  "cidrs": ["210.130.0.0/16"] },
+    { "asn": 8151,  "asn_org": "Uninet S.A.",             "country": "MX", "weight": 2,  "cidrs": ["189.213.0.0/16"] },
+    { "asn": 24863, "asn_org": "LINKdotNET",              "country": "EG", "weight": 2,  "cidrs": ["156.197.0.0/16"] },
+    { "asn": 36874, "asn_org": "Liquid Telecom",          "country": "ZA", "weight": 2,  "cidrs": ["197.155.0.0/16"] }
+  ]
+}
