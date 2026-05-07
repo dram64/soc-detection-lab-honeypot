@@ -508,10 +508,53 @@ def _process_haproxy_object(bucket: str, key: str) -> dict[str, int]:
     }
 
 
+def _lookup_session_prior_match(session_id: str) -> str | None:
+    """Return the real client IP from any prior matched/matched_inherited
+    event of the same session, or None if no prior match exists.
+
+    This is the "forward inheritance" lookup that handles the case where
+    a session's events are split across Cowrie batches: the connect event
+    landed in batch A and was correlated; later events arrive in batch B
+    whose timestamps fall outside the 200ms window of any HAProxy entry,
+    so per-event timestamp correlation can't find them. Inheriting by
+    session_id closes that gap. ADR-010, BUG 2 follow-up.
+
+    A `matched_inherited` prior is itself inheritable — chaining is safe
+    because all events in the chain trace back to the same primary
+    timestamp match (via `pk = SESSION#<id>`).
+    """
+    resp = _DDB.query(
+        TableName=TABLE_NAME,
+        KeyConditionExpression="pk = :pk",
+        FilterExpression="correlation_status IN (:m, :mi)",
+        ExpressionAttributeValues={
+            ":pk": {"S": f"SESSION#{session_id}"},
+            ":m":  {"S": "matched"},
+            ":mi": {"S": "matched_inherited"},
+        },
+        ProjectionExpression="src_ip",
+        Limit=1,
+    )
+    items = resp.get("Items", [])
+    if not items:
+        return None
+    return items[0].get("src_ip", {}).get("S")
+
+
 def _process_cowrie_object(bucket: str, key: str) -> dict[str, int]:
     raw_events = _read_object_lines(bucket, key)
     stored: list[dict[str, Any]] = []
     counts: Counter[str] = Counter()
+    # Per-batch session→IP cache. Two roles:
+    #   1. Avoid an extra DDB Query per event when many events share the
+    #      same session within one batch (typical Cowrie shape: connect,
+    #      version, kex, login, ... all under one session_id).
+    #   2. Carry forward an in-batch primary match from the connect event
+    #      to siblings without a DDB round-trip — the connect's match was
+    #      written this batch and the sibling reads would miss it.
+    # Sentinel "" means "looked up, no prior match found" — so we skip
+    # the DDB query a second time for the same session within the batch.
+    session_match_cache: dict[str, str] = {}
     for raw in raw_events:
         # Synthetic events ship country/asn/asn_org pre-baked. Strip those
         # before Cowrie-schema validation (the schema is extra="forbid"; the
@@ -551,12 +594,36 @@ def _process_cowrie_object(bucket: str, key: str) -> dict[str, int]:
         candidate_ips: list[str] | None = None
         resolved_src_ip = cowrie_src_ip
         if is_tunneled:
-            status, candidates = _correlate(raw["timestamp"])
-            correlation_status = status
-            candidate_count = len(candidates)
-            candidate_ips = [c.client_ip for c in candidates] if candidates else []
-            if status == "matched":
-                resolved_src_ip = candidates[0].client_ip
+            session_id = raw.get("session", "")
+            # Forward inheritance: try the per-session prior match first.
+            # If a prior matched (or matched_inherited) event of this
+            # session exists, inherit its src_ip. Skips the timestamp
+            # window entirely. ADR-010, BUG 2 follow-up.
+            inherited_ip: str | None = None
+            if session_id:
+                if session_id in session_match_cache:
+                    cached = session_match_cache[session_id]
+                    inherited_ip = cached or None
+                else:
+                    inherited_ip = _lookup_session_prior_match(session_id)
+                    session_match_cache[session_id] = inherited_ip or ""
+            if inherited_ip is not None:
+                resolved_src_ip = inherited_ip
+                correlation_status = "matched_inherited"
+                candidate_count = 1
+                candidate_ips = [inherited_ip]
+                _emit_metric("BackwardCorrelationOutcomes", 1.0,
+                             dimensions={"result": "inherited"})
+            else:
+                status, candidates = _correlate(raw["timestamp"])
+                correlation_status = status
+                candidate_count = len(candidates)
+                candidate_ips = [c.client_ip for c in candidates] if candidates else []
+                if status == "matched":
+                    resolved_src_ip = candidates[0].client_ip
+                    # Cache so siblings in the same batch inherit without a query.
+                    if session_id:
+                        session_match_cache[session_id] = resolved_src_ip
 
         # GeoIP runs on the post-correlation IP. ADR-010 — this is the change
         # that makes the GeoMap render real attacker geography even though

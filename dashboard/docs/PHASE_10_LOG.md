@@ -160,6 +160,18 @@ Test session `ddc63aaac987` (SSH from `104.174.33.78` to the public honeypot at 
 
 The 200ms window is correct-sized for the SSH-handshake latency over the autossh tunnel. We'll watch `BackwardCorrelationOutcomes{result=ambiguous}` for the first week of real traffic to decide if Phase 10.5 (deterministic SSH relay) is justified.
 
+### Hotfix 8 — Forward per-session inheritance (BUG 2 follow-up)
+
+Bidirectional correlation as shipped (Hotfix 7) only updates SESSION events that exist in DDB at the moment the HAProxy entry is processed. In production, Cowrie sessions split across multiple fluent-bit batches: connect + version land in batch A, login.failed + session.closed in batch B (~30–60 s later). The backward pass running on the HAProxy arrival catches batch A's events; batch B arrives after, and per-event forward correlation fails because the late events' timestamps fall outside the 200ms window of any HAProxy entry.
+
+Live observation surfaced this: 169 of today's sessions had mixed status (connect matched, siblings missed). Login attempts and command captures — the highest-value attack data — were losing source attribution.
+
+**Fix:** forward inheritance in `_process_cowrie_object`. For each event with `src_ip=127.0.0.1`, query `pk = SESSION#<sid>` first; if any prior event of the session has `correlation_status IN (matched, matched_inherited)`, inherit its `src_ip` + GeoIP (lookup at write time on the inherited IP). Per-batch session→IP cache avoids redundant DDB queries when many events of one session arrive in a single batch.
+
+Distinct status `matched_inherited` (not `matched`) preserves empirical visibility — we can measure the inheritance rate vs primary timestamp-match rate via the new `BackwardCorrelationOutcomes{result=inherited}` EMF metric. Dashboard widgets treat both statuses as semantically equivalent (both are real attributed IPs).
+
+Edge cases (chain-attribution, cross-attacker session-id collisions, race with concurrent backward pass, non-arriving HAProxy entry) are documented in the BUG 2 Gate-1.5 surface and verified with 3 new pytest cases in `test_ingest_handler.py`.
+
 ## Open follow-ups
 
 ### Phase 10.5 — Deterministic SSH-relay correlation (gated on data)

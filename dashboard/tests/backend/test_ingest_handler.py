@@ -722,6 +722,171 @@ def test_haproxy_backward_correlation_no_candidates_no_ops():
     assert types == {"HAPROXY_CONN"}
 
 
+# --- Forward inheritance (BUG 2 follow-up) -----------------------------------
+
+
+@mock_aws
+def test_forward_inheritance_uses_prior_matched_event_in_same_session():
+    """A late Cowrie event whose ts falls outside any HAProxy entry's
+    200ms window must still pick up the real IP if a prior event of the
+    same session was already matched. Without inheritance, login.failed
+    and session.closed get stuck at src_ip=127.0.0.1."""
+    s3 = boto3.client("s3", region_name="us-east-1")
+    ddb = boto3.client("dynamodb", region_name="us-east-1")
+    _setup(s3)
+    _setup_ddb(ddb)
+
+    # Prime: HAProxy + Cowrie connect arrive together, forward correlation
+    # matches the connect event.
+    haproxy_key = "raw/haproxy/date=2026-05-07/host=droplet/h1.json.gz"
+    _put_ndjson_object(
+        s3, haproxy_key,
+        [_haproxy_record(time_iso="2026-05-07T05:13:53.100000+00:00",
+                         client_ip="203.0.113.42", client_port=44444)],
+    )
+    cowrie_connect_key = "raw/cowrie/date=2026-05-07/host=pi/c-connect.json.gz"
+    _put_ndjson_object(
+        s3, cowrie_connect_key,
+        [_cowrie_event(ts="2026-05-07T05:13:53.200000Z",
+                       session="late-batch-sess", eventid="cowrie.session.connect",
+                       src_ip="127.0.0.1")],
+    )
+
+    handler_mod = _import_handler()
+    handler_mod.handler(_s3_event(BUCKET, haproxy_key), context=None)
+    handler_mod.handler(_s3_event(BUCKET, cowrie_connect_key), context=None)
+
+    # Sanity — connect event matched.
+    pre = ddb.query(
+        TableName=TABLE,
+        KeyConditionExpression="pk = :pk",
+        ExpressionAttributeValues={":pk": {"S": "SESSION#late-batch-sess"}},
+    )["Items"]
+    assert len(pre) == 1
+    assert pre[0]["correlation_status"]["S"] == "matched"
+    assert pre[0]["src_ip"]["S"] == "203.0.113.42"
+
+    # Late batch: a session.closed event arrives 30 seconds after the
+    # HAProxy/connect timestamp — far outside any 200ms window. The only
+    # way to attribute it to the real IP is per-session inheritance.
+    late_key = "raw/cowrie/date=2026-05-07/host=pi/c-late.json.gz"
+    _put_ndjson_object(
+        s3, late_key,
+        [_cowrie_event(ts="2026-05-07T05:14:23.500000Z",
+                       session="late-batch-sess", eventid="cowrie.session.params",
+                       src_ip="127.0.0.1")],
+    )
+    handler_mod.handler(_s3_event(BUCKET, late_key), context=None)
+
+    post = ddb.query(
+        TableName=TABLE,
+        KeyConditionExpression="pk = :pk",
+        ExpressionAttributeValues={":pk": {"S": "SESSION#late-batch-sess"}},
+    )["Items"]
+    assert len(post) == 2
+    late = next(it for it in post if it["sk"]["S"].endswith("#cowrie.session.params"))
+    assert late["src_ip"]["S"] == "203.0.113.42"
+    # Distinct status so we can measure inheritance rate vs primary-match rate.
+    assert late["correlation_status"]["S"] == "matched_inherited"
+    assert int(late["correlation_candidate_count"]["N"]) == 1
+    assert [v["S"] for v in late["correlation_candidate_ips"]["L"]] == ["203.0.113.42"]
+    assert late["gsi1pk"]["S"] == "IP#203.0.113.42"
+
+
+@mock_aws
+def test_forward_inheritance_no_prior_match_falls_through_to_timestamp_window():
+    """When no prior matched event exists for the session, forward
+    inheritance must NOT short-circuit — fall through to the existing
+    timestamp-window correlation behavior. Test isolates by using a
+    session whose connect event arrives WITHOUT matching HAProxy data
+    in either DDB or the stream."""
+    s3 = boto3.client("s3", region_name="us-east-1")
+    ddb = boto3.client("dynamodb", region_name="us-east-1")
+    _setup(s3)
+    _setup_ddb(ddb)
+
+    handler_mod = _import_handler()
+    cowrie_event = _cowrie_event(
+        ts="2026-05-07T05:13:53.241412Z",
+        session="no-prior-match",
+        eventid="cowrie.session.connect",
+        src_ip="127.0.0.1",
+    )
+    cowrie_key = "raw/cowrie/date=2026-05-07/host=pi/c-orphan.json.gz"
+    _put_ndjson_object(s3, cowrie_key, [cowrie_event])
+    handler_mod.handler(_s3_event(BUCKET, cowrie_key), context=None)
+
+    items = ddb.query(
+        TableName=TABLE,
+        KeyConditionExpression="pk = :pk",
+        ExpressionAttributeValues={":pk": {"S": "SESSION#no-prior-match"}},
+    )["Items"]
+    assert len(items) == 1
+    item = items[0]
+    # No HAProxy data → timestamp-window correlation runs and reports `missed`.
+    # The inheritance path did NOT short-circuit (which would have left
+    # correlation_status unset or wrongly inherited).
+    assert item["correlation_status"]["S"] == "missed"
+    assert item["src_ip"]["S"] == "127.0.0.1"
+
+
+@mock_aws
+def test_forward_inheritance_chains_from_matched_inherited_without_chain_attribution():
+    """If the only prior event of a session is itself `matched_inherited`
+    (not a primary `matched`), inheritance must still work — the chain
+    traces back to the same primary match via the session_id partition.
+    The new event's status remains `matched_inherited` (no
+    `inherited_from_inherited` or other secondary status proliferation)."""
+    s3 = boto3.client("s3", region_name="us-east-1")
+    ddb = boto3.client("dynamodb", region_name="us-east-1")
+    _setup(s3)
+    _setup_ddb(ddb)
+
+    # Pre-stage a single SESSION event already at matched_inherited.
+    ddb.put_item(
+        TableName=TABLE,
+        Item={
+            "pk": {"S": "SESSION#chain-test"},
+            "sk": {"S": "2026-05-07T05:13:53.241412Z#cowrie.session.connect"},
+            "gsi1pk": {"S": "IP#198.51.100.99"},
+            "gsi1sk": {"S": "2026-05-07T05:13:53.241412Z"},
+            "gsi2pk": {"S": "DAY#2026-05-07"},
+            "gsi2sk": {"S": "2026-05-07T05:13:53.241412Z#SESSION#chain-test"},
+            "type": {"S": "EVENT"},
+            "eventid": {"S": "cowrie.session.connect"},
+            "session": {"S": "chain-test"},
+            "src_ip": {"S": "198.51.100.99"},
+            "sensor": {"S": "honeypot"},
+            "ts": {"S": "2026-05-07T05:13:53.241412Z"},
+            "ingest_id": {"S": "sha1:fake"},
+            "ttl": {"N": "9999999999"},
+            "correlation_status": {"S": "matched_inherited"},
+            "correlation_candidate_count": {"N": "1"},
+            "correlation_candidate_ips": {"L": [{"S": "198.51.100.99"}]},
+        },
+    )
+
+    handler_mod = _import_handler()
+    later_event = _cowrie_event(
+        ts="2026-05-07T05:14:00.000000Z",
+        session="chain-test",
+        eventid="cowrie.session.params",
+        src_ip="127.0.0.1",
+    )
+    later_key = "raw/cowrie/date=2026-05-07/host=pi/c-chain.json.gz"
+    _put_ndjson_object(s3, later_key, [later_event])
+    handler_mod.handler(_s3_event(BUCKET, later_key), context=None)
+
+    items = ddb.query(
+        TableName=TABLE,
+        KeyConditionExpression="pk = :pk",
+        ExpressionAttributeValues={":pk": {"S": "SESSION#chain-test"}},
+    )["Items"]
+    new_item = next(it for it in items if it["sk"]["S"].endswith("#cowrie.session.params"))
+    assert new_item["src_ip"]["S"] == "198.51.100.99"
+    assert new_item["correlation_status"]["S"] == "matched_inherited"
+
+
 def test_unit_cowrie_src_port_is_not_haproxy_client_port():
     """Defensive unit doc-test: Cowrie's `src_port` is the Pi-side
     ephemeral port the kernel assigns when autossh forwards the bytes to
