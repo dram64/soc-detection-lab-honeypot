@@ -105,3 +105,57 @@ This is a **deliberate consequence** of this ADR's CI-cannot-update-its-own-poli
 When to apply this pattern: any change to `modules/github-deploy/main.tf`'s policy document (new statements, action wildcards, scope tightening, etc.). The bootstrap step is documented in [edge-credential-rotation.md](../runbooks/edge-credential-rotation.md) alongside the other manual-bootstrap operations the maintainer owns.
 
 When NOT to apply: changes to dashboard application infrastructure (Lambda code, DynamoDB tables, etc.) that don't touch the deploy role's policy — those go through CI normally.
+
+## Amendment #2 — Phase 11B Step 4 retry #4 (2026-05-08): resource-scoping IS the security boundary
+
+The S3 bucket-attribute wildcard amendment above (`s3:GetBucket*` / `s3:PutBucket*`) didn't fully solve the whack-a-mole because AWS S3's IAM action namespace is **inconsistent**. Documenting the empirical lesson here so future maintainers don't re-discover it.
+
+### What happened
+
+Three rounds of S3 policy amendments were needed to close the action-coverage gap:
+
+| Round | Action set | Result |
+|---|---|---|
+| Phase 11B-1 (original) | Explicit enumeration of ~22 specific bucket-level actions | Missed `s3:GetBucketWebsite` (terraform refresh always queries it) |
+| Step 4 amendment #1 (PR #2) | Added `s3:GetBucketWebsite` + `s3:PutBucketWebsite` explicit | Missed `s3:GetAccelerateConfiguration` on next refresh |
+| Step 4 amendment #2 (PR #3) | Replaced explicit Get/Put bucket actions with `s3:GetBucket*` / `s3:PutBucket*` wildcards | **STILL missed** `s3:GetAccelerateConfiguration` because the IAM action name doesn't have "Bucket" in it |
+| Step 4 amendment #3 (PR #4 — this amendment) | Simplified to `s3:Get*` / `s3:Put*` on bucket-level resources | All future refresh-time reads covered |
+
+### The AWS quirk
+
+AWS S3's IAM action namespace uses inconsistent naming:
+
+- Some actions: `s3:GetBucketX` (`GetBucketWebsite`, `GetBucketLogging`, `GetBucketAcl`, `GetBucketTagging`, etc.)
+- Other actions: `s3:GetX` where X is the configuration type (`GetAccelerateConfiguration`, `GetEncryptionConfiguration`, `GetLifecycleConfiguration`, `GetReplicationConfiguration`, `GetIntelligentTieringConfiguration`, `GetAnalyticsConfiguration`, `GetMetricsConfiguration`, `GetInventoryConfiguration`, etc.)
+
+The API operation names usually have "Bucket" in them (`GetBucketAccelerateConfiguration`), but the corresponding IAM action name often doesn't (`s3:GetAccelerateConfiguration`). `s3:GetBucket*` matched the first set but not the second.
+
+### The architectural lesson
+
+**Resource scoping is the actual security boundary, not action-name enumeration.**
+
+The S3ManageProjectBucketsLevel statement uses bucket-level ARNs only:
+```
+"arn:aws:s3:::dram-soc-honeypot-ingest"
+"arn:aws:s3:::dram-soc-dashboard-frontend"
+```
+Note: NO `/*` suffix. These are bucket-only resource ARNs.
+
+`s3:GetObject` is in the `s3:Get*` action namespace, but its required resource format is `arn:aws:s3:::bucket/key` (with `/*`). IAM evaluates action AND resource together — bucket-only ARNs don't match the object-level resource pattern, so `s3:GetObject` is denied by resource mismatch even though `s3:Get*` matches the action.
+
+This means `s3:Get*` and `s3:Put*` on bucket-level resources is **safe**:
+- All bucket-attribute reads/writes are covered (current + future).
+- Object reads are NOT granted because the resource scope doesn't include the object-level ARN namespace.
+- Object-level access lives in the SEPARATE `S3FrontendBundleObjects` SID, which scopes to `dram-soc-dashboard-frontend/*` only — NEVER `honeypot-ingest/*`.
+- The "no CI reads of attacker payloads in `raw/*`" property from this ADR's original design is preserved by the explicit asymmetry between the two SIDs, not by enumeration of action names.
+
+### Practical implications
+
+Going forward, when designing IAM policies for terraform-managed AWS resources:
+
+- **Lean on resource scoping**, not action enumeration. AWS IAM action names are inconsistent across services and even within services; enumeration is brittle.
+- Use action wildcards (`service:Get*`, `service:Put*`) on tightly-scoped resource ARNs to future-proof against AWS adding new refresh-time read APIs.
+- Keep object-level / data-plane grants in separate SIDs with object-level resource ARNs — those are the ones that actually need explicit-action discipline because object content is what you're protecting.
+- Reserve explicit-enumeration for actions that genuinely DO widen blast radius (e.g., `iam:Create*`, `lambda:InvokeFunction`, etc.) — not for refresh-time read APIs.
+
+The S3FrontendBundleObjects SID (object-level Get/Put/Delete on `dram-soc-dashboard-frontend/*` only) remains the explicit object-access surface — it is the single place a future maintainer needs to audit when reasoning about "what objects can CI read or write." That asymmetry is the ADR's core security property, not the action enumeration on the bucket-level statement.
