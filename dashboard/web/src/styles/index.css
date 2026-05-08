@@ -28,11 +28,8 @@
 }
 
 @layer utilities {
-  /* Subtle horizontal scan-line overlay. Sparing use only — applied via the
-     ::before pseudo-element on Card so it sits inside the chrome rather
-     than blanketing the whole page. 1.5% white at 3px stripes is just
-     barely perceptible and reads as "this is a console", not "this is a
-     visual effect". */
+  /* Horizontal scan-line overlay. Applied via ::before on Card/Counter so
+     it sits inside the chrome rather than blanketing the whole page. */
   .scan-lines {
     position: relative;
   }
@@ -45,8 +42,8 @@
       to bottom,
       transparent 0,
       transparent 2px,
-      rgba(255, 255, 255, 0.015) 2px,
-      rgba(255, 255, 255, 0.015) 3px
+      rgba(255, 255, 255, 0.04) 2px,
+      rgba(255, 255, 255, 0.04) 3px
     );
   }
 }

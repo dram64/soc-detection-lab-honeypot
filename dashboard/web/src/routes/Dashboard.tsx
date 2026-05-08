@@ -43,10 +43,10 @@ export function Dashboard() {
         <div>
           {/* // prefix is via ::before so it's purely visual — keeps
               getByText('Honeypot Dashboard') test assertions matching. */}
-          <h1 className="font-display text-5xl uppercase tracking-widest text-fg before:mr-2 before:text-accent before:content-['//']">
+          <h1 className="font-display text-7xl uppercase leading-none tracking-widest text-fg before:mr-3 before:text-accent before:drop-shadow-[0_0_24px_rgba(245,209,31,0.55)] before:content-['//']">
             Honeypot Dashboard
           </h1>
-          <p className="mt-1 font-mono text-xs uppercase tracking-widest text-fg-muted">
+          <p className="mt-3 font-mono text-sm uppercase tracking-widest text-fg-muted">
             Cowrie SSH honeypot · live capture
           </p>
         </div>
