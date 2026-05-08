@@ -4,21 +4,28 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Dashboard palette — dark theme, teal accent (per Phase 5 brief).
-        // Phase 6 will iterate on this once real visualizations land.
+        // Dashboard palette — dark neutral surfaces, urban-yellow accent
+        // with a magenta secondary for warning flavoring. Inkier than the
+        // prior teal scheme; meant to read as industrial/utility chrome
+        // rather than tasteful admin pastel.
         bg: {
-          DEFAULT: '#0b0f14', // near-black neutral, page background
-          elevated: '#121821', // slightly raised surfaces (cards)
-          border: '#1f2933', // subtle dividers
+          DEFAULT: '#08090d', // ink-black page background
+          elevated: '#10141b', // slightly raised surfaces (cards)
+          border: '#222a36', // subtle dividers
+          edge: '#3a4554', // stronger dividers for emphasis
         },
         fg: {
-          DEFAULT: '#e6edf3', // high-contrast off-white
-          muted: '#8b96a3', // secondary copy
+          DEFAULT: '#eef1f5', // off-white, slightly cooler than before
+          muted: '#8d97a4', // secondary copy
           subtle: '#5a6473', // tertiary / placeholder
         },
         accent: {
-          DEFAULT: '#2dd4bf', // teal — Z's preferred color
-          dim: '#0f766e',
+          DEFAULT: '#f5d11f', // urban yellow — primary highlight color
+          dim: '#736216', // muted yellow for hover/secondary states
+        },
+        accent2: {
+          DEFAULT: '#ec4899', // magenta — secondary accent for warnings
+          dim: '#831843',
         },
         danger: {
           DEFAULT: '#f87171',
@@ -37,6 +44,18 @@ export default {
           'Consolas',
           'monospace',
         ],
+        // Display face for the masthead — chunky condensed sans-serif.
+        // Falls back gracefully when Bebas Neue isn't loaded.
+        display: [
+          '"Bebas Neue"',
+          '"Oswald"',
+          '"Arial Narrow"',
+          'Impact',
+          'sans-serif',
+        ],
+      },
+      letterSpacing: {
+        widest: '0.18em',
       },
     },
   },

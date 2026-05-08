@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('../api/queries', () => ({
   useHealth: vi.fn().mockReturnValue({
-    data: { status: 'ok', version: 'test-sha' },
+    data: { status: 'ok', version: 'test-sha-1234567890abcdef' },
     isPending: false,
     isError: false,
   }),
@@ -41,9 +41,10 @@ describe('Dashboard route', () => {
   it('mounts header, counter row, both top charts, timeline, and events table', () => {
     render(<Dashboard />);
     expect(screen.getByText('Honeypot Dashboard')).toBeInTheDocument();
-    expect(screen.getByText('Cowrie SSH honeypot, real-time')).toBeInTheDocument();
-    expect(screen.getByText('● healthy')).toBeInTheDocument();
-    expect(screen.getByText('test-sha')).toBeInTheDocument();
+    expect(screen.getByText('Cowrie SSH honeypot · live capture')).toBeInTheDocument();
+    expect(screen.getByText('[ ONLINE ]')).toBeInTheDocument();
+    // Version is sliced to 7-char short-SHA convention.
+    expect(screen.getByText('test-sh')).toBeInTheDocument();
     expect(screen.getByText('Total events')).toBeInTheDocument();
     expect(screen.getByText('Top usernames (24h)')).toBeInTheDocument();
     expect(screen.getByText('Top passwords (24h)')).toBeInTheDocument();
