@@ -154,13 +154,20 @@ resource "aws_cloudfront_response_headers_policy" "frontend" {
     }
 
     content_security_policy {
+      # style-src + font-src allow Google Fonts for the apex portfolio page
+      # (Archivo / Inter / JetBrains Mono via fonts.googleapis.com →
+      # fonts.gstatic.com). The dashboard's inline-Tailwind styles still
+      # need 'unsafe-inline' on style-src; the Google Fonts addition is
+      # a CSS resource load, not arbitrary script. ADR-011 envelope
+      # unaffected — these are static CDN domains for public Open Source
+      # typefaces, no script-execution surface.
       content_security_policy = join(" ", [
         "default-src 'self';",
         "script-src 'self';",
-        "style-src 'self' 'unsafe-inline';",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;",
         "img-src 'self' data:;",
         "connect-src 'self' https://mlncxsr5a9.execute-api.us-east-1.amazonaws.com;",
-        "font-src 'self' data:;",
+        "font-src 'self' data: https://fonts.gstatic.com;",
         "object-src 'none';",
         "base-uri 'self';",
         "frame-ancestors 'none'",
