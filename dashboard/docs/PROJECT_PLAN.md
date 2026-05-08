@@ -5,7 +5,7 @@
 **Repo:** https://github.com/dram64/soc-detection-lab (sub-path `dashboard/`)
 **Public URL (target):** https://dashboard.dram-soc.org
 **AWS account:** 334856751632 (us-east-1)
-**Plan version:** 1.6 — 2026-05-07 (Phase 11B-2 CI/CD scaffolding shipped)
+**Plan version:** 1.7 — 2026-05-07 (Phase 11B SHIPPED — all 5 steps complete; README rewritten; portfolio site live at apex)
 **Status:** Phases 1–4 in flight
 
 ---
@@ -937,6 +937,12 @@ Explicitly NOT building first time:
 ---
 
 ## Changelog
+
+**v1.7 (2026-05-07, Phase 11B fully shipped + README rewritten + portfolio live):**
+- §11 Phase 11B: **all 5 steps shipped.** PR #1 merged the 4 workflow files (`dashboard-ci`, `dashboard-tf-plan`, `dashboard-backend-deploy`, `dashboard-frontend-deploy`) plus 4 cleanup commits. PRs #2/#3/#4 patched 4 IAM gaps surfaced by the first real `terraform apply` from CI (`s3:GetBucketWebsite`, `iam:ListOpenIDConnectProviders`, `ssm:DescribeParameters`, plus a wildcards collapse on `s3:Get*`/`s3:Put*` resource-scoped to project-owned buckets — security boundary is the resource scope, not action enumeration). Step 4 (first CI-driven backend deploy) closed after 5 retries; the failures cleanly mapped to (a) IAM gaps, (b) AWS S3 action-namespace inconsistency, and (c) the CloudFront mutate-tag-gate refusing to update untagged Function/OAC/RHPolicy resources. Step 5 (frontend auto-deploy) merged in PR #5 after the initial workflow self-trigger broke the dashboard for ~6h24m by deploying with the wrong env var name (`VITE_API_URL` vs `VITE_API_BASE_URL`); fix removed the self-trigger and switched to runtime API endpoint resolution via `aws apigatewayv2 get-apis`. Phase 11C auto-trigger flip remains gated on 5+ clean `workflow_dispatch` deploys; **currently 1 of 5.**
+- §11 Phase 8.5: **portfolio site live at apex.** `dram-soc.org` + `www.dram-soc.org` now serve a static HTML portfolio (deployed to `s3://dram-soc-dashboard-frontend/apex/index.html`, routed via CloudFront Function `host_router` rewriting `/` → `/apex/index.html`). PR #6 reworked the dashboard UI (industrial-chrome + yellow accent + Bebas Neue display font); PR #7 extended CSP to allow Google Fonts (`https://fonts.googleapis.com` on `style-src`, `https://fonts.gstatic.com` on `font-src`) for the Archivo / Inter / JetBrains Mono load on the apex portfolio. PR #7 was applied via workstation targeted apply first (the RHPolicy resource is AWS-API-untaggable so CI's mutate-tag-gate would block it), then the terraform code was reconciled to match live state.
+- **README rewrite (SHA 6fe9d28):** the top-level public README was rewritten end-to-end to accurately describe the deployed AWS-native pipeline. Prior README described Wazuh + ELK + Splunk + MISP + Suricata + Zeek + Sigma rules running on Dell PowerEdge / Cisco / Palo Alto hardware — **none of which are deployed.** The rewrite states what is actually built: Cowrie on Pi 5 + DigitalOcean droplet + autossh reverse tunnel + fluent-bit + Lambda correlation + DynamoDB + API Gateway + CloudFront + React SPA. The top-level `wazuh/`, `elastic/`, `splunk/`, `misp/`, `suricata/`, `zeek/`, top-level `docs/`, and `docker-compose.yml` are explicitly called out as "exploration scaffolding from the project's initial homelab-SIEM scoping that was pivoted away from" — repo cleanup queued in Future work.
+- **Next-workstream candidates** (NOT yet started, queued for separate sessions): (a) homelab-scaffolding cleanup commit — delete the unused top-level dirs once SIEM-integration future-work item is conclusively resolved; (b) Pi-only Wazuh + Suricata + k3s + Sigma buildout to legitimize the keyword claims that the original (now-removed) README staked; (c) ADR-011 §Amendment #3 + runbook for the CF tag-bootstrap pattern (covers the OAC / ResponseHeadersPolicy AWS-API-untaggability blocker that recurred in Step 4 retry #5 and PR #7).
 
 **v1.6 (2026-05-07, Phase 11B-2 CI/CD scaffolding shipped):**
 - §11 Phase 11B: GitHub Actions deploy role (Phase 11B-1, SHA 6aa5357) + 4 workflow files (Phase 11B-2, SHA 7b2180f) now live on main. The backend-deploy workflow stays `workflow_dispatch`-only until Phase 11C unblocks (after 5+ clean manual deploys), per ADR-011's CI/CD permission boundary.

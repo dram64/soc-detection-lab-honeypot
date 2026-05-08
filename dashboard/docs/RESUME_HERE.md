@@ -8,14 +8,17 @@ If you have 60 seconds, read just §1 and §6.
 
 ## §1 — Current state
 
-- **Project status:** Portfolio-ready. Phases 1–8.5 shipped. **Phase 10 SHIPPED LIVE** (real attacker traffic flowing, MaxMind GeoIP enriched, bidirectional correlation working). Phase 9 / 10.5 / 11 still pending.
-- **Live URLs:**
-  - Apex front door: <https://dram-soc.org> · <https://www.dram-soc.org> (Phase 8.5)
-  - Dashboard: <https://dashboard.dram-soc.org> (Phase 8)
+- **Project status:** Portfolio-ready. Phases 1–8.5, 10, 11A, 11B all shipped. **Phase 11B fully complete** (5 of 5 steps; PRs #1–#5 merged; first CI-driven backend deploy closed after 5 retries; CI-driven frontend auto-deploy live). Phase 11C auto-trigger flip gated on **4 more clean `workflow_dispatch` deploys** (currently 1 of 5). Phase 9 / 10.5 still pending.
+- **README:** rewritten 2026-05-07 (SHA 6fe9d28) to accurately describe the deployed AWS-native pipeline. Prior README described an unbuilt homelab stack (Wazuh/ELK/Splunk/MISP/Suricata/Zeek + nonexistent enterprise hardware); new README states only what's actually deployed.
+- **Live URLs (all verified 200 as of 2026-05-07):**
+  - Portfolio / apex front door: <https://dram-soc.org> · <https://www.dram-soc.org> (Phase 8.5; static HTML deployed to `s3://...dashboard-frontend/apex/index.html`, routed via CF Function `host_router`)
+  - Dashboard: <https://dashboard.dram-soc.org> (Phase 8; React SPA; UI refresh in PR #6 — industrial chrome + yellow accent + Bebas Neue display font)
+  - Partner project: <https://diamond-iq.dram-soc.org>
+- **CSP state:** extended in PR #7 (e1562a3) to allow Google Fonts on `style-src` (`https://fonts.googleapis.com`) and `font-src` (`https://fonts.gstatic.com`) for the apex portfolio. Applied via workstation targeted apply (RHPolicy is AWS-API-untaggable; CI mutate-tag-gate would block); terraform code reconciled to match live state.
 - **Cost rate:** ~$2.60/mo. Last billing-alarm threshold: $10 (state OK, billing alerts must be enabled in the AWS console for `EstimatedCharges` to publish).
-- **Branch:** `main`, up to date with `origin/main`. Last commit: `1b5984e Fix Sigma rules: ... ssh_brute_force to correlation`.
-- **Working tree:** intentionally dirty. The whole `dashboard/` subtree is untracked — Phases 1–8 have **not yet been committed**. See §5 for the parking commit you should run.
-- **No `terraform apply` is in flight.** Last apply finished 2026-04-29; state file is on the S3 backend `diamond-iq-tfstate-334856751632`.
+- **Branch:** `main`, up to date with `origin/main`. Last commit: `6fe9d28 docs(readme): rewrite to accurately reflect actually-built AWS-native honeypot pipeline`.
+- **Working tree:** clean (post-README-rewrite). `dashboard/soc_detection_dashboard.egg-info/` is the only untracked path — gitignore queued in backlog.
+- **No `terraform apply` is in flight.** Last CI apply: Step 4 backend deploy (retry #5 success) earlier this session. State on S3 backend `diamond-iq-tfstate-334856751632`.
 
 ## §2 — AWS resource inventory (us-east-1)
 
@@ -85,6 +88,25 @@ CloudWatch dashboard + viral-traffic runbook + heartbeat alarm now active. Add a
 
 ### Phase 11 — real-data tuning buffer
 3–5 days post-cutover. Tune password dictionary against real attacker-traffic distribution (PROJECT_PLAN v1.0).
+
+## §6.5 — Phase 11B SHIPPED — next workstream candidates
+
+Phase 11B all 5 steps shipped 2026-05-07. CI/CD GitHub Actions OIDC deploy role + 6 workflow files live; first CI-driven backend deploy (`workflow_dispatch`) closed after 5 retries; frontend auto-deploy live on `dashboard/web/**` push to main. **Next gating step is Phase 11C auto-trigger flip — 4 more clean deploys to bank, currently 1 of 5.**
+
+The following are **candidate workstreams** for the next session — none proposed yet, just queued so they're surfaced when you pick this back up. Direct one of them, or direct something else, when you next sit down.
+
+| Candidate | What it is | Trigger / gate |
+|---|---|---|
+| (a) Homelab-scaffolding cleanup commit | Delete top-level `wazuh/`, `elastic/`, `splunk/`, `misp/`, `suricata/`, `zeek/`, `docker-compose.yml`, top-level `docs/`. Single commit, doc-only impact. | Conditional on the SIEM-integration future-work item being conclusively resolved one way or the other (see README Future work). Not blocked on anything technical — purely a "do I want to keep these as placeholders or delete them" decision. |
+| (b) Pi-only Wazuh + Suricata + k3s + Sigma buildout | Stand up a real local SIEM on the Pi: Wazuh manager + Suricata IDS + k3s for orchestration + Sigma rules deployed and firing. Would legitimize keyword claims that the prior (now-removed) README staked, in a way that the AWS-native pipeline doesn't on its own. | Sized as a multi-week effort; only worth doing if the resume strategy specifically benefits from those keywords appearing as live infrastructure rather than as Future work bullets. Discuss before scoping. |
+| (c) ADR-011 §Amendment #3 + runbook for CF tag-bootstrap pattern | Document the CloudFront tag-bootstrap pattern that recurred in Step 4 retry #5 (cf:UpdateFunction blocked by mutate-tag-gate on untagged Function) and PR #7 (RHPolicy untaggable, requires workstation targeted apply). Add a runbook for "what to do when CI's mutate-tag-gate blocks a CF resource update." | Pure documentation work; ~1 hour. Worth doing before the next CF resource change so the next maintainer (you, in 6 weeks) doesn't re-derive the workaround from scratch. |
+
+Also queued (smaller, can be batched):
+- **GHA Node 20 deprecation update** (June 2026 cutoff — workflow actions need bumping).
+- **`gitignore`** for `dashboard/soc_detection_dashboard.egg-info/`.
+- **`moto`** pyproject extras realignment.
+- **Stale README** in `modules/edge-shippers/`.
+- **4 more clean backend deploys** to unblock Phase 11C — these can be ad-hoc as deploy-worthy changes accumulate; no need to manufacture them.
 
 ## §6.bak — Phase 8.5 — apex landing page (DONE)
 
