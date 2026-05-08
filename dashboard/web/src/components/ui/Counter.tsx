@@ -13,15 +13,15 @@ export interface CounterProps {
 
 export function Counter({ label, value, loading = false }: CounterProps) {
   return (
-    <div className="rounded-lg border border-bg-border bg-bg-elevated p-5">
-      <p className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
+    <div className="scan-lines border border-bg-border border-l-4 border-l-accent bg-bg-elevated p-5">
+      <p className="font-mono text-sm font-bold uppercase tracking-widest text-fg-muted">
         {label}
       </p>
       {loading ? (
-        <Skeleton className="mt-3 h-9 w-24" />
+        <Skeleton className="mt-3 h-16 w-32" />
       ) : (
         <p
-          className="mt-2 font-mono text-3xl font-semibold tracking-tight text-fg"
+          className="mt-2 font-display text-6xl leading-none tracking-wide text-accent drop-shadow-[0_0_18px_rgba(245,209,31,0.35)]"
           aria-label={`${label}: ${value ?? 'unknown'}`}
         >
           {formatEventCount(value)}
