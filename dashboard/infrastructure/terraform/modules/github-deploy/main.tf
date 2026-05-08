@@ -185,38 +185,47 @@ data "aws_iam_policy_document" "deploy" {
   statement {
     sid    = "S3ManageProjectBucketsLevel"
     effect = "Allow"
-    # Phase 11B Step 4 amendment #2 (post-PR-#2-retry): replaced the
-    # explicit Get*/Put* bucket-attribute enumeration with s3:GetBucket*
-    # / s3:PutBucket* wildcards. terraform's AWS provider queries a long
-    # tail of bucket-attribute APIs on every aws_s3_bucket refresh
-    # (Versioning, Policy, Tagging, PublicAccessBlock, Ownership,
-    # Notification, CORS, Acl, Website, AccelerateConfiguration, Logging,
-    # Replication, ObjectLockConfiguration, IntelligentTiering, etc.).
-    # PR #2 enumerated only Website; the next refresh hit Accelerate;
-    # the pattern would continue indefinitely.
+    # Phase 11B Step 4 amendment #3 (post-PR-#3-retry): collapsed all
+    # explicit Get*/Put* enumerations and the s3:GetBucket*/s3:PutBucket*
+    # wildcards into broader s3:Get*/s3:Put* on the bucket-level resources.
     #
-    # Security envelope preserved: s3:GetObject is a SEPARATE namespace
-    # and is NOT covered by s3:GetBucket*. ADR-011's "no object reads on
-    # raw/* in honeypot-ingest" property is intact — the role still
-    # cannot read attacker-uploaded payloads.
+    # Why: AWS S3's IAM action namespace is inconsistent — some actions
+    # use s3:GetBucketX naming (GetBucketWebsite, GetBucketLogging, etc.)
+    # while others use s3:GetX naming (GetAccelerateConfiguration,
+    # GetLifecycleConfiguration, GetEncryptionConfiguration, GetReplication
+    # Configuration, GetIntelligentTieringConfiguration, etc.). The PR #3
+    # GetBucket*/PutBucket* wildcards covered the first set but missed the
+    # second; the next backend-deploy retry hit GetAccelerateConfiguration.
+    # Enumeration of either set is brittle; AWS adds new actions over
+    # provider versions.
     #
-    # Resource scoping unchanged: only the 2 project buckets.
+    # Security envelope — RESOURCE SCOPING is the boundary, NOT action-name
+    # enumeration:
+    # - This statement's resources are bucket-level ARNs ONLY (no /*
+    #   suffix). IAM evaluates action AND resource together.
+    # - s3:GetObject is in the s3:Get* action namespace, but its required
+    #   resource format is `arn:aws:s3:::bucket/key` (with /*). The bucket-
+    #   only ARN here CANNOT match that resource pattern, so the role
+    #   cannot read object content via this statement regardless of the
+    #   action wildcard.
+    # - Object-level access lives in S3FrontendBundleObjects (separate SID,
+    #   different resources). That statement is scoped to dram-soc-dashboard-
+    #   frontend/* only — NEVER honeypot-ingest/*. ADR-011's "no object
+    #   reads on raw/* in honeypot-ingest" property remains intact and
+    #   architecturally explicit.
+    #
+    # Future-proof against terraform provider adding more refresh-time
+    # bucket-attribute reads.
     actions = [
+      "s3:Get*",
+      "s3:Put*",
       "s3:CreateBucket",
       "s3:DeleteBucket",
       "s3:ListBucket",
       "s3:DeleteBucketPolicy",
-      # Outside the GetBucket* / PutBucket* namespaces — kept explicit:
-      "s3:GetBucketLocation",
-      "s3:GetEncryptionConfiguration",
-      "s3:PutEncryptionConfiguration",
-      "s3:GetLifecycleConfiguration",
-      "s3:PutLifecycleConfiguration",
-      # Wildcards covering all current + future bucket-attribute reads/writes:
-      "s3:GetBucket*",
-      "s3:PutBucket*",
     ]
     # Bucket-level only — note the absence of `/*` resource entries here.
+    # This is the actual security boundary; see comment above.
     resources = [
       "arn:aws:s3:::${var.name_prefix}-honeypot-ingest",
       "arn:aws:s3:::${var.name_prefix}-dashboard-frontend",
