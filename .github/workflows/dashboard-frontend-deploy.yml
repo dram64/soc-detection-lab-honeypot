@@ -10,11 +10,24 @@ name: dashboard-frontend-deploy
 # dashboard-backend-deploy.yml.
 
 on:
+  # Note: this workflow's own path is INTENTIONALLY NOT in the paths
+  # filter. Phase 11B Step 4 incident: when 7b2180f added this file,
+  # the path filter matched its own creation, the workflow self-fired,
+  # and built a bundle with placeholder env vars (broke
+  # dashboard.dram-soc.org for ~3hr). Deploy workflows including
+  # themselves in their trigger paths is a footgun; CI workflows can
+  # because they don't ship artifacts. Add workflow_dispatch for
+  # manual triggers when this workflow itself needs to be exercised.
   push:
     branches: [main]
     paths:
       - 'dashboard/web/**'
-      - '.github/workflows/dashboard-frontend-deploy.yml'
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Why are you running this manual deploy?'
+        required: false
+        default: 'manual run'
 
 permissions:
   id-token: write
@@ -29,10 +42,12 @@ env:
   AWS_ROLE_ARN: arn:aws:iam::334856751632:role/dram-soc-github-deploy
   S3_BUCKET: dram-soc-dashboard-frontend
   CF_ALIAS_HOST: dashboard.dram-soc.org
-  # CONFIRM: SOC-specific Vite env vars. These are placeholders mirroring
-  # Diamond IQ's set; verify against dashboard/web/src/ before first run.
-  VITE_API_URL: https://CONFIRM-FROM-API-OUTPUT.execute-api.us-east-1.amazonaws.com
-  VITE_HIDE_DEMO_BADGES: 'false'
+  # API_NAME is the HTTP API's terraform-set name; resolved to its
+  # endpoint URL at runtime in the "Resolve API endpoint" step below.
+  # Phase 11B Step 5 fix: replaces the prior hardcoded placeholder
+  # (which combined with a wrong env-var name to ship a bundle with
+  # no working API URL on first deploy).
+  API_NAME: dram-soc-api
 
 jobs:
   deploy:
@@ -63,11 +78,29 @@ jobs:
         working-directory: dashboard/web
         run: npm ci
 
+      # Resolve the HTTP API endpoint at deploy time by looking it up by
+      # name. Mirrors the CloudFront "list-distributions filter by alias"
+      # pattern below. Avoids hardcoding the API ID — if the API is
+      # destroyed and recreated, the ID changes but the name stays.
+      # Frontend src expects VITE_API_BASE_URL (per
+      # dashboard/web/src/api/client.ts:9 + vite-env.d.ts) — that's the
+      # only env var the bundle consumes.
+      - name: Resolve API endpoint (by name)
+        id: api
+        run: |
+          API_ENDPOINT=$(aws apigatewayv2 get-apis \
+            --query "Items[?Name=='${{ env.API_NAME }}'].ApiEndpoint | [0]" \
+            --output text)
+          if [ -z "$API_ENDPOINT" ] || [ "$API_ENDPOINT" = "None" ]; then
+            echo "::error::Could not resolve HTTP API endpoint for name '${{ env.API_NAME }}'"
+            exit 1
+          fi
+          echo "endpoint=$API_ENDPOINT" >> "$GITHUB_OUTPUT"
+
       - name: Build frontend
         working-directory: dashboard/web
         env:
-          VITE_API_URL: ${{ env.VITE_API_URL }}
-          VITE_HIDE_DEMO_BADGES: ${{ env.VITE_HIDE_DEMO_BADGES }}
+          VITE_API_BASE_URL: ${{ steps.api.outputs.endpoint }}
         run: npm run build
 
       - name: Resolve CloudFront distribution id (by alias)
@@ -111,6 +144,7 @@ jobs:
             echo "| Output | Value |"
             echo "| --- | --- |"
             echo "| Live URL | https://${{ env.CF_ALIAS_HOST }} |"
+            echo "| API endpoint baked in | \`${{ steps.api.outputs.endpoint }}\` |"
             echo "| S3 bucket | \`${{ env.S3_BUCKET }}\` |"
             echo "| Distribution | \`${{ steps.cf.outputs.distribution_id }}\` |"
             echo "| Invalidation | \`${{ steps.invalidate.outputs.invalidation_id }}\` |"
