@@ -16,12 +16,15 @@ export interface CardProps {
 export function Card({ title, rightSlot, className = '', children }: CardProps) {
   return (
     <section
-      className={`rounded-lg border border-bg-border bg-bg-elevated p-5 ${className}`}
+      className={`scan-lines border border-bg-border border-l-2 border-l-accent bg-bg-elevated p-5 ${className}`}
     >
       {(title || rightSlot) && (
         <header className="mb-4 flex items-baseline justify-between">
           {title ? (
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
+            // The » prefix is a CSS ::before pseudo-element so it shows
+            // visually but isn't in the DOM textContent — keeps existing
+            // tests' getByText('Title') matchers working unchanged.
+            <h2 className="font-mono text-xs font-bold uppercase tracking-widest text-fg-muted before:mr-1 before:text-accent before:content-['»']">
               {title}
             </h2>
           ) : (

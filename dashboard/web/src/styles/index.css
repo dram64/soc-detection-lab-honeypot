@@ -1,3 +1,7 @@
+/* Bebas Neue for the display face. Self-host alternative if Google Fonts
+   becomes a CSP concern; for now the request is on cache for repeat visits. */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -20,5 +24,29 @@
       'Helvetica Neue',
       Arial,
       sans-serif;
+  }
+}
+
+@layer utilities {
+  /* Subtle horizontal scan-line overlay. Sparing use only — applied via the
+     ::before pseudo-element on Card so it sits inside the chrome rather
+     than blanketing the whole page. 1.5% white at 3px stripes is just
+     barely perceptible and reads as "this is a console", not "this is a
+     visual effect". */
+  .scan-lines {
+    position: relative;
+  }
+  .scan-lines::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 2px,
+      rgba(255, 255, 255, 0.015) 2px,
+      rgba(255, 255, 255, 0.015) 3px
+    );
   }
 }

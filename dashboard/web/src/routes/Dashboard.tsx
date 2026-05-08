@@ -11,20 +11,26 @@ function StatusPill() {
   let label: string;
   let cls: string;
   if (health.isPending) {
-    label = '○ loading';
+    label = 'LOADING';
     cls = 'text-fg-muted';
   } else if (health.isError) {
-    label = '● error';
+    label = 'ERROR';
     cls = 'text-danger';
   } else {
-    label = '● healthy';
+    label = 'ONLINE';
     cls = 'text-ok';
   }
   return (
     <div className="flex items-baseline gap-3">
-      <span className={`text-sm font-medium ${cls}`}>{label}</span>
+      <span
+        className={`font-mono text-xs font-bold uppercase tracking-widest ${cls}`}
+      >
+        [ {label} ]
+      </span>
       {health.data?.version ? (
-        <span className="font-mono text-xs text-fg-subtle">{health.data.version}</span>
+        <span className="font-mono text-xs text-fg-subtle">
+          {health.data.version.slice(0, 7)}
+        </span>
       ) : null}
     </div>
   );
@@ -33,10 +39,16 @@ function StatusPill() {
 export function Dashboard() {
   return (
     <main className="mx-auto max-w-7xl px-6 py-10">
-      <header className="flex flex-wrap items-baseline justify-between gap-4 border-b border-bg-border pb-6">
+      <header className="flex flex-wrap items-baseline justify-between gap-4 border-b-2 border-bg-edge pb-6">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Honeypot Dashboard</h1>
-          <p className="mt-1 text-fg-muted">Cowrie SSH honeypot, real-time</p>
+          {/* // prefix is via ::before so it's purely visual — keeps
+              getByText('Honeypot Dashboard') test assertions matching. */}
+          <h1 className="font-display text-5xl uppercase tracking-widest text-fg before:mr-2 before:text-accent before:content-['//']">
+            Honeypot Dashboard
+          </h1>
+          <p className="mt-1 font-mono text-xs uppercase tracking-widest text-fg-muted">
+            Cowrie SSH honeypot · live capture
+          </p>
         </div>
         <StatusPill />
       </header>
