@@ -152,24 +152,8 @@ soc-detection-lab-honeypot/
 
 The top-level `wazuh/`, `elastic/`, `splunk/`, `misp/`, `suricata/`, `zeek/` directories, the `docker-compose.yml`, and the top-level `docs/` are exploration scaffolding from the project's initial homelab-SIEM scoping that was pivoted away from once the AWS-native pipeline took shape. None of those tools are currently running anywhere in the deployed system. The working system is fully contained in `dashboard/`. Cleanup of the unused scaffolding is on the cleanup backlog (see Future work).
 
-## Future work
-
-Roadmap items genuinely under consideration, distinct from features that already exist:
-
-- **Self-hosted SIEM integration** — pipe a copy of the captured sessions into Wazuh / ELK / Splunk for cross-correlation against host-based agents. The top-level scaffolding directories were placeholders for this; not yet deployed. The 5 Sigma rules at `sigma/rules/` would feed into this if/when it lands.
-- **Phase 10.5 — deterministic Pi-side SSH relay** — replace `autossh` with a custom `asyncssh` client that establishes the SSH connection itself, eliminating the timestamp-window correlation entirely. Gated on measured ambiguity rate from real traffic; trigger threshold defined in ADR-010.
-- **Phase 11C — backend-deploy auto-trigger flip** — once 5+ clean `workflow_dispatch` deploys are banked, flip `dashboard-backend-deploy.yml` to `push: branches: [main]`. Currently 1 of 5.
-- **Phase 11D — CloudFront resource manual-only stack** — move CF resource management to a manual-apply stack (mirroring the `edge-shippers-credentials` pattern from ADR-011) to fully resolve the AWS-API-untaggable resource issue (CF OAC and ResponseHeadersPolicy can't carry tags, so the deploy role's mutate-tag-gate becomes a permanent blocker on those resource types).
-- **Repo cleanup** — delete the unused homelab-scoping scaffolding directories at the top level (`wazuh/`, `elastic/`, `splunk/`, `misp/`, `suricata/`, `zeek/`, the top-level `docs/`, and `docker-compose.yml`) once the SIEM-integration future-work item is conclusively resolved one way or the other.
-
-## License
-
-MIT — see [LICENSE](LICENSE)
 
 ## About
 
-Built by [Desi Ramirez](https://github.com/dram64) — software engineering grad at Cal Poly SLO, working on cloud and security projects in the run-up to a security/SRE role.
-
-Pairs with [Diamond IQ](https://diamond-iq.dram-soc.org) ([repo](https://github.com/dram64/diamond-iq)) — sports analytics platform on the same AWS account that exercises a different shape of the same skills (real-time WebSocket fanout + Bedrock AI inference + multi-source ingestion).
 
 Portfolio: https://dram-soc.org
