@@ -16,7 +16,6 @@ A working production system for collecting, processing, and visualizing live SSH
 - **Observability** — CloudWatch metric filters + alarms on the ingest Lambda's log group; SNS topic (`-edge-alarms`) for alerting from CloudWatch alarms (`-cowrie-heartbeat-missing`, `-haproxy-heartbeat-missing` — 15-min window, `treat_missing_data: breaching`).
 - **CI/CD** — GitHub Actions OIDC trust assumes a scoped IAM role (`dram-soc-github-deploy`) for `terraform apply` + Lambda code deploy. ADR-011 formalizes the human-vs-CI permission boundary so the deploy role explicitly cannot mint AWS access keys.
 
-The project is built as a portfolio piece for cloud security and detection engineering. It pairs with [Diamond IQ](https://diamond-iq.dram-soc.org) (sports analytics platform on the same AWS account) to demonstrate end-to-end engineering across two distinct production systems.
 
 ## Architecture
 
