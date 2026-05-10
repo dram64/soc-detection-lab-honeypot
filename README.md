@@ -150,7 +150,6 @@ soc-detection-lab-honeypot/
 └── .github/workflows/                  # 6 workflows (above)
 ```
 
-The top-level `wazuh/`, `elastic/`, `splunk/`, `misp/`, `suricata/`, `zeek/` directories, the `docker-compose.yml`, and the top-level `docs/` are exploration scaffolding from the project's initial homelab-SIEM scoping that was pivoted away from once the AWS-native pipeline took shape. None of those tools are currently running anywhere in the deployed system. The working system is fully contained in `dashboard/`. Cleanup of the unused scaffolding is on the cleanup backlog (see Future work).
 
 
 ## About
