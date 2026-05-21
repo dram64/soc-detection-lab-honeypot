@@ -8,7 +8,11 @@ If you have 60 seconds, read just §1 and §6.
 
 ## §1 — Current state
 
-- **Project status:** Portfolio-ready. Phases 1–8.5, 10, 11A, 11B all shipped. **Phase 11B fully complete** (5 of 5 steps; PRs #1–#5 merged; first CI-driven backend deploy closed after 5 retries; CI-driven frontend auto-deploy live). Phase 11C auto-trigger flip gated on **4 more clean `workflow_dispatch` deploys** (currently 1 of 5). Phase 9 / 10.5 still pending.
+- **🔴 SENSOR DECOMMISSIONED (2026-05-21).** The Raspberry Pi 5 honeypot was factory-reset and returned. Cowrie collection is **over** — the project is now a **completed 14-day run (May 6–21, 2026)**, not a live-collecting system. The AWS pipeline + dashboard + portfolio remain fully live and Pi-independent (dashboard headline widgets are now static final-run data). No new attacker data will arrive.
+- **Collected dataset (final):** 231,930 events · 36,440 attack sessions · 36,405 SSH login attempts · 16,180 commands · 1,322 unique attacker IPs across 84 countries · 20 distinct malware payloads. Backed up: raw events in S3 `raw/` (90-day lifecycle) **+ permanent local copies** at `C:\tmp\cowrie-archive\` and `C:\tmp\haproxy-archive\`; captured malware zip + SHA-256 manifest at `s3://dram-soc-honeypot-ingest/captured-samples/` (no lifecycle — persists); Cowrie TTY replays at `C:\tmp\cowrie-tty.tar.gz`.
+- **Dashboard reframe (PR #9, merged 48d524f):** dashboard is now a permanent record of the run — static counters, real top-20 passwords (high-frequency attack strings; ADR-005 singleton long-tail stays redacted), static full-run timeline, recent-events passwords masked as bullets, rolling-window markers removed, header states the collection timeframe. CI fix: `dashboard-frontend-deploy.yml` now excludes `apex/*` from its `--delete` sync (it would otherwise wipe the portfolio).
+- **Phase 1A (Wazuh SIEM on Pi): SHELVED.** The Pi is gone, so Wazuh-on-Pi as scoped is dead. The `homelab/` directory (Phase 1A WIP artifacts) was removed from the repo. If revived, it needs a new host (re-buy Pi, or a VM/VPS) and a re-scope. Phase 1A never got past Step 4 (3 deploy failures — see git history / the deleted `homelab/wazuh/PHASE_1A_LOG.md` recoverable via `git show 9956e98:homelab/wazuh/PHASE_1A_LOG.md`).
+- **Project status:** Portfolio-ready. Phases 1–8.5, 10, 11A, 11B all shipped. **Phase 11B fully complete** (5 of 5 steps; PRs #1–#5 merged). Phase 11C auto-trigger flip was gated on 4 more clean `workflow_dispatch` deploys — now **moot** for new collection (sensor gone), though the backend-deploy path still works for infra changes. Phase 9 / 10.5 obsolete (no live sensor to observe/tune).
 - **README:** rewritten 2026-05-07 (SHA 6fe9d28) to accurately describe the deployed AWS-native pipeline. Prior README described an unbuilt homelab stack (Wazuh/ELK/Splunk/MISP/Suricata/Zeek + nonexistent enterprise hardware); new README states only what's actually deployed.
 - **Live URLs (all verified 200 as of 2026-05-07):**
   - Portfolio / apex front door: <https://dram-soc.org> · <https://www.dram-soc.org> (Phase 8.5; static HTML deployed to `s3://...dashboard-frontend/apex/index.html`, routed via CF Function `host_router`)
@@ -16,9 +20,10 @@ If you have 60 seconds, read just §1 and §6.
   - Partner project: <https://diamond-iq.dram-soc.org>
 - **CSP state:** extended in PR #7 (e1562a3) to allow Google Fonts on `style-src` (`https://fonts.googleapis.com`) and `font-src` (`https://fonts.gstatic.com`) for the apex portfolio. Applied via workstation targeted apply (RHPolicy is AWS-API-untaggable; CI mutate-tag-gate would block); terraform code reconciled to match live state.
 - **Cost rate:** ~$2.60/mo. Last billing-alarm threshold: $10 (state OK, billing alerts must be enabled in the AWS console for `EstimatedCharges` to publish).
-- **Branch:** `main`, up to date with `origin/main`. Last commit: `6fe9d28 docs(readme): rewrite to accurately reflect actually-built AWS-native honeypot pipeline`.
-- **Working tree:** clean (post-README-rewrite). `dashboard/soc_detection_dashboard.egg-info/` is the only untracked path — gitignore queued in backlog.
-- **No `terraform apply` is in flight.** Last CI apply: Step 4 backend deploy (retry #5 success) earlier this session. State on S3 backend `diamond-iq-tfstate-334856751632`.
+- **Branch:** `main`, up to date with `origin/main`. Last code commit: `48d524f feat(dashboard): finalize as completed-run view + fix apex-wiping deploy sync` (PR #9). Plus doc updates on top reflecting decommission.
+- **Working tree:** `dashboard/soc_detection_dashboard.egg-info/` is the only untracked path — gitignore still queued in backlog.
+- **Open follow-up:** the **DigitalOcean droplet** (HAProxy ingress + tunnel endpoint) is still running (~$4–5/mo) with nothing to tunnel to now the Pi is gone — tear it down to stop the cost. Not yet done.
+- **No `terraform apply` is in flight.** State on S3 backend `diamond-iq-tfstate-334856751632`.
 
 ## §2 — AWS resource inventory (us-east-1)
 
@@ -89,24 +94,22 @@ CloudWatch dashboard + viral-traffic runbook + heartbeat alarm now active. Add a
 ### Phase 11 — real-data tuning buffer
 3–5 days post-cutover. Tune password dictionary against real attacker-traffic distribution (PROJECT_PLAN v1.0).
 
-## §6.5 — Phase 11B SHIPPED — next workstream candidates
+## §6.5 — Post-decommission — next workstream candidates
 
-Phase 11B all 5 steps shipped 2026-05-07. CI/CD GitHub Actions OIDC deploy role + 6 workflow files live; first CI-driven backend deploy (`workflow_dispatch`) closed after 5 retries; frontend auto-deploy live on `dashboard/web/**` push to main. **Next gating step is Phase 11C auto-trigger flip — 4 more clean deploys to bank, currently 1 of 5.**
+The honeypot run is complete and the sensor is gone (see §1). The project is now a **finished portfolio piece**: live AWS pipeline + dashboard + portfolio presenting a completed 14-day dataset. Remaining work is cleanup + optional revival, not active collection.
 
-The following are **candidate workstreams** for the next session — none proposed yet, just queued so they're surfaced when you pick this back up. Direct one of them, or direct something else, when you next sit down.
-
-| Candidate | What it is | Trigger / gate |
+| Candidate | What it is | Status / gate |
 |---|---|---|
-| (a) Homelab-scaffolding cleanup commit | Delete top-level `wazuh/`, `elastic/`, `splunk/`, `misp/`, `suricata/`, `zeek/`, `docker-compose.yml`, top-level `docs/`. Single commit, doc-only impact. | Conditional on the SIEM-integration future-work item being conclusively resolved one way or the other (see README Future work). Not blocked on anything technical — purely a "do I want to keep these as placeholders or delete them" decision. |
-| (b) Pi-only Wazuh + Suricata + k3s + Sigma buildout | Stand up a real local SIEM on the Pi: Wazuh manager + Suricata IDS + k3s for orchestration + Sigma rules deployed and firing. Would legitimize keyword claims that the prior (now-removed) README staked, in a way that the AWS-native pipeline doesn't on its own. | Sized as a multi-week effort; only worth doing if the resume strategy specifically benefits from those keywords appearing as live infrastructure rather than as Future work bullets. Discuss before scoping. |
-| (c) ADR-011 §Amendment #3 + runbook for CF tag-bootstrap pattern | Document the CloudFront tag-bootstrap pattern that recurred in Step 4 retry #5 (cf:UpdateFunction blocked by mutate-tag-gate on untagged Function) and PR #7 (RHPolicy untaggable, requires workstation targeted apply). Add a runbook for "what to do when CI's mutate-tag-gate blocks a CF resource update." | Pure documentation work; ~1 hour. Worth doing before the next CF resource change so the next maintainer (you, in 6 weeks) doesn't re-derive the workaround from scratch. |
+| (a) Decommission the DigitalOcean droplet | The HAProxy ingress + reverse-tunnel endpoint has nothing to tunnel to now the Pi is gone. Tear down the droplet to stop the ~$4–5/mo spend. Also remove/disable its `soc-fluent-bit` shipping + any DNS pointing at it. | **Recommended next.** Not done yet. Check terraform/edge-shippers state for anything that references the droplet before destroying. |
+| (b) ADR-011 §Amendment #3 + runbook for CF tag-bootstrap pattern | Document the CloudFront tag-bootstrap pattern from Step 4 retry #5 (cf:UpdateFunction blocked by mutate-tag-gate on untagged Function) and PR #7 (RHPolicy untaggable → workstation targeted apply). Runbook: "what to do when CI's mutate-tag-gate blocks a CF resource update." | Pure docs; ~1 hour. Still valid. |
+| (c) SIEM workstream revival (was Phase 1A) | Wazuh + Suricata + Sigma was scoped on the Pi (now returned). `homelab/` artifacts were deleted from the repo; recover via `git show 9956e98:homelab/wazuh/...`. Needs a **new host** (re-buy Pi, or a VM/VPS) and a re-scope. Phase 1A never got past `docker compose up` (3 distinct deploy failures documented in the old log). | Dead as-scoped. Only revive if the resume strategy specifically needs live SIEM keywords. Discuss before scoping. |
 
 Also queued (smaller, can be batched):
-- **GHA Node 20 deprecation update** (June 2026 cutoff — workflow actions need bumping).
 - **`gitignore`** for `dashboard/soc_detection_dashboard.egg-info/`.
+- **GHA Node 20 deprecation update** (June 2026 cutoff — workflow actions need bumping).
 - **`moto`** pyproject extras realignment.
 - **Stale README** in `modules/edge-shippers/`.
-- **4 more clean backend deploys** to unblock Phase 11C — these can be ad-hoc as deploy-worthy changes accumulate; no need to manufacture them.
+- **Backend-deploy auto-trigger flip (was Phase 11C):** now moot for collection (no sensor). The `workflow_dispatch` backend-deploy path still works for infra changes if needed.
 
 ## §6.bak — Phase 8.5 — apex landing page (DONE)
 

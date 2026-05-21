@@ -2,20 +2,33 @@
 
 **Live dashboard:** https://dashboard.dram-soc.org · **Portfolio:** https://dram-soc.org · **Partner project:** [Diamond IQ](https://diamond-iq.dram-soc.org) ([repo](https://github.com/dram64/diamond-iq))
 
-A serverless AWS-native pipeline that ingests live SSH attacker telemetry from a Cowrie honeypot at the network edge, correlates the captured sessions to their real source IPs through a reverse-tunnel architecture, enriches with GeoIP, and renders the result on a real-time React dashboard.
+A serverless AWS-native pipeline that ingested live SSH attacker telemetry from a Cowrie honeypot over a 14-day collection run (May 6–21, 2026), correlated the captured sessions to their real source IPs through a reverse-tunnel architecture, enriched with GeoIP, and renders the result on a React dashboard. **The edge sensor has since been decommissioned; the AWS pipeline and dashboard remain live**, now presenting the completed run as a permanent record.
 
 ## What this is
 
-A working production system for collecting, processing, and visualizing live SSH attacker traffic. Real attackers from the public internet probe a Cowrie honeypot and the captured attempts (commands, credentials, session metadata) flow through:
+A production system for collecting, processing, and visualizing live SSH attacker traffic. Over a 14-day run, real attackers from the public internet probed a Cowrie honeypot and the captured attempts (commands, credentials, session metadata) flowed through:
 
 - **Edge** — Raspberry Pi 5 hosting Cowrie SSH/Telnet honeypot, with a DigitalOcean droplet hosting HAProxy as the public ingress. `autossh` holds a persistent reverse SSH tunnel between them so the Pi never has a port forwarded from a residential ISP.
 - **Log shipping** — `fluent-bit` on both edge hosts ships JSON logs to S3 with filesystem-backed buffering (1 GB cap, 1-min/8-MB batches, gzip + NDJSON) and per-host IAM scoping.
 - **Correlation** — A timestamp-window join in Lambda matches each Cowrie session (which sees `127.0.0.1` because of the reverse tunnel) to the originating HAProxy connection log line, recovering the real source IP. Enriches with MaxMind GeoLite2 Country + ASN.
 - **Storage** — Single-table DynamoDB design (per ADR-003) with TTL on raw events and aggregate counters under separate prefixes.
-- **API + UI** — API Gateway HTTP API + Lambda + a React SPA on CloudFront. Dashboard auto-refreshes at https://dashboard.dram-soc.org.
+- **API + UI** — API Gateway HTTP API + Lambda + a React SPA on CloudFront at https://dashboard.dram-soc.org.
 - **Observability** — CloudWatch metric filters + alarms on the ingest Lambda's log group; SNS topic (`-edge-alarms`) for alerting from CloudWatch alarms (`-cowrie-heartbeat-missing`, `-haproxy-heartbeat-missing` — 15-min window, `treat_missing_data: breaching`).
 - **CI/CD** — GitHub Actions OIDC trust assumes a scoped IAM role (`dram-soc-github-deploy`) for `terraform apply` + Lambda code deploy. ADR-011 formalizes the human-vs-CI permission boundary so the deploy role explicitly cannot mint AWS access keys.
 
+## Collection results (14-day run · May 6–21, 2026)
+
+| Metric | Value |
+|---|---|
+| Events captured | 231,930 |
+| Attack sessions | 36,440 |
+| SSH login attempts | 36,405 |
+| Commands executed | 16,180 |
+| Unique attacker IPs | 1,322 |
+| Source countries | 84 |
+| Distinct malware payloads captured | 20 (SHA-256 manifest retained per ADR-009) |
+
+Captured live botnet activity — Mirai credential markers (`345gs5662d34`, used as both username and password), SSH-key implant persistence, crypto-mining reconnaissance, and automated Go/libssh scanners. Top source countries by volume: Netherlands, Uzbekistan, United States, Hong Kong, Germany. The dashboard at https://dashboard.dram-soc.org presents this dataset; the raw event archive persists in S3.
 
 ## Architecture
 

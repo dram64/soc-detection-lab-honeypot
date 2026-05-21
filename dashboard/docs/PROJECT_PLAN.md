@@ -5,7 +5,7 @@
 **Repo:** https://github.com/dram64/soc-detection-lab (sub-path `dashboard/`)
 **Public URL (target):** https://dashboard.dram-soc.org
 **AWS account:** 334856751632 (us-east-1)
-**Plan version:** 1.7 — 2026-05-07 (Phase 11B SHIPPED — all 5 steps complete; README rewritten; portfolio site live at apex)
+**Plan version:** 1.8 — 2026-05-21 (collection run COMPLETE — sensor decommissioned; dashboard/portfolio reframed to a permanent record; Phase 1A SIEM shelved)
 **Status:** Phases 1–4 in flight
 
 ---
@@ -937,6 +937,15 @@ Explicitly NOT building first time:
 ---
 
 ## Changelog
+
+**v1.8 (2026-05-21, collection run complete — sensor decommissioned):**
+- **Honeypot decommissioned.** The Raspberry Pi 5 was factory-reset and returned. Cowrie collection ended after a **14-day run (May 6–21, 2026)**. The project is now a completed dataset, not a live-collecting system; the AWS pipeline + dashboard + portfolio remain live and Pi-independent.
+- **Final dataset:** 231,930 events · 36,440 sessions · 36,405 SSH login attempts · 16,180 commands · 1,322 unique attacker IPs / 84 countries · 20 distinct malware payloads. Raw events archived to S3 `raw/` (90-day lifecycle) **+ permanent local copies**; captured malware zip + SHA-256 manifest at `s3://dram-soc-honeypot-ingest/captured-samples/` (no lifecycle); Cowrie TTY replays pulled locally.
+- **Dashboard reframed (PR #9, SHA 48d524f):** static final-run counters; real top-20 passwords (high-frequency attack strings — ADR-005 singleton long-tail stays redacted, masked as bullets in the recent-events feed); static full-run timeline; rolling-window `(24h)` markers removed; header states the collection timeframe; footer ADR-005 link corrected to `-honeypot` repo. **CI fix:** `dashboard-frontend-deploy.yml` `--delete` sync now excludes `apex/*` — it would otherwise treat the co-located apex portfolio prefix as an orphan and wipe `dram-soc.org`.
+- **Portfolio (`dram-soc.org`) reframed** to "14-DAY RUN" with a Collection Summary stat block; top-level README updated from present-tense "live" to completed-run framing + a Collection results table.
+- **Phase 1A (Wazuh SIEM on Pi): SHELVED.** Pi returned → Wazuh-on-Pi dead as scoped. The `homelab/` WIP artifacts were removed from the repo (recoverable via `git show 9956e98:homelab/...`). Phase 1A never cleared Step 4 (`docker compose up`) — 3 distinct deploy failures. Revival needs a new host + re-scope.
+- **Phase 9 / 10.5 / 11C: obsolete** for collection purposes (no live sensor to observe, tune, or feed). The `workflow_dispatch` backend-deploy path still works for infra changes.
+- **Open follow-up:** DigitalOcean droplet (~$4–5/mo) still running with nothing to tunnel to — teardown pending.
 
 **v1.7 (2026-05-07, Phase 11B fully shipped + README rewritten + portfolio live):**
 - §11 Phase 11B: **all 5 steps shipped.** PR #1 merged the 4 workflow files (`dashboard-ci`, `dashboard-tf-plan`, `dashboard-backend-deploy`, `dashboard-frontend-deploy`) plus 4 cleanup commits. PRs #2/#3/#4 patched 4 IAM gaps surfaced by the first real `terraform apply` from CI (`s3:GetBucketWebsite`, `iam:ListOpenIDConnectProviders`, `ssm:DescribeParameters`, plus a wildcards collapse on `s3:Get*`/`s3:Put*` resource-scoped to project-owned buckets — security boundary is the resource scope, not action enumeration). Step 4 (first CI-driven backend deploy) closed after 5 retries; the failures cleanly mapped to (a) IAM gaps, (b) AWS S3 action-namespace inconsistency, and (c) the CloudFront mutate-tag-gate refusing to update untagged Function/OAC/RHPolicy resources. Step 5 (frontend auto-deploy) merged in PR #5 after the initial workflow self-trigger broke the dashboard for ~6h24m by deploying with the wrong env var name (`VITE_API_URL` vs `VITE_API_BASE_URL`); fix removed the self-trigger and switched to runtime API endpoint resolution via `aws apigatewayv2 get-apis`. Phase 11C auto-trigger flip remains gated on 5+ clean `workflow_dispatch` deploys; **currently 1 of 5.**
