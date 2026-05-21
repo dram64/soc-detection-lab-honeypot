@@ -16,7 +16,7 @@ const GeoMapInner = lazy(() => import('./GeoMap'));
 
 function GeoMapFallback() {
   return (
-    <Card title="Attack origins (24h)">
+    <Card title="Attack origins">
       <Skeleton className="h-[420px] w-full" label="Loading attack origins map" />
     </Card>
   );

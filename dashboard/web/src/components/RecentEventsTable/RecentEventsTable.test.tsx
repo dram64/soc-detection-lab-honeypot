@@ -82,7 +82,7 @@ describe('RecentEventsTable', () => {
     expect(screen.getByText('123456')).toBeInTheDocument();
   });
 
-  it('renders the filtered marker as a readable label', () => {
+  it('masks the filtered marker as bullet characters', () => {
     mocked.mockReturnValue(
       mockQuery({
         data: {
@@ -92,7 +92,7 @@ describe('RecentEventsTable', () => {
       }),
     );
     render(<RecentEventsTable />);
-    expect(screen.getByText(/<filtered \(14 chars\)>/)).toBeInTheDocument();
+    expect(screen.getByText('•'.repeat(14))).toBeInTheDocument();
   });
 
   it('keeps showing data on isError (silent stale)', () => {

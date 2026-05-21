@@ -118,11 +118,17 @@ jobs:
       - name: Sync to S3 (--delete to remove orphans; index.html separately)
         working-directory: dashboard/web
         run: |
+          # IMPORTANT: the apex portfolio lives at s3://<bucket>/apex/* in this
+          # SAME bucket (served via the host-router CF Function). It is deployed
+          # out-of-band, NOT from dist/. Without "--exclude apex/*", the --delete
+          # below would treat the entire apex/ prefix as an orphan and wipe the
+          # portfolio at dram-soc.org. Keep this exclude.
           aws s3 sync dist/ "s3://${{ env.S3_BUCKET }}/" \
             --delete \
             --exact-timestamps \
             --cache-control "public, max-age=31536000, immutable" \
-            --exclude "index.html"
+            --exclude "index.html" \
+            --exclude "apex/*"
           aws s3 cp dist/index.html "s3://${{ env.S3_BUCKET }}/index.html" \
             --cache-control "public, max-age=60, must-revalidate" \
             --content-type "text/html"

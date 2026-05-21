@@ -51,7 +51,7 @@ describe('TopUsernamesChart', () => {
     );
     render(<TopUsernamesChart />);
     expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
-    expect(screen.getByText('Top usernames (24h)')).toBeInTheDocument();
+    expect(screen.getByText('Top usernames')).toBeInTheDocument();
   });
 
   it('renders the empty state when data is present but items is empty', () => {
