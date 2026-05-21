@@ -25,7 +25,7 @@ const COLOR_NO_DATA = '#1f2933'; // neutral bg-border tone
 const STROKE = '#0b0f14'; // page background, draws subtle borders
 
 function GeoMapContent() {
-  const { data } = useTopCountries({ limit: 20, window: '24h' });
+  const { data } = useTopCountries({ limit: 20, window: '7d' });
 
   // Build numeric-id → count lookup and the saturation scale.
   const { countByNumeric, colorScale, maxCount } = useMemo(() => {
@@ -52,7 +52,7 @@ function GeoMapContent() {
 
   if (!data) {
     return (
-      <Card title="Attack origins (24h)">
+      <Card title="Attack origins">
         <Skeleton className="h-[420px] w-full" label="Loading attack origins map" />
       </Card>
     );
@@ -68,7 +68,7 @@ function GeoMapContent() {
   );
 
   return (
-    <Card title="Attack origins (24h)" rightSlot={headerNote}>
+    <Card title="Attack origins" rightSlot={headerNote}>
       <div className="relative h-[420px] w-full">
         <ComposableMap
           projection="geoEqualEarth"

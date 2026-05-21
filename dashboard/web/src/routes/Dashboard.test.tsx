@@ -41,14 +41,16 @@ describe('Dashboard route', () => {
   it('mounts header, counter row, both top charts, timeline, and events table', () => {
     render(<Dashboard />);
     expect(screen.getByText('Honeypot Dashboard')).toBeInTheDocument();
-    expect(screen.getByText('Cowrie SSH honeypot · live capture')).toBeInTheDocument();
+    expect(
+      screen.getByText('Cowrie SSH honeypot · 14-day collection run · May 6–21, 2026'),
+    ).toBeInTheDocument();
     expect(screen.getByText('[ ONLINE ]')).toBeInTheDocument();
     // Version is sliced to 7-char short-SHA convention.
     expect(screen.getByText('test-sh')).toBeInTheDocument();
     expect(screen.getByText('Total events')).toBeInTheDocument();
-    expect(screen.getByText('Top usernames (24h)')).toBeInTheDocument();
-    expect(screen.getByText('Top passwords (24h)')).toBeInTheDocument();
-    expect(screen.getByText('Event timeline (24h)')).toBeInTheDocument();
+    expect(screen.getByText('Top usernames')).toBeInTheDocument();
+    expect(screen.getByText('Top passwords')).toBeInTheDocument();
+    expect(screen.getByText('Event timeline')).toBeInTheDocument();
     expect(screen.getAllByLabelText(/Loading event row/).length).toBeGreaterThan(0);
     expect(screen.getByTestId('geomap-placeholder')).toBeInTheDocument();
     expect(screen.getByText(/dictionary-classified attempts/)).toBeInTheDocument();

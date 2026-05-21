@@ -4,6 +4,7 @@ import {
   formatRelative,
   formatTechnique,
   formatTimelineTick,
+  maskPassword,
   parseFilteredPassword,
 } from './format';
 
@@ -105,5 +106,26 @@ describe('parseFilteredPassword', () => {
     expect(parseFilteredPassword('<filtered:len=8>')).toBe(8);
     expect(parseFilteredPassword('<filtered:len=24>')).toBe(24);
     expect(parseFilteredPassword('<filtered:len=0>')).toBe(0);
+  });
+});
+
+describe('maskPassword', () => {
+  it('renders dictionary passwords verbatim', () => {
+    expect(maskPassword('123456')).toBe('123456');
+    expect(maskPassword('password')).toBe('password');
+  });
+
+  it('masks the filtered marker as N bullet characters', () => {
+    expect(maskPassword('<filtered:len=8>')).toBe('••••••••');
+    expect(maskPassword('<filtered:len=14>')).toBe('••••••••••••••');
+  });
+
+  it('renders a zero-length filtered password as (empty)', () => {
+    expect(maskPassword('<filtered:len=0>')).toBe('(empty)');
+  });
+
+  it('returns the em-dash for nullish input', () => {
+    expect(maskPassword(null)).toBe('—');
+    expect(maskPassword(undefined)).toBe('—');
   });
 });

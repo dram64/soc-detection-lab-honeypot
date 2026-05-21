@@ -47,7 +47,7 @@ export function Dashboard() {
             Honeypot Dashboard
           </h1>
           <p className="mt-3 font-mono text-sm uppercase tracking-widest text-fg-muted">
-            Cowrie SSH honeypot · live capture
+            Cowrie SSH honeypot · 14-day collection run · May 6–21, 2026
           </p>
         </div>
         <StatusPill />
@@ -77,7 +77,7 @@ export function Dashboard() {
           Passwords shown are dictionary-classified attempts from the bundled attack-dictionary
           list; non-dictionary attempts are length-redacted (
           <a
-            href="https://github.com/dram64/soc-detection-lab/blob/main/dashboard/docs/adr/005-password-filtering.md"
+            href="https://github.com/dram64/soc-detection-lab-honeypot/blob/main/dashboard/docs/adr/005-password-filtering.md"
             target="_blank"
             rel="noreferrer"
             className="underline decoration-fg-subtle/50 hover:text-fg-muted hover:decoration-accent"

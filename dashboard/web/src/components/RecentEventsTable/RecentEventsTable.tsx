@@ -32,7 +32,7 @@ function PasswordCell({ value }: { value: string | null }) {
   if (filteredLen !== null) {
     return (
       <span className="font-mono text-fg-muted" title="Non-dictionary attempt; raw value redacted (ADR-005)">
-        &lt;filtered ({filteredLen} chars)&gt;
+        {filteredLen === 0 ? '(empty)' : '•'.repeat(filteredLen)}
       </span>
     );
   }

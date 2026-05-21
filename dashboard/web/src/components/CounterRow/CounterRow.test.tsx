@@ -1,69 +1,23 @@
 import { render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
-vi.mock('../../api/queries', () => ({
-  useSummary: vi.fn(),
-}));
-
-import { useSummary } from '../../api/queries';
-import type { SummaryResponse } from '../../api/types';
-import { mockQuery } from '../../test-utils';
+import { describe, expect, it } from 'vitest';
 import { CounterRow } from './CounterRow';
 
-const mockedUseSummary = vi.mocked(useSummary);
-
 describe('CounterRow', () => {
-  beforeEach(() => {
-    mockedUseSummary.mockReset();
-  });
-
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('renders skeletons while data is undefined', () => {
-    mockedUseSummary.mockReturnValue(mockQuery<SummaryResponse>({ data: undefined }));
+  it('renders the four final run-total counters', () => {
     render(<CounterRow />);
-    const placeholders = screen.getAllByRole('status', { name: 'Loading' });
-    expect(placeholders).toHaveLength(4);
     expect(screen.getByText('Total events')).toBeInTheDocument();
+    expect(screen.getByText('Attack sessions')).toBeInTheDocument();
+    expect(screen.getByText('Login attempts')).toBeInTheDocument();
+    expect(screen.getByText('Unique attacker IPs')).toBeInTheDocument();
   });
 
-  it('renders all four counters when data is present', () => {
-    mockedUseSummary.mockReturnValue(
-      mockQuery({
-        data: {
-          total: 12345,
-          last_24h: 678,
-          last_1h: 9,
-          unique_ips_24h: 42,
-          sensor_last_seen: null,
-        },
-      }),
-    );
+  it('renders the compact-formatted run totals', () => {
     render(<CounterRow />);
-    expect(screen.getByText('12.3k')).toBeInTheDocument();
-    expect(screen.getByText('678')).toBeInTheDocument();
-    expect(screen.getByText('9')).toBeInTheDocument();
-    expect(screen.getByText('42')).toBeInTheDocument();
-  });
-
-  it('keeps showing previous data on background refetch error (silent stale)', () => {
-    mockedUseSummary.mockReturnValue(
-      mockQuery({
-        data: {
-          total: 100,
-          last_24h: 50,
-          last_1h: 5,
-          unique_ips_24h: 10,
-          sensor_last_seen: null,
-        },
-        isError: true,
-      }),
-    );
-    render(<CounterRow />);
-    expect(screen.getByText('100')).toBeInTheDocument();
-    expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/failed/i)).not.toBeInTheDocument();
+    // 231,930 → "231.9k"
+    expect(screen.getByText('231.9k')).toBeInTheDocument();
+    // 1,322 → "1.3k"
+    expect(screen.getByText('1.3k')).toBeInTheDocument();
+    // 36,440 (sessions) and 36,405 (login attempts) both compact to "36.4k"
+    expect(screen.getAllByText('36.4k')).toHaveLength(2);
   });
 });

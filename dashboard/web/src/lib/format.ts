@@ -90,3 +90,19 @@ export function parseFilteredPassword(value: string | null | undefined): number 
   if (!m || !m[1]) return null;
   return Number.parseInt(m[1], 10);
 }
+
+/**
+ * Renders an attempted password for display. Dictionary-classified passwords
+ * pass through verbatim. The `<filtered:len=N>` marker (ADR-005 — non-dictionary
+ * attempt, raw value never retained) is masked as N bullet characters so it
+ * reads as an authentic redacted credential rather than a literal "filtered"
+ * string. A zero-length password renders as `(empty)`.
+ */
+export function maskPassword(value: string | null | undefined): string {
+  if (value == null) return '—';
+  const len = parseFilteredPassword(value);
+  if (len !== null) {
+    return len === 0 ? '(empty)' : '•'.repeat(len);
+  }
+  return value;
+}

@@ -1,29 +1,32 @@
-import { useSummary } from '../../api/queries';
 import { Counter } from '../ui/Counter';
 
 /**
- * Top row of four big stat counters. The component fetches its own data
- * via `useSummary()` and renders skeletons until the first response arrives.
+ * Top row of four stat counters.
  *
- * Silent stale data pattern (see dashboard/web/README.md): we never look
- * at `query.isError`. If `data` is undefined we render skeletons; otherwise
- * we render the data. Background refetch errors leave the previous data
- * on screen.
+ * The Cowrie sensor completed its collection run (May 6–21, 2026) and was
+ * decommissioned, so these show the FINAL run totals rather than rolling
+ * time windows (which would empty out once the sensor stopped reporting).
+ * Figures are the authoritative totals aggregated from the raw S3 event
+ * archive — the same numbers surfaced on the portfolio Collection Summary.
  */
-export function CounterRow() {
-  const { data } = useSummary();
-  const loading = data === undefined;
+const RUN_TOTALS = {
+  events: 231930,
+  sessions: 36440,
+  loginAttempts: 36405,
+  uniqueIps: 1322,
+} as const;
 
+export function CounterRow() {
   return (
     <div
       role="region"
-      aria-label="Honeypot summary counters"
+      aria-label="Honeypot run totals"
       className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
     >
-      <Counter label="Total events" value={data?.total} loading={loading} />
-      <Counter label="Last 24h" value={data?.last_24h} loading={loading} />
-      <Counter label="Last 1h" value={data?.last_1h} loading={loading} />
-      <Counter label="Unique IPs (24h)" value={data?.unique_ips_24h} loading={loading} />
+      <Counter label="Total events" value={RUN_TOTALS.events} />
+      <Counter label="Attack sessions" value={RUN_TOTALS.sessions} />
+      <Counter label="Login attempts" value={RUN_TOTALS.loginAttempts} />
+      <Counter label="Unique attacker IPs" value={RUN_TOTALS.uniqueIps} />
     </div>
   );
 }
