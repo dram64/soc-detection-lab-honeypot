@@ -51,7 +51,7 @@ describe('Dashboard route', () => {
     expect(screen.getByText('Top usernames')).toBeInTheDocument();
     expect(screen.getByText('Top passwords')).toBeInTheDocument();
     expect(screen.getByText('Event timeline')).toBeInTheDocument();
-    expect(screen.getAllByLabelText(/Loading event row/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Recent events/)).toBeInTheDocument();
     expect(screen.getByTestId('geomap-placeholder')).toBeInTheDocument();
     expect(screen.getByText(/dictionary-classified attempts/)).toBeInTheDocument();
   });

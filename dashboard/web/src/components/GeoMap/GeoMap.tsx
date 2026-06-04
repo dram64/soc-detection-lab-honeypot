@@ -7,11 +7,10 @@ import {
   Geography,
 } from 'react-simple-maps';
 import countriesTopo from 'world-atlas/countries-110m.json';
-import { useTopCountries } from '../../api/queries';
+import type { TopListResponse } from '../../api/types';
 import { alpha2ToName, alpha2ToNumeric, NUMERIC_TO_ALPHA2 } from '../../lib/country-codes';
 import { formatEventCount } from '../../lib/format';
 import { Card } from '../ui/Card';
-import { Skeleton } from '../ui/Skeleton';
 
 interface GeographyFeature {
   rsmKey: string;
@@ -24,8 +23,42 @@ const COLOR_HIGH = '#5eead4'; // teal at high saturation
 const COLOR_NO_DATA = '#1f2933'; // neutral bg-border tone
 const STROKE = '#0b0f14'; // page background, draws subtle borders
 
+/**
+ * Top attacker source countries from the completed 14-day collection run
+ * (May 6-21, 2026), aggregated from the raw S3 HAProxy archive and GeoIP-
+ * resolved to alpha-2 codes. Static for the same reason TopPasswordsChart +
+ * TopUsernamesChart are: the live API window emptied post-decommission.
+ *
+ * The full run touched 84 distinct source countries; this is the top 20 by
+ * connection count.
+ */
+const RUN_COUNTRIES: TopListResponse = {
+  items: [
+    { value: 'NL', count: 12539 },
+    { value: 'UZ', count: 6274 },
+    { value: 'US', count: 2519 },
+    { value: 'MU', count: 2457 },
+    { value: 'HK', count: 1333 },
+    { value: 'DE', count: 1321 },
+    { value: 'IN', count: 1186 },
+    { value: 'SG', count: 1160 },
+    { value: 'ID', count: 895 },
+    { value: 'VN', count: 854 },
+    { value: 'PL', count: 764 },
+    { value: 'GB', count: 737 },
+    { value: 'CN', count: 665 },
+    { value: 'BR', count: 530 },
+    { value: 'KR', count: 394 },
+    { value: 'MN', count: 346 },
+    { value: 'RU', count: 240 },
+    { value: 'BE', count: 205 },
+    { value: 'FR', count: 175 },
+    { value: 'ES', count: 145 },
+  ],
+};
+
 function GeoMapContent() {
-  const { data } = useTopCountries({ limit: 20, window: '7d' });
+  const data = RUN_COUNTRIES;
 
   // Build numeric-id → count lookup and the saturation scale.
   const { countByNumeric, colorScale, maxCount } = useMemo(() => {
@@ -49,14 +82,6 @@ function GeoMapContent() {
   }, [data]);
 
   const [hover, setHover] = useState<{ name: string; count: number } | null>(null);
-
-  if (!data) {
-    return (
-      <Card title="Attack origins">
-        <Skeleton className="h-[420px] w-full" label="Loading attack origins map" />
-      </Card>
-    );
-  }
 
   // Use the resolved-country count, not data.items.length — items whose
   // alpha-2 code isn't in the mapping table are silently dropped.

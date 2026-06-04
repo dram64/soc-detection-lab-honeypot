@@ -1,10 +1,9 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useMemo, useRef } from 'react';
-import { useEvents } from '../../api/queries';
+import { useRef } from 'react';
 import type { PublicEvent } from '../../api/types';
 import { formatRelative, parseFilteredPassword } from '../../lib/format';
 import { Card } from '../ui/Card';
-import { Skeleton } from '../ui/Skeleton';
+import { RUN_EVENTS } from './RecentEventsTable.data';
 
 const ROW_HEIGHT = 36;
 const VISIBLE_ROWS = 12;
@@ -68,11 +67,14 @@ function Row({ event, top }: { event: PublicEvent; top: number }) {
   );
 }
 
+/**
+ * Final events from the completed 14-day collection run. Static data — same
+ * pattern as the counters / top-N charts / timeline. See ./RecentEventsTable.data.ts
+ * for the rows + the safe-list password filter rationale (ADR-005).
+ */
 export function RecentEventsTable() {
-  const { data } = useEvents({ limit: 50 });
+  const items: PublicEvent[] = RUN_EVENTS;
   const parentRef = useRef<HTMLDivElement>(null);
-
-  const items = useMemo(() => data?.items ?? [], [data]);
 
   const virtualizer = useVirtualizer({
     count: items.length,
@@ -80,26 +82,6 @@ export function RecentEventsTable() {
     estimateSize: () => ROW_HEIGHT,
     overscan: 6,
   });
-
-  if (!data) {
-    return (
-      <Card title="Recent events">
-        <div className="space-y-2">
-          {Array.from({ length: VISIBLE_ROWS }).map((_, i) => (
-            <Skeleton key={i} className="h-7 w-full" label={`Loading event row ${i + 1}`} />
-          ))}
-        </div>
-      </Card>
-    );
-  }
-
-  if (items.length === 0) {
-    return (
-      <Card title="Recent events">
-        <p className="py-12 text-center text-sm text-fg-muted">No events yet.</p>
-      </Card>
-    );
-  }
 
   return (
     <Card title={`Recent events (${items.length})`}>
