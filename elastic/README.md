@@ -180,5 +180,5 @@ Session counts use counts of `cowrie.session.connect` events (exactly one per se
 - **ADR-005:** raw non-dictionary passwords never reach Elasticsearch. That's enforced in
   `transform.py`, tested end to end, and checked on the live index: 451 distinct indexed password values,
   0 outside the dictionary or the `<filtered:len=N>` form.
-- **ADR-009:** no binaries in this stack or this repo; only SHA-256s, file names and paths. (Separately, project notes record a captured-payload archive in S3 under `captured-samples/`, which is under review against ADR-009. Phase 2 never read it.)
+- **ADR-009:** no binaries in this stack or this repo; only SHA-256s, file names and paths. (A zip of payload files found in S3 under `captured-samples/`, uploaded at decommission, contradicted ADR-009 and was permanently deleted on 2026-09-19; only the SHA-256 manifest remains. Phase 2 never read it.)
 - Attacker commands are indexed verbatim, which matches what the live dashboard already publishes.
