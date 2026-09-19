@@ -10,11 +10,6 @@ on:
       - '.github/workflows/detection-ci.yml'
   pull_request:
     branches: [main]
-    paths:
-      - 'elastic/**'
-      - 'sigma/**'
-      - 'dashboard/functions/shared/**'
-      - '.github/workflows/detection-ci.yml'
 
 permissions:
   contents: read
