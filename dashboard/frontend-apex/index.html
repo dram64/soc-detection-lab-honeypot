@@ -1387,7 +1387,7 @@
             <li><strong>Bidirectional timestamp-window correlation:</strong> Cowrie sees every attacker as <code>127.0.0.1</code> because of the reverse tunnel. The ingest Lambda joins each Cowrie session to the corresponding HAProxy log line on a 500ms window (empirically widened from a 200ms baseline after measuring real-traffic handshake latency &mdash; see ADR-010), recovering the real source IP. Enriched with MaxMind GeoLite2 Country + ASN.</li>
             <li><strong>Serverless AWS pipeline:</strong> fluent-bit on both edges &rarr; S3 (per-prefix scoped IAM) &rarr; 3 Python 3.13 Lambdas (ingest / aggregator / api) &rarr; single-table DynamoDB (ADR-003) &rarr; API Gateway HTTP API &rarr; CloudFront + ACM &rarr; React 18 + Vite + TS + TanStack Query SPA. Cloudflare proxied DNS as edge WAF (ADR-007). All Terraform.</li>
             <li><strong>Detection engineering:</strong> 8 Sigma rules deployed as Kibana detection rules against the replayed dataset (4,905 alerts across the 14-day run), covering MITRE ATT&amp;CK Credential Access (T1110), Persistence (T1098.004), and Command &amp; Control (T1090); 3 further rules requiring Zeek/Suricata/MISP telemetry are parked with their data-source dependency documented. Real-attacker-fixture corpus with sanitization enforced by ADR-005 (password strip, RFC 5737 doc-IP swap for the maintainer&rsquo;s home IP).</li>
-            <li><strong>Security engineering:</strong> GitHub Actions OIDC &rarr; scoped deploy role with the ADR-011 permission boundary (CI role explicitly cannot mint AWS access keys &mdash; human-managed credentials live in separate Terraform state). 262 pytest gates + ruff + tflint + tfsec + gitleaks + Sigma validation, all required before merge.</li>
+            <li><strong>Security engineering:</strong> GitHub Actions OIDC &rarr; scoped deploy role with the ADR-011 permission boundary (CI role explicitly cannot mint AWS access keys &mdash; human-managed credentials live in separate Terraform state). Required status checks on every merge: 262 backend pytest tests, the Phase 2 detection-tooling lint + test suite, gitleaks secret scanning, and Sigma rule validation + conversion; ruff, tflint and YAML/shell linting also run on every pull request, and tfsec scans Terraform changes pushed to main.</li>
             <li><strong>Observability:</strong> CloudWatch metric filters + alarms on the ingest Lambda&rsquo;s log group, SNS-backed alerting on <code>cowrie-heartbeat-missing</code> and <code>haproxy-heartbeat-missing</code> (15-min window, <code>treat_missing_data: breaching</code>). 9 ADRs documenting the design trade-offs.</li>
           </ul>          </ul>
 
@@ -1570,14 +1570,7 @@ GET *   &#9474;                             &#9474;  POST /contact
 
           <!-- Internet -->
           <text x="440" y="22" font-family="JetBrains Mono, monospace" font-size="10" fill="#6b7280" letter-spacing="1.5" text-anchor="middle">INTERNET</text>
-          <line x1="440" y1="32" x2="440" y2="62" stroke="#7fb3d5" stroke-width="1.5" marker-end="url(#lab-arrow)"/>
-
-          <!-- Palo Alto firewall -->
-          <rect x="280" y="65" width="320" height="46" fill="#f4f8fc" stroke="#7fb3d5" stroke-width="1.5" rx="4"/>
-          <text x="440" y="83" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1a1f2b" text-anchor="middle">Palo Alto PA-440</text>
-          <text x="440" y="99" font-family="JetBrains Mono, monospace" font-size="10" fill="#7fb3d5" text-anchor="middle">NGFW &middot; zone policies</text>
-
-          <line x1="440" y1="111" x2="440" y2="135" stroke="#7fb3d5" stroke-width="1.5" marker-end="url(#lab-arrow)"/>
+          <line x1="440" y1="32" x2="440" y2="132" stroke="#7fb3d5" stroke-width="1.5" marker-end="url(#lab-arrow)"/>
 
           <!-- Cisco switch -->
           <rect x="280" y="135" width="320" height="44" fill="#f4f8fc" stroke="#7fb3d5" stroke-width="1.5" rx="4"/>
@@ -1643,7 +1636,7 @@ GET *   &#9474;                             &#9474;  POST /contact
           <text x="440" y="415" font-family="JetBrains Mono, monospace" font-size="9" fill="#7fb3d5" text-anchor="middle">APC UPS &middot; NUT graceful-shutdown automation</text>
         </svg>
       </div>
-      <div class="arch-caption" style="margin-bottom:24px;">Internet &rarr; PA-440 (NGFW zone policies) &rarr; Catalyst C1000-8T (VLAN segmentation, mgmt / servers / lab) &rarr; UniFi U6+ wireless / Proxmox HA cluster (2&times; OptiPlex Micro + HPE MicroServer Gen10 Plus v2, ZFS replication, live migration, HPE iLO + Intel vPro/AMT out-of-band) / Raspberry Pi 5 k3s worker. APC UPS with NUT graceful-shutdown on the whole rack.</div>
+      <div class="arch-caption" style="margin-bottom:24px;">Internet &rarr; Catalyst C1000-8T (VLAN segmentation, mgmt / servers / lab) &rarr; UniFi U6+ wireless / Proxmox HA cluster (2&times; OptiPlex Micro + HPE MicroServer Gen10 Plus v2, ZFS replication, live migration, HPE iLO + Intel vPro/AMT out-of-band) / Raspberry Pi 5 k3s worker. APC UPS with NUT graceful-shutdown on the whole rack.</div>
 
       <h4 style="margin-top: 28px;">Hardware</h4>
       <div class="hardware-grid">
@@ -1654,10 +1647,6 @@ GET *   &#9474;                             &#9474;  POST /contact
         <div class="hw-item">
           <div class="role">L2 switching</div>
           <div class="name">Cisco Catalyst C1000-8T (VLAN-segmented)</div>
-        </div>
-        <div class="hw-item">
-          <div class="role">Firewall</div>
-          <div class="name">Palo Alto PA-440 NGFW</div>
         </div>
         <div class="hw-item">
           <div class="role">Wireless</div>
@@ -1686,8 +1675,8 @@ GET *   &#9474;                             &#9474;  POST /contact
         <li><strong>Windows Server Active Directory domain</strong> &mdash; users, groups, OUs, GPO, DNS, DHCP; hybrid-joined to Entra ID with Intune device policies applied.</li>
         <li><strong>Multi-node k3s across Proxmox VMs + the Pi 5</strong> &mdash; GitOps deploys via Argo CD; self-hosted services (DNS filtering, internal Git, password manager) monitored with Prometheus/Grafana.</li>
         <li><strong>Three-node Proxmox HA cluster</strong> &mdash; ZFS replication, live migration between nodes, out-of-band management over HPE iLO (MicroServer) and Intel vPro / AMT (OptiPlex Micros).</li>
-        <li><strong>Segmented network</strong> &mdash; VLANs and trunking on the Catalyst C1000-8T, inter-zone security policies on the PA-440, UniFi U6+ for managed wireless.</li>
-        <li><strong>Detection stack:</strong> Wazuh SIEM with agents across the Windows domain and Linux VMs (Sysmon telemetry, detections tested with Atomic Red Team). Suricata IDS on a SPAN port off the Catalyst monitoring the lab VLAN. Elastic Stack ingesting the archived honeypot dataset via a Python ingest loader (local replay, not Filebeat/Logstash), with 8 Sigma-derived detection rules deployed in Kibana and 3 parked for lack of a Zeek/Suricata/MISP source.</li>
+        <li><strong>Segmented network</strong> &mdash; VLANs and trunking on the Catalyst C1000-8T, UniFi U6+ for managed wireless.</li>
+        <li><strong>Detection stack:</strong> Wazuh SIEM with agents across the Windows domain and Linux VMs (Sysmon telemetry). Elastic Stack ingesting the archived honeypot dataset via a Python ingest loader (local replay, not Filebeat/Logstash), with 8 Sigma-derived detection rules deployed in Kibana and 3 parked for lack of a Zeek/Suricata/MISP source.</li>
         <li><strong>Operations routine:</strong> Ansible-driven patching, scheduled backups, UPS-backed graceful shutdown via NUT, monitoring and log review.</li>
       </ul>
     </div>
@@ -1726,11 +1715,10 @@ GET *   &#9474;                             &#9474;  POST /contact
         </div>
       </div>
       <div class="skill-cat">
-        <h3>Security <span class="count">10</span></h3>
+        <h3>Security <span class="count">9</span></h3>
         <div class="skill-list">
           <span class="skill-tag">Wazuh SIEM</span>
           <span class="skill-tag">Elastic Stack (ELK)</span>
-          <span class="skill-tag">Suricata IDS/IPS</span>
           <span class="skill-tag">Sigma rules / MITRE ATT&amp;CK</span>
           <span class="skill-tag">Honeypot &amp; attacker telemetry analysis</span>
           <span class="skill-tag">Log analysis</span>
