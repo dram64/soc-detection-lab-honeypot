@@ -37,13 +37,6 @@ Thumbs.db
 # Honeypot raw captures (can be large; archive separately)
 honeypot-captures/
 
-# Local Wazuh state
-wazuh/queue/
-wazuh/stats/
-
-# Splunk runtime data
-splunk/var/
-
 # Pcap files
 *.pcap
 *.pcapng

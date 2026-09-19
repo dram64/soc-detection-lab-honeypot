@@ -4,6 +4,8 @@
 
 A serverless AWS-native pipeline that ingested live SSH attacker telemetry from a Cowrie honeypot over a 14-day collection run (May 6–21, 2026), correlated the captured sessions to their real source IPs through a reverse-tunnel architecture, enriched with GeoIP, and renders the result on a React dashboard. **The edge sensor has since been decommissioned; the AWS pipeline and dashboard remain live**, now presenting the completed run as a permanent record.
 
+**Phase 2 (September 2026): offline detection & analysis.** After the run ended, the archived dataset was replayed into a local Elasticsearch + Kibana stack. The repo's Sigma rules were deployed as Kibana detection rules against it, and the resulting alerts were triaged into analyst write-ups. This was an after-the-fact analysis of the archived data; **no SIEM was running during collection.** See [Phase 2](#phase-2--offline-detection--analysis-of-the-archived-run).
+
 ## What this is
 
 A production system for collecting, processing, and visualizing live SSH attacker traffic. Over a 14-day run, real attackers from the public internet probed a Cowrie honeypot and the captured attempts (commands, credentials, session metadata) flowed through:
@@ -25,10 +27,40 @@ A production system for collecting, processing, and visualizing live SSH attacke
 | SSH login attempts | 36,405 |
 | Commands executed | 16,180 |
 | Unique attacker IPs | 1,322 |
-| Source countries | 84 |
+| Source countries | 83 † |
 | Distinct malware payloads captured | 20 (SHA-256 manifest retained per ADR-009) |
 
-Captured live botnet activity — Mirai credential markers (`345gs5662d34`, used as both username and password), SSH-key implant persistence, crypto-mining reconnaissance, and automated Go/libssh scanners. Top source countries by volume: Netherlands, Uzbekistan, United States, Hong Kong, Germany. The dashboard at https://dashboard.dram-soc.org presents this dataset; the raw event archive persists in S3.
+† Previously reported as 84. The ip-api.com lookup output for all 1,322 ingress IPs lists 85 country labels, including two duplicate pairs ("Netherlands" / "The Netherlands", "Turkey" / "Türkiye"), which makes 83 distinct countries. The Phase 2 replay, using MaxMind GeoLite2 on the 1,287 IPs that can be tied to Cowrie sessions, finds 80. Details in [elastic/README.md](elastic/README.md#source-ip-attribution).
+
+Captured live botnet activity: a botnet credential marker (`345gs5662d34`), SSH-key implant persistence, a RedTail cryptominer kit plus miner reconnaissance, and automated Go/libssh scanners. (Earlier versions of this README called `345gs5662d34` a "Mirai" marker. The Phase 2 analysis found no support for that in this SSH-only dataset: it is a step of the SSH-key implant campaign. See [INV-01](docs/investigations/01-botnet-credential-marker.md).) Top source countries by volume: Netherlands, Uzbekistan, United States, Hong Kong, Germany. The dashboard at https://dashboard.dram-soc.org presents this dataset. The raw events were shipped to S3 under a lifecycle rule that expires `raw/` objects after 90 days (`modules/ingest/main.tf`), so the S3 copy of this run has aged out by design. A complete local copy of the archive (231,930 events) is what Phase 2 replayed. The captured-payload SHA-256 manifest lives under a separate prefix with no lifecycle.
+
+## Phase 2 — offline detection & analysis of the archived run
+
+Built in September 2026, after decommissioning. It runs locally only (Docker, every port bound to `127.0.0.1`), costs nothing, and exposes nothing. The honeypot run itself is unchanged: 14 days, May 6–21, 2026.
+
+| Step | What was done | Where |
+|---|---|---|
+| Stack | Single-node Elasticsearch + Kibana 9.5.4 (security on, loopback-only) via docker-compose | [elastic/](elastic/) |
+| Ingest | All 231,930 archived events replayed into ES with an ECS-aligned mapping. Source IPs rebuilt offline with the same HAProxy timestamp-window join as the ingest Lambda (34,956 / 36,440 sessions attributed, 95.9%). ADR-005 password filtering and the ADR-009 no-binaries policy are enforced before indexing. | [elastic/soc_elastic/](elastic/soc_elastic/) |
+| Rules | 8 Sigma rules (2 original + 6 new, written against observed events) converted with pySigma to ES\|QL, Sigma correlations included, and loaded into the Kibana detection engine with ATT&CK (v19.2) mappings | [sigma/](sigma/), [elastic/detection-rules/](elastic/detection-rules/) |
+| Replay | Each rule executed once over the archived window: **4,905 alerts, and every rule's alert count matches its query run directly against the index** | [elastic/evidence/](elastic/evidence/) |
+| Analysis | 4 investigation write-ups: evidence, ATT&CK, severity call, Tier-1 next steps | [docs/investigations/](docs/investigations/) |
+| Dashboards | Attacker origin (geo + ASN), credentials & commands, payload hashes, alert timeline; exported as Kibana NDJSON | [elastic/kibana/saved_objects/](elastic/kibana/saved_objects/) |
+
+| Rule | ATT&CK | Alerts |
+|---|---|---|
+| SSH authorized_keys implant | T1098.004, T1222.002 | 1,577 |
+| Botnet credential marker `345gs5662d34` | T1110.001 | 1,523 |
+| SSH brute force (correlation) | T1110.001 | 1,054 |
+| High-rate automated SSH scanner (correlation) | T1595 | 219 |
+| Crypto-miner payload upload (RedTail) | T1105, T1496.001 | 188 |
+| Credential stuffing (correlation) | T1110.004 | 168 |
+| SSH port-forward (direct-tcpip) request | T1090 | 130 |
+| Crypto-mining host recon | T1057, T1082 | 46 |
+
+Three earlier Sigma rules need Suricata, MISP or Zeek data that this lab never had. They're kept, clearly marked, in [sigma/rules/not-deployed/](sigma/rules/not-deployed/) and weren't deployed.
+
+![Phase 2 alert timeline](elastic/evidence/screenshots/dash-alerts.png)
 
 ## Architecture
 
@@ -114,7 +146,8 @@ End-to-end correlation has been verified against real attacker traffic:
 | GeoIP enrichment | MaxMind GeoLite2 Country + ASN (Lambda layer) |
 | IaC | Terraform (modular, separate state for human-managed credentials per ADR-011) |
 | Frontend | React 18 + Vite + TypeScript + TanStack Query + Tailwind + Recharts (per ADR-004) |
-| CI/CD | GitHub Actions: pytest (262 tests), ruff lint+format, terraform validate matrix, tflint, terraform-plan-on-PR, OIDC apply on workflow_dispatch |
+| CI/CD | GitHub Actions: pytest (262 dashboard tests + 66 Phase 2 tests), ruff lint+format, terraform validate matrix, tflint, terraform-plan-on-PR, OIDC apply on workflow_dispatch, gitleaks, tfsec, Sigma validate + convert |
+| Detection & analysis (Phase 2, local, offline replay of the archived run) | Elasticsearch + Kibana 9.5.4 (docker-compose, loopback-only); Python replay loader (offline HAProxy↔Cowrie IP attribution, ECS mapping, ADR-005/009 enforced); 8 Sigma rules → ES\|QL detection rules via pySigma with ATT&CK mappings; 4 Kibana dashboards |
 
 ## Architecture decision records
 
@@ -134,14 +167,15 @@ Nine ADRs documenting the trade-offs that shaped the design:
 
 ## CI / CD
 
-Six workflows in [.github/workflows/](.github/workflows/):
+Seven workflows in [.github/workflows/](.github/workflows/):
 
 - **`dashboard-ci.yml`** — pytest (262 backend tests), ruff lint + format-check, terraform validate (matrix on `environments/dev` + `stacks/edge-shippers-credentials`), tflint. Runs on every PR + push to main under `dashboard/**`.
 - **`dashboard-tf-plan.yml`** — On PRs touching `dashboard/infrastructure/**`: OIDC-assumes the deploy role, runs `terraform plan`, posts the output as a PR comment.
 - **`dashboard-backend-deploy.yml`** — `workflow_dispatch` only (the auto-trigger flip lands after 5+ clean manual deploys per the Phase 11B-1 design). Builds Lambda zips + GeoIP layer, runs `terraform apply`.
 - **`dashboard-frontend-deploy.yml`** — Auto-fires on `dashboard/web/**` changes pushed to main. Vite build, S3 sync (with `--delete`), CloudFront invalidation. The API endpoint is resolved at deploy time via `aws apigatewayv2 get-apis --query "Items[?Name=='dram-soc-api'].ApiEndpoint"` rather than hardcoded — survives API-recreation events.
 - **`security-scan.yml`** — gitleaks (secret scanning) + tfsec (IaC) + yamllint + shellcheck. Runs on every PR + push to main, no path filter.
-- **`sigma-validate.yml`** — Sigma rule syntax validation. 5 rules at `sigma/rules/` are validated; see "Sigma rules" note in Repository layout.
+- **`sigma-validate.yml`**: `sigma check` on all 11 Sigma rules (8 deployable + 3 not deployed), then converts the 8 deployable rules to ES|QL through the Cowrie→ECS pipeline (pinned sigma-cli/pySigma versions).
+- **`detection-ci.yml`**: Phase 2 tooling (`elastic/soc_elastic`): ruff lint + format check, and pytest (66 tests) with a 90% coverage gate.
 
 ## Repository layout
 
@@ -158,10 +192,15 @@ soc-detection-lab-honeypot/
 │   ├── tools/                          #   Synthetic data generator (used by tests)
 │   ├── edge/                           #   fluent-bit configs + HAProxy snippet for Pi/droplet
 │   └── docs/                           #   9 ADRs + 11 phase logs + runbooks + PROJECT_PLAN.md
-├── sigma/                              # 5 Sigma rules (syntax-validated by CI; not yet
-│                                       # deployed against a live SIEM — see Future work)
-└── .github/workflows/                  # 6 workflows (above)
+├── elastic/                            # Phase 2: local ES + Kibana stack, replay loader,
+│                                       #   rule deployer, dashboards, evidence (offline)
+├── sigma/                              # 8 deployed Cowrie rules + Cowrie→ECS pipeline;
+│                                       #   3 not-deployed network rules (no data source)
+├── docs/investigations/                # Phase 2 analyst write-ups (INV-01 … INV-04)
+└── .github/workflows/                  # 7 workflows (above)
 ```
+
+An earlier, broader SOC design (Wazuh, Splunk, MISP, Suricata, Zeek on dedicated lab hardware) was scoped but never built. Its placeholder configs were removed from this repo and remain in git history. This repo is the Cowrie honeypot, the AWS pipeline, and the Phase 2 offline detection work described above.
 
 
 
