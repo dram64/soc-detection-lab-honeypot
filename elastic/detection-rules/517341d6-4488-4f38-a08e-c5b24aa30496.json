@@ -1,0 +1,55 @@
+{
+  "rule_id": "517341d6-4488-4f38-a08e-c5b24aa30496",
+  "name": "[Sigma] High-Rate Automated SSH Scanner From Single Source",
+  "description": "One source IP opened 20 or more SSH sessions with a library/scanner client\nbanner inside a 1-hour bucket, which points to an automated scanner or\nbrute-force bot rather than a human.",
+  "type": "esql",
+  "language": "esql",
+  "query": "from cowrie-* metadata _id, _index, _version | where event.action==\"cowrie.client.version\" and (cowrie.client.version like \"*SSH-2.0-Go*\" or cowrie.client.version like \"*libssh*\" or cowrie.client.version like \"*ZGrab*\" or cowrie.client.version like \"*Nmap*\" or cowrie.client.version like \"*AsyncSSH*\") and not source.ip is null\n| eval timebucket=date_trunc(1hours, @timestamp) | stats event_count=count() by timebucket, source.ip\n| where event_count >= 20",
+  "severity": "low",
+  "risk_score": 21,
+  "from": "now-139d",
+  "to": "now",
+  "interval": "24h",
+  "enabled": false,
+  "max_signals": 2000,
+  "threat": [
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {
+        "id": "TA0043",
+        "name": "Reconnaissance",
+        "reference": "https://attack.mitre.org/tactics/TA0043/"
+      },
+      "technique": [
+        {
+          "id": "T1595",
+          "name": "Active Scanning",
+          "reference": "https://attack.mitre.org/techniques/T1595/",
+          "subtechnique": []
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "Sigma",
+    "Cowrie",
+    "Phase 2 replay",
+    "sigma-status:experimental",
+    "T1595"
+  ],
+  "references": [
+    "https://attack.mitre.org/techniques/T1595/"
+  ],
+  "false_positives": [
+    "Internal automation running at high frequency (not applicable on a honeypot)"
+  ],
+  "author": [
+    "dram64"
+  ],
+  "license": "MIT",
+  "meta": {
+    "source": "sigma",
+    "sigma_status": "experimental",
+    "attack_version": "19.2"
+  }
+}

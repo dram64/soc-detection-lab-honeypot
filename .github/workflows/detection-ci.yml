@@ -1,0 +1,45 @@
+name: Detection CI (Phase 2 replay tooling)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'elastic/**'
+      - 'sigma/**'
+      - 'dashboard/functions/shared/**'
+      - '.github/workflows/detection-ci.yml'
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: soc_elastic lint + pytest
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: elastic
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install (dashboard shared code + soc_elastic)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ../dashboard -e ".[dev]"
+
+      - name: Ruff lint
+        run: ruff check soc_elastic tests
+
+      - name: Ruff format check
+        run: ruff format --check soc_elastic tests
+
+      - name: Pytest with coverage gate (fail_under = 90)
+        run: python -m pytest --cov --cov-report=term-missing

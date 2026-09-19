@@ -50,8 +50,10 @@ jobs:
         run: |
           yamllint -d "{extends: relaxed, rules: {line-length: {max: 200}}}" \
             sigma/rules/*.yml \
-            docker-compose.yml \
-            elastic/*.yml \
+            sigma/rules/not-deployed/*.yml \
+            sigma/pipelines/*.yml \
+            elastic/docker-compose.yml \
+            elastic/kibana/kibana.yml \
             .github/workflows/*.yml
 
   shellcheck:
@@ -64,4 +66,4 @@ jobs:
       - name: Run shellcheck
         run: |
           sudo apt-get update && sudo apt-get install -y shellcheck
-          find scripts/ -name "*.sh" -exec shellcheck {} +
+          if [ -d scripts ]; then find scripts/ -name "*.sh" -exec shellcheck {} +; else echo "no scripts/ dir"; fi

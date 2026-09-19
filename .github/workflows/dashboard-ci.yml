@@ -5,13 +5,10 @@ name: dashboard-ci
 # pip-based Python (no uv.lock), and SOC's two-stack terraform layout.
 
 on:
+  # No paths filter on pull_request: `pytest` is a required status check on
+  # main, and a required check that never runs leaves a PR pending forever.
   pull_request:
     branches: [main]
-    paths:
-      - 'dashboard/**'
-      - '.github/workflows/dashboard-ci.yml'
-      - '.github/workflows/dashboard-backend-deploy.yml'
-      - '.github/workflows/dashboard-tf-plan.yml'
   push:
     branches: [main]
     paths:
@@ -84,8 +81,9 @@ jobs:
       fail-fast: false
       matrix:
         dir:
+          # stacks/edge-shippers-credentials was destroyed and removed on
+          # 2026-09-19 (both edge hosts decommissioned); nothing to validate.
           - dashboard/infrastructure/terraform/environments/dev
-          - dashboard/infrastructure/terraform/stacks/edge-shippers-credentials
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2

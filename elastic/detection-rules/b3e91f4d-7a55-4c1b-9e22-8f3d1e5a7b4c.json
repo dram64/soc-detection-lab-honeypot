@@ -1,0 +1,63 @@
+{
+  "rule_id": "b3e91f4d-7a55-4c1b-9e22-8f3d1e5a7b4c",
+  "name": "[Sigma] Credential Stuffing \u2014 Multiple Usernames from Single Source",
+  "description": "Detects credential stuffing attacks where a single source IP attempts logins\nwith many different usernames in a short time window. Distinguishes from\nbrute force (single user, many passwords) by tracking username diversity.\nCommon pattern from botnet-driven credential reuse attacks.",
+  "type": "esql",
+  "language": "esql",
+  "query": "from cowrie-* metadata _id, _index, _version | where event.action==\"cowrie.login.failed\" and not source.ip is null\n| eval timebucket=date_trunc(10minutes, @timestamp) | stats value_count=count_distinct(user.name) by timebucket, source.ip\n| where value_count >= 10",
+  "severity": "high",
+  "risk_score": 73,
+  "from": "now-139d",
+  "to": "now",
+  "interval": "24h",
+  "enabled": false,
+  "max_signals": 2000,
+  "threat": [
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {
+        "id": "TA0006",
+        "name": "Credential Access",
+        "reference": "https://attack.mitre.org/tactics/TA0006/"
+      },
+      "technique": [
+        {
+          "id": "T1110",
+          "name": "Brute Force",
+          "reference": "https://attack.mitre.org/techniques/T1110/",
+          "subtechnique": [
+            {
+              "id": "T1110.004",
+              "name": "Credential Stuffing",
+              "reference": "https://attack.mitre.org/techniques/T1110/004/"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "Sigma",
+    "Cowrie",
+    "Phase 2 replay",
+    "sigma-status:test",
+    "T1110.004"
+  ],
+  "references": [
+    "https://attack.mitre.org/techniques/T1110/004/",
+    "https://owasp.org/www-community/attacks/Credential_stuffing"
+  ],
+  "false_positives": [
+    "Vulnerability scanner running through default credential lists",
+    "Internal red team exercise (should be tagged in advance)"
+  ],
+  "author": [
+    "dram64"
+  ],
+  "license": "MIT",
+  "meta": {
+    "source": "sigma",
+    "sigma_status": "test",
+    "attack_version": "19.2"
+  }
+}

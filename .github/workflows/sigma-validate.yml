@@ -5,14 +5,16 @@ on:
     branches: [main]
     paths:
       - 'sigma/**'
+      - '.github/workflows/sigma-validate.yml'
   pull_request:
     branches: [main]
-    paths:
-      - 'sigma/**'
+
+permissions:
+  contents: read
 
 jobs:
   sigma-validate:
-    name: Validate Sigma rule syntax
+    name: Validate + convert Sigma rules
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,31 +23,24 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.13'
 
-      - name: Install sigma-cli
+      - name: Install sigma-cli + Elasticsearch backend (pinned)
         run: |
           pip install --upgrade pip
-          pip install pysigma sigma-cli
+          pip install "sigma-cli==3.1.0" "pysigma==1.5.0" "pysigma-backend-elasticsearch==2.1.1"
 
-      - name: Validate all Sigma rules
+      - name: Validate all rules (deployed and not-deployed)
         run: |
           set -e
-          for rule in sigma/rules/*.yml; do
-            echo "==> Validating $rule"
-            sigma check "$rule"
+          for rule in sigma/rules/*.yml sigma/rules/not-deployed/*.yml; do
+            echo "==> sigma check $rule"
+            sigma check --fail-on-error --fail-on-issues "$rule"
           done
 
-      - name: Convert rules to Splunk format (smoke test)
+      - name: Convert deployable rules to ES|QL through the Cowrie->ECS pipeline
         run: |
-          for rule in sigma/rules/*.yml; do
-            echo "==> Converting $rule to Splunk SPL"
-            sigma convert -t splunk "$rule" || echo "  (may not have a splunk backend mapping yet)"
-          done
-
-      - name: Convert rules to ElasticSearch format (smoke test)
-        run: |
-          for rule in sigma/rules/*.yml; do
-            echo "==> Converting $rule to Elasticsearch query"
-            sigma convert -t es-qs "$rule" || echo "  (may not have an es backend mapping yet)"
-          done
+          set -e
+          # The collection is converted together so correlation rules can resolve
+          # their base rules across files.
+          sigma convert -t esql -p sigma/pipelines/cowrie_ecs.yml sigma/rules/*.yml

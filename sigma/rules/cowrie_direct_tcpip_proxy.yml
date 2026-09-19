@@ -1,0 +1,31 @@
+title: SSH Port-Forward (direct-tcpip) Request Through Honeypot
+id: 91f0e1bb-037a-4fdf-87e1-9f0a4747fa13
+status: experimental
+description: |
+  The SSH client asked the honeypot to open a TCP connection to a third party
+  (a direct-tcpip channel, i.e. 'ssh -L' / -W style forwarding). Attackers
+  use this to proxy traffic, check their apparent egress IP, or reach STUN
+  and web endpoints through the compromised host. Cowrie logs the request and
+  does not relay it.
+references:
+  - https://attack.mitre.org/techniques/T1090/
+author: dram64
+date: 2026/09/19
+tags:
+  - attack.command-and-control
+  - attack.t1090
+logsource:
+  category: network_connection
+  product: cowrie
+detection:
+  selection:
+    eventid: 'cowrie.direct-tcpip.request'
+  condition: selection
+falsepositives:
+  - Legitimate SSH port forwarding by an administrator (not applicable on a honeypot)
+level: medium
+fields:
+  - src_ip
+  - session
+  - dst_ip
+  - dst_port

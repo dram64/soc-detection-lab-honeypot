@@ -1,0 +1,148 @@
+{
+  "index_patterns": ["cowrie-*"],
+  "priority": 200,
+  "_meta": {
+    "description": "Phase 2 offline replay of the archived 14-day Cowrie run (May 6-21, 2026). See elastic/README.md.",
+    "managed_by": "soc-detection-lab/elastic/soc_elastic"
+  },
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    },
+    "mappings": {
+      "dynamic": false,
+      "properties": {
+        "@timestamp": { "type": "date" },
+        "message": { "type": "match_only_text" },
+        "tags": { "type": "keyword" },
+        "ecs": { "properties": { "version": { "type": "keyword" } } },
+        "event": {
+          "properties": {
+            "kind": { "type": "keyword" },
+            "module": { "type": "keyword" },
+            "dataset": { "type": "keyword" },
+            "action": { "type": "keyword" },
+            "category": { "type": "keyword" },
+            "type": { "type": "keyword" },
+            "outcome": { "type": "keyword" },
+            "duration": { "type": "long" }
+          }
+        },
+        "observer": {
+          "properties": {
+            "name": { "type": "keyword" },
+            "type": { "type": "keyword" },
+            "product": { "type": "keyword" },
+            "vendor": { "type": "keyword" }
+          }
+        },
+        "network": {
+          "properties": {
+            "protocol": { "type": "keyword" },
+            "transport": { "type": "keyword" }
+          }
+        },
+        "source": {
+          "properties": {
+            "ip": { "type": "ip" },
+            "port": { "type": "long" },
+            "geo": {
+              "properties": {
+                "country_iso_code": { "type": "keyword" },
+                "country_name": { "type": "keyword" }
+              }
+            },
+            "as": {
+              "properties": {
+                "number": { "type": "long" },
+                "organization": {
+                  "properties": {
+                    "name": {
+                      "type": "keyword",
+                      "fields": { "text": { "type": "match_only_text" } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "destination": {
+          "properties": {
+            "address": { "type": "keyword" },
+            "ip": { "type": "ip" },
+            "port": { "type": "long" }
+          }
+        },
+        "user": { "properties": { "name": { "type": "keyword" } } },
+        "process": {
+          "properties": {
+            "command_line": {
+              "type": "keyword",
+              "ignore_above": 8191,
+              "fields": { "text": { "type": "match_only_text" } }
+            }
+          }
+        },
+        "file": {
+          "properties": {
+            "name": { "type": "keyword" },
+            "path": { "type": "keyword" },
+            "hash": { "properties": { "sha256": { "type": "keyword" } } }
+          }
+        },
+        "related": {
+          "properties": {
+            "ip": { "type": "ip" },
+            "user": { "type": "keyword" },
+            "hash": { "type": "keyword" }
+          }
+        },
+        "cowrie": {
+          "properties": {
+            "eventid": { "type": "keyword" },
+            "session": { "type": "keyword" },
+            "src_ip": { "type": "ip" },
+            "password": { "type": "keyword" },
+            "arch": { "type": "keyword" },
+            "duration_s": { "type": "float" },
+            "outfile": { "type": "keyword" },
+            "duplicate": { "type": "boolean" },
+            "client": {
+              "properties": {
+                "version": { "type": "keyword", "ignore_above": 1024 },
+                "hassh": { "type": "keyword" }
+              }
+            },
+            "auth": {
+              "properties": {
+                "type": { "type": "keyword" },
+                "key_fingerprint": { "type": "keyword" }
+              }
+            },
+            "ttylog": {
+              "properties": {
+                "path": { "type": "keyword" },
+                "size": { "type": "long" },
+                "sha256": { "type": "keyword" }
+              }
+            },
+            "direct_tcpip": {
+              "properties": { "data": { "type": "keyword", "ignore_above": 2048 } }
+            },
+            "correlation": {
+              "properties": {
+                "status": { "type": "keyword" },
+                "candidate_count": { "type": "integer" },
+                "candidate_ips": { "type": "ip" },
+                "haproxy_ts": { "type": "date" },
+                "delta_ms": { "type": "float" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

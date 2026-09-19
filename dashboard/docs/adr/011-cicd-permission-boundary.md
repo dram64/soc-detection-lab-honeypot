@@ -28,6 +28,8 @@ Everything except the IAM users + access keys + user policies. Includes the SNS 
 
 The deploy role's IAM policy ([`modules/github-deploy/main.tf`](../../infrastructure/terraform/modules/github-deploy/main.tf)) explicitly **excludes** all `iam:*User*` and `iam:*AccessKey*` actions. It also excludes `ssm:DeleteParameter` so a compromised CI cannot wipe the license key.
 
+> **Retired 2026-09-19.** Both edge hosts are decommissioned (Pi returned 2026-05-21, droplet destroyed 2026-09-19). The two access keys were deleted, `terraform destroy` removed the 4 IAM resources, and the stack directory was removed from the repo. The permission boundary below still describes the deploy role, which is unchanged; the human-managed stack it refers to no longer exists.
+
 ### Human-managed credentials (`stacks/edge-shippers-credentials/` — terraform-applied manually from the maintainer's workstation)
 
 The 6 IAM resources moved out of `modules/edge-shippers/`:

@@ -1,0 +1,59 @@
+title: Automated SSH Client Banner
+id: f33d2c5c-1ea5-42eb-a3ed-1e761df7b35c
+status: experimental
+description: |
+  Base rule: an SSH client version banner from a programming library or a
+  scanner rather than an interactive client. On its own this is informational;
+  the correlation rule below raises it when one source repeats it at volume.
+  Unattributed sessions (no recovered source IP) are excluded so they don't
+  collapse into a single null group.
+references:
+  - https://attack.mitre.org/techniques/T1595/
+author: dram64
+date: 2026/09/19
+name: cowrie_automated_ssh_client_banner
+logsource:
+  category: network_connection
+  product: cowrie
+detection:
+  selection:
+    eventid: 'cowrie.client.version'
+    version|contains:
+      - 'SSH-2.0-Go'
+      - 'libssh'
+      - 'ZGrab'
+      - 'Nmap'
+      - 'AsyncSSH'
+  filter_unattributed:
+    src_ip: null
+  condition: selection and not filter_unattributed
+falsepositives:
+  - Legitimate automation (Ansible, backup jobs, monitoring) using these libraries
+level: informational
+---
+title: High-Rate Automated SSH Scanner From Single Source
+id: 517341d6-4488-4f38-a08e-c5b24aa30496
+status: experimental
+description: |
+  One source IP opened 20 or more SSH sessions with a library/scanner client
+  banner inside a 1-hour bucket, which points to an automated scanner or
+  brute-force bot rather than a human.
+references:
+  - https://attack.mitre.org/techniques/T1595/
+author: dram64
+date: 2026/09/19
+correlation:
+  type: event_count
+  rules:
+    - cowrie_automated_ssh_client_banner
+  group-by:
+    - src_ip
+  timespan: 1h
+  condition:
+    gte: 20
+tags:
+  - attack.reconnaissance
+  - attack.t1595
+falsepositives:
+  - Internal automation running at high frequency (not applicable on a honeypot)
+level: low

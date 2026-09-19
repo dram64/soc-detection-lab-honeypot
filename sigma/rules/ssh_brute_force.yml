@@ -1,7 +1,10 @@
 title: Cowrie Failed SSH Login
 id: e2d6f1a3-8b47-4c91-9e15-3a7c2d8f4b16
-status: stable
-description: Base detection — a single failed SSH authentication event captured by Cowrie or OpenSSH.
+status: test
+description: |
+  Base detection — a single failed SSH authentication event captured by Cowrie.
+  Unattributed sessions (source IP not recovered through the reverse tunnel)
+  are excluded so they don't collapse into one null group in the correlation.
 references:
   - https://attack.mitre.org/techniques/T1110/
 author: dram64
@@ -13,18 +16,19 @@ logsource:
 detection:
   selection:
     eventid: 'cowrie.login.failed'
-  condition: selection
+  filter_unattributed:
+    src_ip: null
+  condition: selection and not filter_unattributed
 falsepositives:
   - Legitimate user mistyping their password
 level: low
 ---
 title: SSH Brute Force Attack
 id: a8f47e1c-9b22-4d3e-8c5a-2f9d8e1b6c47
-status: stable
+status: test
 description: |
   Detects multiple failed SSH authentication attempts from a single source IP
   within a short time window, indicating brute-force or credential stuffing attempts.
-  Tuned against Cowrie honeypot logs and OpenSSH server logs.
 references:
   - https://attack.mitre.org/techniques/T1110/
   - https://attack.mitre.org/techniques/T1110/001/

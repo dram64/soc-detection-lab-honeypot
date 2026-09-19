@@ -1,0 +1,38 @@
+# pySigma processing pipeline: Cowrie-native field names -> the ECS-aligned
+# fields written by elastic/soc_elastic (see elastic/README.md "Field mapping").
+#
+# Rules in sigma/rules/ are written against Cowrie's own JSON field names
+# (eventid, src_ip, username, input, ...) so they stay readable against a raw
+# cowrie.json. This pipeline is the single place those names are translated.
+name: Cowrie to ECS (soc-detection-lab)
+priority: 20
+transformations:
+  - id: cowrie_only
+    type: rule_failure
+    message: "This pipeline only maps logsource product 'cowrie'."
+    rule_conditions:
+      - type: logsource
+        product: cowrie
+    rule_cond_not: true
+
+  - id: cowrie_index
+    type: set_state
+    key: index
+    val: cowrie-*
+
+  - id: cowrie_field_mapping
+    type: field_name_mapping
+    mapping:
+      eventid: event.action
+      src_ip: source.ip
+      username: user.name
+      input: process.command_line
+      version: cowrie.client.version
+      hassh: cowrie.client.hassh
+      shasum: file.hash.sha256
+      filename: file.name
+      destfile: file.path
+      dst_ip: destination.address
+      dst_port: destination.port
+      session: cowrie.session
+      protocol: network.protocol

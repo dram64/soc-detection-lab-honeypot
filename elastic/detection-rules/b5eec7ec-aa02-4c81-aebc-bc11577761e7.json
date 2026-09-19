@@ -1,0 +1,63 @@
+{
+  "rule_id": "b5eec7ec-aa02-4c81-aebc-bc11577761e7",
+  "name": "[Sigma] Crypto-Mining Host Reconnaissance Commands",
+  "description": "Commands that check for competing miner processes or count CPU cores,\nwhich is how cryptojacking bots size a host and look for rivals before\ndropping a miner. Written against commands observed in the archived dataset\n(e.g. \"ps -ef | grep '[Mm]iner'\", \"cat /proc/cpuinfo | grep name | wc -l\").",
+  "type": "esql",
+  "language": "esql",
+  "query": "from cowrie-* metadata _id, _index, _version | where event.action==\"cowrie.command.input\" and (process.command_line like \"*[Mm]iner*\" or process.command_line like \"*xmrig*\" or process.command_line like \"*/proc/cpuinfo*\" and process.command_line like \"*wc -l*\")",
+  "severity": "medium",
+  "risk_score": 47,
+  "from": "now-139d",
+  "to": "now",
+  "interval": "24h",
+  "enabled": false,
+  "max_signals": 2000,
+  "threat": [
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {
+        "id": "TA0007",
+        "name": "Discovery",
+        "reference": "https://attack.mitre.org/tactics/TA0007/"
+      },
+      "technique": [
+        {
+          "id": "T1057",
+          "name": "Process Discovery",
+          "reference": "https://attack.mitre.org/techniques/T1057/",
+          "subtechnique": []
+        },
+        {
+          "id": "T1082",
+          "name": "System Information Discovery",
+          "reference": "https://attack.mitre.org/techniques/T1082/",
+          "subtechnique": []
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "Sigma",
+    "Cowrie",
+    "Phase 2 replay",
+    "sigma-status:experimental",
+    "T1057",
+    "T1082"
+  ],
+  "references": [
+    "https://attack.mitre.org/techniques/T1057/",
+    "https://attack.mitre.org/techniques/T1082/"
+  ],
+  "false_positives": [
+    "Administrators checking CPU count or hunting for miners themselves"
+  ],
+  "author": [
+    "dram64"
+  ],
+  "license": "MIT",
+  "meta": {
+    "source": "sigma",
+    "sigma_status": "experimental",
+    "attack_version": "19.2"
+  }
+}

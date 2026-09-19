@@ -10,14 +10,6 @@
 ssl/
 certs/
 
-# Force-include the edge-shippers credentials terraform stack. The
-# directory is named for what it MANAGES (IAM users + user policies);
-# it holds zero secret material — per ADR-011, access keys live
-# entirely outside terraform state. The .tf files are configuration
-# the team needs to maintain in version control.
-!dashboard/infrastructure/terraform/stacks/edge-shippers-credentials/
-!dashboard/infrastructure/terraform/stacks/edge-shippers-credentials/**
-
 # Docker volumes (if mounted locally)
 logs/
 volumes/
@@ -36,13 +28,6 @@ Thumbs.db
 
 # Honeypot raw captures (can be large; archive separately)
 honeypot-captures/
-
-# Local Wazuh state
-wazuh/queue/
-wazuh/stats/
-
-# Splunk runtime data
-splunk/var/
 
 # Pcap files
 *.pcap
@@ -85,3 +70,13 @@ dashboard/_ds_*.json
 # mutex; never commit.
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+
+# Python build/test artifacts (any subproject)
+__pycache__/
+*.egg-info/
+.coverage
+.pytest_cache/
+.ruff_cache/
+
+# Phase 2 local Elastic stack: screenshot tooling scratch
+elastic/.screenshots-tmp/

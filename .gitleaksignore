@@ -1,0 +1,13 @@
+# Reviewed gitleaks false positives. Each entry is an exact finding fingerprint
+# (commit:file:rule:line). Adding an entry requires confirming the match is not
+# a real credential.
+
+# elastic/.env.example: placeholder text "replace-with-64-hex-chars", not a key.
+d882efb44c9234493f1ecc0b3c2946908480c9ab:elastic/.env.example:generic-api-key:6
+
+# elastic/docker-compose.yml: `curl -u "elastic:$${ELASTIC_PASSWORD}"`, an
+# environment-variable reference resolved from the gitignored elastic/.env at
+# runtime. No credential value is in the file.
+d882efb44c9234493f1ecc0b3c2946908480c9ab:elastic/docker-compose.yml:curl-auth-user:28
+d882efb44c9234493f1ecc0b3c2946908480c9ab:elastic/docker-compose.yml:curl-auth-user:31
+d882efb44c9234493f1ecc0b3c2946908480c9ab:elastic/docker-compose.yml:curl-auth-user:60

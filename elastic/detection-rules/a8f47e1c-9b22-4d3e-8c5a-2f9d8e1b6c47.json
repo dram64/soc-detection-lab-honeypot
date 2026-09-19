@@ -1,0 +1,65 @@
+{
+  "rule_id": "a8f47e1c-9b22-4d3e-8c5a-2f9d8e1b6c47",
+  "name": "[Sigma] SSH Brute Force Attack",
+  "description": "Detects multiple failed SSH authentication attempts from a single source IP\nwithin a short time window, indicating brute-force or credential stuffing attempts.",
+  "type": "esql",
+  "language": "esql",
+  "query": "from cowrie-* metadata _id, _index, _version | where event.action==\"cowrie.login.failed\" and not source.ip is null\n| eval timebucket=date_trunc(5minutes, @timestamp) | stats event_count=count() by timebucket, source.ip\n| where event_count >= 5",
+  "severity": "medium",
+  "risk_score": 47,
+  "from": "now-139d",
+  "to": "now",
+  "interval": "24h",
+  "enabled": false,
+  "max_signals": 2000,
+  "threat": [
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {
+        "id": "TA0006",
+        "name": "Credential Access",
+        "reference": "https://attack.mitre.org/tactics/TA0006/"
+      },
+      "technique": [
+        {
+          "id": "T1110",
+          "name": "Brute Force",
+          "reference": "https://attack.mitre.org/techniques/T1110/",
+          "subtechnique": [
+            {
+              "id": "T1110.001",
+              "name": "Password Guessing",
+              "reference": "https://attack.mitre.org/techniques/T1110/001/"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "Sigma",
+    "Cowrie",
+    "Phase 2 replay",
+    "sigma-status:test",
+    "T1110",
+    "T1110.001"
+  ],
+  "references": [
+    "https://attack.mitre.org/techniques/T1110/",
+    "https://attack.mitre.org/techniques/T1110/001/"
+  ],
+  "false_positives": [
+    "Legitimate user typo'ing their password multiple times",
+    "Automated systems with stale credentials",
+    "Misconfigured client retry logic"
+  ],
+  "author": [
+    "dram64"
+  ],
+  "license": "MIT",
+  "meta": {
+    "source": "sigma",
+    "sigma_status": "test",
+    "attack_version": "19.2"
+  }
+}

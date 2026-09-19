@@ -1,0 +1,85 @@
+{
+  "rule_id": "bc1c826e-f397-48e2-8288-fe41a92f3d70",
+  "name": "[Sigma] SSH Authorized Keys Implant via Shell Command",
+  "description": "A command that writes an SSH public key into authorized_keys, giving the\nattacker key-based re-entry that survives a password change. In this dataset\nthe pattern usually comes with 'chattr -ia .ssh' (strip immutable/append-only\nattributes) and 'rm -rf .ssh' (wipe competing keys).",
+  "type": "esql",
+  "language": "esql",
+  "query": "from cowrie-* metadata _id, _index, _version | where event.action==\"cowrie.command.input\" and process.command_line like \"*authorized_keys*\" and process.command_line like \"*ssh-rsa*\"",
+  "severity": "high",
+  "risk_score": 73,
+  "from": "now-139d",
+  "to": "now",
+  "interval": "24h",
+  "enabled": false,
+  "max_signals": 2000,
+  "threat": [
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {
+        "id": "TA0003",
+        "name": "Persistence",
+        "reference": "https://attack.mitre.org/tactics/TA0003/"
+      },
+      "technique": [
+        {
+          "id": "T1098",
+          "name": "Account Manipulation",
+          "reference": "https://attack.mitre.org/techniques/T1098/",
+          "subtechnique": [
+            {
+              "id": "T1098.004",
+              "name": "SSH Authorized Keys",
+              "reference": "https://attack.mitre.org/techniques/T1098/004/"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {
+        "id": "TA0112",
+        "name": "Defense Impairment",
+        "reference": "https://attack.mitre.org/tactics/TA0112/"
+      },
+      "technique": [
+        {
+          "id": "T1222",
+          "name": "File and Directory Permissions Modification",
+          "reference": "https://attack.mitre.org/techniques/T1222/",
+          "subtechnique": [
+            {
+              "id": "T1222.002",
+              "name": "Linux and Mac Permissions",
+              "reference": "https://attack.mitre.org/techniques/T1222/002/"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "Sigma",
+    "Cowrie",
+    "Phase 2 replay",
+    "sigma-status:experimental",
+    "T1098.004",
+    "T1222.002"
+  ],
+  "references": [
+    "https://attack.mitre.org/techniques/T1098/004/",
+    "https://attack.mitre.org/techniques/T1222/002/"
+  ],
+  "false_positives": [
+    "Administrators provisioning keys by hand (not applicable on a honeypot)"
+  ],
+  "author": [
+    "dram64"
+  ],
+  "license": "MIT",
+  "meta": {
+    "source": "sigma",
+    "sigma_status": "experimental",
+    "attack_version": "19.2"
+  }
+}

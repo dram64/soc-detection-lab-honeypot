@@ -1,0 +1,39 @@
+title: Crypto-Miner Payload Uploaded to Honeypot (RedTail)
+id: 365b73e5-7b21-43a9-ae6b-d69deab771a6
+status: experimental
+description: |
+  An attacker uploaded (SCP/SFTP) files matching the RedTail cryptominer
+  kit: per-architecture 'redtail.*' binaries plus the 'setup.sh' / 'clean.sh'
+  installer scripts. The honeypot records the SHA-256; per ADR-009 the binaries
+  themselves are not retained in this repo or in Elasticsearch.
+references:
+  - https://attack.mitre.org/techniques/T1105/
+  - https://attack.mitre.org/techniques/T1496/001/
+author: dram64
+date: 2026/09/19
+tags:
+  - attack.command-and-control
+  - attack.t1105
+  - attack.impact
+  - attack.t1496.001
+logsource:
+  category: file_event
+  product: cowrie
+detection:
+  selection_event:
+    eventid: 'cowrie.session.file_upload'
+  selection_redtail:
+    filename|startswith: 'redtail.'
+  selection_installer:
+    filename:
+      - 'setup.sh'
+      - 'clean.sh'
+  condition: selection_event and (selection_redtail or selection_installer)
+falsepositives:
+  - Legitimate files that happen to be named setup.sh/clean.sh (on a real server)
+level: high
+fields:
+  - src_ip
+  - session
+  - filename
+  - shasum

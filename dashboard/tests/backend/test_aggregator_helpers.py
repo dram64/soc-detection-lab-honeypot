@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from functions.aggregator.handler import (
+    SUMMARY_TTL_DAYS,
     _hour_bucket,
     _hourly_ttl,
     _rank_ttl,
@@ -31,9 +32,13 @@ def test_rank_ttl_is_in_the_future():
 
 
 def test_summary_ttl_is_far_future():
+    # Deterministic: the TTL is SUMMARY_TTL_DAYS after the summarized day. The
+    # previous form compared a fixed 2026-04-28 date against datetime.now() and
+    # started failing once real time passed ~65 days beyond it.
     ttl = _summary_ttl("2026-04-28")
-    now = int(datetime.now(UTC).timestamp())
-    assert ttl > now + (300 * 86400)
+    expected = datetime(2026, 4, 28, tzinfo=UTC) + timedelta(days=SUMMARY_TTL_DAYS)
+    assert ttl == int(expected.timestamp())
+    assert SUMMARY_TTL_DAYS >= 300  # daily summaries are meant to outlive the raw events
 
 
 def test_unmarshal_string():

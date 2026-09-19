@@ -1,0 +1,35 @@
+title: SSH Authorized Keys Implant via Shell Command
+id: bc1c826e-f397-48e2-8288-fe41a92f3d70
+status: experimental
+description: |
+  A command that writes an SSH public key into authorized_keys, giving the
+  attacker key-based re-entry that survives a password change. In this dataset
+  the pattern usually comes with 'chattr -ia .ssh' (strip immutable/append-only
+  attributes) and 'rm -rf .ssh' (wipe competing keys).
+references:
+  - https://attack.mitre.org/techniques/T1098/004/
+  - https://attack.mitre.org/techniques/T1222/002/
+author: dram64
+date: 2026/09/19
+tags:
+  - attack.persistence
+  - attack.t1098.004
+  - attack.defense-impairment
+  - attack.t1222.002
+logsource:
+  category: process_creation
+  product: cowrie
+detection:
+  selection:
+    eventid: 'cowrie.command.input'
+    input|contains|all:
+      - 'authorized_keys'
+      - 'ssh-rsa'
+  condition: selection
+falsepositives:
+  - Administrators provisioning keys by hand (not applicable on a honeypot)
+level: high
+fields:
+  - src_ip
+  - session
+  - input
