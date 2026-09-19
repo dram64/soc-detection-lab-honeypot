@@ -1,369 +1,1881 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SOC Detection Lab — Honeypot pipeline visualized in real time</title>
-<meta name="description" content="A live SSH honeypot pipeline visualized in real time. Cowrie → S3 → Lambda → DynamoDB → API → React dashboard, on AWS.">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="canonical" href="https://dram-soc.org/">
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desi Ramirez — Selected projects</title>
+<meta name="description" content="Selected projects from Desi Ramirez — software engineering grad working on cloud, security, and infrastructure projects while learning the craft.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #0b0f14;
-  --bg-elev: #121821;
-  --bg-border: #1f2933;
-  --fg: #e6edf3;
-  --fg-muted: #8b96a3;
-  --fg-subtle: #5a6473;
-  --accent: #2dd4bf;
-  --accent-dim: #0f766e;
-  --danger: #f87171;
-  --max: 1100px;
-  --rad: 10px;
-  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-}
-* { box-sizing: border-box; }
-html, body { background: var(--bg); color: var(--fg); margin: 0; padding: 0; }
-body {
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  line-height: 1.55;
-}
-a { color: var(--accent); text-decoration: none; }
-a:hover { text-decoration: underline; text-decoration-color: var(--accent-dim); }
-code, .mono { font-family: var(--mono); }
+  :root {
+    /* Refined palette — yellow + warm neutrals, nothing else */
+    --ink: #0F1012;          /* near-black, slight warmth */
+    --ink-2: #eef2f6;        /* card on dark */
+    --ink-3: #f4f8fc;        /* elevated */
+    --line: #e2e8f0;         /* border */
+    --line-2: #cbd5e1;       /* stronger border */
+    --paper: #ffffff;        /* cream */
+    --paper-2: #f4f8fc;      /* aged */
+    --bone: #f0f6fc;         /* lightest cream */
+    --blue: #7fb3d5;       /* signature accent — slightly warmer than neon */
+    --blue-deep: #4a8cbf;
+    --text: #1a1f2b;         /* warm off-white */
+    --muted: #6b7280;
+    --subtle: #9ca3af;
 
-nav.top {
-  position: sticky; top: 0; z-index: 10;
-  background: rgba(11, 15, 20, 0.86);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--bg-border);
-}
-nav.top .row {
-  max-width: var(--max); margin: 0 auto;
-  padding: 14px 24px;
-  display: flex; align-items: center; justify-content: space-between; gap: 16px;
-}
-nav.top .brand { font-weight: 600; letter-spacing: -0.01em; }
-nav.top .brand .dot { color: var(--accent); }
-nav.top .links { display: flex; gap: 18px; align-items: center; font-size: 14px; color: var(--fg-muted); }
-nav.top .links a { color: var(--fg-muted); }
-nav.top .links a:hover { color: var(--fg); }
-nav.top .cta {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 14px; border-radius: 8px;
-  background: var(--accent); color: #052e2a;
-  font-weight: 600; font-size: 13px;
-}
-nav.top .cta:hover { background: #5eead4; text-decoration: none; }
+    --display: 'Archivo', system-ui, -apple-system, sans-serif;
+    --body: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    --yellow: #a3c9e3;         /* chip highlight — matches showcase.dram-soc.org accent */
+  }
 
-main { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--paper);
+    color: var(--text);
+    font-family: var(--body);
+    line-height: 1.6;
+    font-size: 16px;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body::after {
+    /* very subtle paper grain — barely there */
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9998;
+    background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.04 0'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");
+    opacity: 0.6;
+  }
 
-section.hero { padding: 72px 0 56px; }
-section.hero h1 {
-  font-size: clamp(34px, 5vw, 52px);
-  font-weight: 700; letter-spacing: -0.02em;
-  margin: 0 0 16px;
-}
-section.hero h1 .accent { color: var(--accent); }
-section.hero p.lede {
-  font-size: clamp(17px, 2vw, 19px);
-  color: var(--fg-muted);
-  max-width: 64ch;
-  margin: 0 0 28px;
-}
-.cta-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-bottom: 36px; }
-.btn-primary {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 12px 22px; border-radius: 8px;
-  background: var(--accent); color: #052e2a;
-  font-weight: 600; font-size: 15px;
-}
-.btn-primary:hover { background: #5eead4; text-decoration: none; }
-.btn-ghost {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 12px 18px; border-radius: 8px;
-  border: 1px solid var(--bg-border); color: var(--fg);
-  font-size: 15px;
-}
-.btn-ghost:hover { border-color: var(--accent); text-decoration: none; }
+  ::selection { background: var(--blue); color: var(--ink); }
+  a { color: var(--blue); text-decoration: none; transition: color .15s; }
+  a:hover { color: var(--text); }
 
-.hero-media {
-  border: 1px solid var(--bg-border);
-  border-radius: var(--rad);
-  background: var(--bg-elev);
-  overflow: hidden;
-  box-shadow: 0 1px 0 rgba(255,255,255,.02), 0 16px 32px -16px rgba(0,0,0,0.55);
-}
-.hero-media video, .hero-media img {
-  width: 100%; height: auto; display: block;
-}
-.hero-media-cap {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 10px 14px; font-size: 12px; color: var(--fg-subtle);
-  border-top: 1px solid var(--bg-border);
-}
-.hero-media-cap .live {
-  color: var(--accent); font-family: var(--mono);
-}
-.hero-media-cap .live::before {
-  content: "●"; margin-right: 6px; animation: blink 1.6s infinite;
-}
-@keyframes blink { 50% { opacity: 0.3; } }
+  .container { max-width: 1140px; margin: 0 auto; padding: 0 28px; position: relative; }
 
-.live-stat {
-  margin-top: 28px; padding: 18px 22px;
-  border: 1px solid var(--bg-border); background: var(--bg-elev);
-  border-radius: var(--rad);
-  font-size: 16px; color: var(--fg-muted);
-}
-.live-stat strong { color: var(--accent); font-family: var(--mono); font-weight: 600; font-size: 1.15em; }
-.live-stat.error a { color: var(--accent); }
+  /* thin hazard accent strip — the one ZZZ flourish that survived */
+  .accent-strip {
+    height: 4px;
+    background:
+      repeating-linear-gradient(
+        -45deg,
+        var(--blue) 0px,
+        var(--blue) 8px,
+        var(--ink) 8px,
+        var(--ink) 16px
+      );
+  }
 
-section { padding: 56px 0; border-top: 1px solid var(--bg-border); }
-section h2 {
-  font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em;
-  color: var(--fg-subtle); font-weight: 600; margin: 0 0 24px;
-}
-section h3 {
-  font-size: 24px; font-weight: 600; letter-spacing: -0.01em;
-  margin: 0 0 16px;
-}
-section p { color: var(--fg-muted); max-width: 70ch; margin: 0 0 14px; }
-section p strong { color: var(--fg); font-weight: 600; }
+  /* ————— NAV ————— */
+  nav {
+    position: sticky;
+    top: 0;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    border-bottom: 1px solid var(--line);
+    z-index: 100;
+    padding: 16px 0;
+  }
+  nav .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .nav-logo {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 16px;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .nav-logo .mark {
+    color: var(--blue);
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .nav-links { display: flex; gap: 6px; font-family: var(--mono); font-size: 12px; flex-wrap: wrap; }
+  .nav-links a {
+    color: var(--muted);
+    padding: 6px 12px;
+    letter-spacing: 0.02em;
+    transition: all .15s;
+    border-bottom: 1px solid transparent;
+  }
+  .nav-links a:hover {
+    color: var(--text);
+    border-bottom-color: var(--blue);
+  }
+  .nav-links .num {
+    color: var(--subtle);
+    margin-right: 4px;
+  }
 
-.arch {
-  background: var(--bg-elev);
-  border: 1px solid var(--bg-border);
-  border-radius: var(--rad);
-  padding: 22px;
-}
-.arch svg { width: 100%; height: auto; display: block; }
-.arch figcaption { color: var(--fg-subtle); font-size: 13px; margin-top: 14px; line-height: 1.6; }
+  /* ————— CONTACT BAR ————— */
+  .contact-bar {
+    background: var(--bone);
+    border-bottom: 1px solid var(--line);
+    padding: 9px 0;
+    font-family: var(--mono);
+    font-size: 11.5px;
+  }
+  .contact-bar .container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    color: var(--muted);
+  }
+  .contact-bar a {
+    color: var(--muted);
+    transition: color .15s;
+    letter-spacing: 0.01em;
+  }
+  .contact-bar a:hover { color: var(--blue); }
+  .contact-bar .divider { color: var(--subtle); }
 
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip {
-  display: inline-flex; align-items: center;
-  padding: 6px 12px; border-radius: 999px;
-  background: var(--bg-elev); border: 1px solid var(--bg-border);
-  color: var(--fg-muted); font-size: 13px; font-family: var(--mono);
-}
-.chip.accent { color: var(--accent); border-color: var(--accent-dim); }
+  /* ————— HERO ————— */
+  .hero {
+    position: relative;
+    padding: 110px 0 90px;
+    overflow: hidden;
+  }
+  .hero::before {
+    /* subtle radial wash, very low opacity */
+    content: '';
+    position: absolute;
+    top: -200px;
+    right: -200px;
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, rgba(127, 179, 213, 0.06) 0%, transparent 65%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .hero .container { position: relative; z-index: 1; }
 
-.adr-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
-@media (min-width: 760px) { .adr-grid { grid-template-columns: 1fr 1fr; } }
-.adr-card {
-  border: 1px solid var(--bg-border); background: var(--bg-elev);
-  border-radius: var(--rad); padding: 20px;
-}
-.adr-card .badge {
-  display: inline-block; padding: 3px 8px; border-radius: 4px;
-  background: rgba(45,212,191,0.08); color: var(--accent);
-  font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
-  margin-bottom: 10px;
-}
-.adr-card h4 {
-  margin: 0 0 8px; font-size: 16px; font-weight: 600; color: var(--fg);
-}
-.adr-card p { font-size: 14px; line-height: 1.55; margin: 0 0 12px; }
-.adr-card .read { font-size: 13px; }
+  .availability {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 36px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    padding: 6px 12px 6px 8px;
+    background: var(--ink-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+  }
+  .availability .dot {
+    width: 7px; height: 7px;
+    background: var(--blue);
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(127, 179, 213, 0.5);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
 
-.links-row { display: flex; flex-wrap: wrap; gap: 22px; align-items: center; }
-.links-row a { font-size: 15px; }
+  h1 {
+    font-family: var(--display);
+    font-weight: 900;
+    font-size: clamp(48px, 7.5vw, 92px);
+    line-height: 0.96;
+    letter-spacing: -0.035em;
+    margin-bottom: 28px;
+    color: var(--text);
+  }
+  h1 .name {
+    display: block;
+  }
+  h1 .role-line {
+    display: block;
+    font-weight: 700;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+  h1 .role-line .accent {
+    color: var(--text);
+    border-bottom: 4px solid var(--blue);
+    padding-bottom: 2px;
+  }
 
-footer {
-  border-top: 1px solid var(--bg-border);
-  margin-top: 56px;
-  padding: 24px;
-  text-align: center;
-  color: var(--fg-subtle);
-  font-size: 13px;
-}
-footer a { color: var(--fg-subtle); }
-footer a:hover { color: var(--accent); }
+  .hero-tagline {
+    font-size: 18px;
+    color: var(--muted);
+    max-width: 620px;
+    line-height: 1.65;
+    margin-bottom: 40px;
+    font-weight: 400;
+  }
+  .hero-tagline strong { color: var(--text); font-weight: 600; }
 
-@media (prefers-reduced-motion: reduce) {
-  .hero-media-cap .live::before { animation: none; }
-  .hero-media video { display: none; }
-  .hero-media img.poster { display: block; }
-}
-</style>
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 22px;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.01em;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    transition: all .15s;
+    border-radius: 4px;
+  }
+  .btn-primary {
+    background: var(--blue);
+    color: var(--ink);
+    border-color: var(--blue);
+  }
+  .btn-primary:hover {
+    background: var(--text);
+    color: var(--ink);
+    border-color: var(--text);
+    transform: translateY(-1px);
+  }
+  .btn-secondary {
+    background: transparent;
+    color: var(--text);
+    border-color: var(--line-2);
+  }
+  .btn-secondary:hover {
+    border-color: var(--blue);
+    color: var(--blue);
+  }
+  .btn .arrow { font-size: 16px; line-height: 1; }
+
+  /* ————— SECTION FRAMING ————— */
+  section {
+    padding: 84px 0 88px;
+    position: relative;
+    border-top: 1px solid var(--line);
+  }
+  section.paper {
+    background: var(--bone);
+    color: var(--ink);
+    border-top-color: var(--line-2);
+  }
+  section.paper a { color: var(--ink); }
+  section.paper a:hover { color: var(--blue-deep); }
+
+  .section-header {
+    margin-bottom: 48px;
+  }
+  .section-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    margin-bottom: 16px;
+    color: var(--muted);
+  }
+  section.paper .section-eyebrow { color: var(--subtle); }
+  .section-eyebrow .num {
+    color: var(--blue);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  section.paper .section-eyebrow .num { color: var(--blue-deep); }
+  .section-eyebrow .label {
+    color: inherit;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-weight: 500;
+  }
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(34px, 4.5vw, 52px);
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+  section.paper h2 { color: var(--ink); }
+  h2 .accent {
+    border-bottom: 4px solid var(--blue);
+    padding-bottom: 1px;
+  }
+
+  .section-intro {
+    color: var(--muted);
+    font-size: 17px;
+    max-width: 680px;
+    line-height: 1.65;
+  }
+  section.paper .section-intro { color: var(--subtle); }
+
+  /* ————— ABOUT ————— */
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 56px;
+    align-items: start;
+  }
+  @media (max-width: 880px) { .about-grid { grid-template-columns: 1fr; gap: 32px; } }
+  .about-text p {
+    color: var(--ink);
+    margin-bottom: 16px;
+    font-size: 16.5px;
+    line-height: 1.7;
+  }
+  .about-text p strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .about-text p strong.hl {
+    background: linear-gradient(transparent 60%, var(--blue) 60%);
+    padding: 0 2px;
+  }
+
+  .profile-card {
+    background: var(--bone);
+    border: 1.5px solid var(--ink);
+    position: relative;
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+  .profile-card-header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 11px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+  }
+  .profile-card-header .ok {
+    color: var(--ink);
+    background: var(--blue);
+    padding: 2px 8px;
+    font-weight: 600;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+  }
+  .profile-row {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    padding: 14px 18px;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.18);
+    align-items: start;
+    gap: 12px;
+  }
+  .profile-row:last-child { border-bottom: 0; }
+  .profile-row .field {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding-top: 3px;
+    font-weight: 500;
+  }
+  .profile-row .value {
+    font-family: var(--body);
+    color: var(--ink);
+    font-size: 14.5px;
+    font-weight: 500;
+    line-height: 1.45;
+  }
+  .profile-row .value .meta {
+    font-family: var(--mono);
+    color: var(--subtle);
+    font-size: 12px;
+    display: block;
+    margin-top: 3px;
+    font-weight: 400;
+  }
+  .profile-row .contact-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    align-items: center;
+    font-size: 13.5px;
+  }
+  .profile-row .contact-inline a {
+    color: var(--ink);
+    font-family: var(--mono);
+    text-decoration: underline;
+    text-decoration-color: rgba(255, 255, 255, 0.28);
+    text-underline-offset: 3px;
+    transition: color .15s, text-decoration-color .15s;
+  }
+  .profile-row .contact-inline a:hover {
+    color: var(--blue);
+    text-decoration-color: var(--blue);
+  }
+  .profile-row .contact-inline .sep {
+    color: var(--subtle);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  /* ————— PROJECTS ————— */
+  .project { margin-bottom: 48px; }
+  .project:last-child { margin-bottom: 0; }
+  .project-card {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    transition: border-color .2s;
+    position: relative;
+    border-radius: 8px;
+  }
+  .project-card:hover { border-color: var(--line-2); }
+  .project-card::before {
+    /* subtle blueprint corner tick */
+    content: '';
+    position: absolute;
+    top: 12px; left: 12px;
+    width: 10px; height: 10px;
+    border-top: 1.5px solid var(--blue);
+    border-left: 1.5px solid var(--blue);
+    z-index: 2;
+    opacity: 0.6;
+  }
+  .project-card::after {
+    content: '';
+    position: absolute;
+    bottom: 12px; right: 12px;
+    width: 10px; height: 10px;
+    border-bottom: 1.5px solid var(--blue);
+    border-right: 1.5px solid var(--blue);
+    z-index: 2;
+    opacity: 0.6;
+  }
+  .project-header {
+    padding: 32px 36px 26px;
+    border-bottom: 1px solid var(--line);
+  }
+  .project-meta-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .project-status {
+    color: var(--ink);
+    background: var(--blue);
+    padding: 3px 9px;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 10.5px;
+    border-radius: 3px;
+  }
+  .project-status .live-dot {
+    width: 5px; height: 5px; border-radius: 50%; background: var(--ink);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  .project-tag {
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .project-title {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(26px, 3.3vw, 34px);
+    margin-bottom: 12px;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    color: var(--text);
+  }
+  .project-tagline {
+    color: var(--muted);
+    font-size: 15.5px;
+    line-height: 1.65;
+    margin-bottom: 22px;
+    max-width: 760px;
+  }
+  .project-links { display: flex; gap: 8px; flex-wrap: wrap; }
+  .project-links a {
+    color: var(--ink);
+    background: var(--bone);
+    border: 1px solid var(--blue);
+    padding: 7px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 4px;
+    transition: all .15s;
+  }
+  .project-links a:hover {
+    background: var(--blue);
+    color: var(--ink);
+    border-color: var(--blue-deep);
+  }
+
+  .project-body { padding: 30px 36px 34px; }
+  .project-body h4 {
+    font-size: 11.5px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--blue);
+    margin-bottom: 16px;
+    margin-top: 28px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .project-body h4::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+  .project-body h4:first-child { margin-top: 0; }
+  .project-body ul { list-style: none; padding: 0; }
+  .project-body li {
+    padding: 11px 0 11px 22px;
+    position: relative;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.65;
+    border-bottom: 1px dashed var(--line);
+  }
+  .project-body li:last-child { border-bottom: 0; }
+  .project-body li::before {
+    content: '⸱';
+    position: absolute;
+    left: 2px;
+    top: 11px;
+    color: var(--blue);
+    font-size: 11px;
+  }
+  .project-body li strong { color: var(--text); font-weight: 600; }
+
+  /* arch diagram */
+  .arch-diagram {
+    margin: 16px 0 6px;
+    padding: 22px;
+    background: var(--bone);
+    border: 1px solid var(--line);
+    overflow-x: auto;
+    border-radius: 6px;
+  }
+  .arch-diagram svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+  }
+  .arch-caption {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--subtle);
+    text-align: center;
+    margin-top: 12px;
+    letter-spacing: 0.02em;
+  }
+
+  /* stack chips */
+  .stack-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 4px;
+  }
+  .stack-chip {
+    padding: 5px 10px;
+    background: var(--yellow);
+    border: 1px solid var(--yellow);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink);
+    border-radius: 3px;
+  }
+
+  /* ————— HOMELAB ————— */
+  .homelab-card {
+    background: var(--ink-2);
+    border: 1px solid var(--line);
+    padding: 32px 36px 36px;
+    border-radius: 8px;
+    position: relative;
+  }
+  .homelab-card::before, .homelab-card::after {
+    content: '';
+    position: absolute;
+    width: 10px; height: 10px;
+    opacity: 0.6;
+  }
+  .homelab-card::before {
+    top: 12px; left: 12px;
+    border-top: 1.5px solid var(--blue);
+    border-left: 1.5px solid var(--blue);
+  }
+  .homelab-card::after {
+    bottom: 12px; right: 12px;
+    border-bottom: 1.5px solid var(--blue);
+    border-right: 1.5px solid var(--blue);
+  }
+  .homelab-card h4 {
+    font-size: 11.5px;
+    font-family: var(--mono);
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    margin-bottom: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .homelab-card h4::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+  .hardware-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+    margin: 22px 0;
+  }
+  .hw-item {
+    padding: 14px 16px;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    transition: border-color .15s;
+    border-radius: 4px;
+  }
+  .hw-item:hover { border-color: var(--line-2); }
+  .hw-item .role {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--blue);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    font-weight: 500;
+  }
+  .hw-item .name {
+    color: var(--text);
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.35;
+  }
+  .lab-list { list-style: none; padding: 0; margin-top: 6px; }
+  .lab-list li {
+    padding: 11px 0 11px 22px;
+    position: relative;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.65;
+    border-bottom: 1px dashed var(--line);
+  }
+  .lab-list li:last-child { border-bottom: 0; }
+  .lab-list li::before {
+    content: '⸱';
+    position: absolute;
+    left: 2px;
+    top: 11px;
+    color: var(--blue);
+    font-size: 11px;
+  }
+  .lab-list li strong { color: var(--text); font-weight: 600; }
+
+  /* ————— SKILLS ————— */
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .skill-cat {
+    background: var(--bone);
+    color: var(--ink);
+    border: 1.5px solid var(--ink);
+    padding: 18px 20px 20px;
+    border-radius: 4px;
+  }
+  .skill-cat h3 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 14.5px;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1.5px solid var(--ink);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .skill-cat h3 .count {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink);
+    background: var(--blue);
+    padding: 2px 7px;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  .skill-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .skill-tag {
+    padding: 4px 9px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    font-size: 11.5px;
+    color: var(--ink);
+    font-family: var(--mono);
+    transition: all .15s;
+    border-radius: 3px;
+  }
+  .skill-tag:hover {
+    background: var(--ink);
+    color: var(--blue);
+    border-color: var(--ink);
+  }
+
+  /* certs */
+  .certs-section { margin-top: 56px; }
+  .certs-heading {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    margin-bottom: 16px;
+    margin-top: 32px;
+    color: var(--subtle);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .certs-heading::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.18);
+    max-width: 200px;
+  }
+  .certs-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .cert-card {
+    flex: 1;
+    min-width: 280px;
+    background: var(--bone);
+    border: 1.5px solid var(--ink);
+    padding: 18px 20px 18px 24px;
+    position: relative;
+    color: var(--ink);
+    border-radius: 4px;
+  }
+  .cert-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 5px;
+    background: var(--blue);
+  }
+  .cert-card.progress::before {
+    background: repeating-linear-gradient(
+      45deg,
+      var(--blue) 0,
+      var(--blue) 5px,
+      var(--ink) 5px,
+      var(--ink) 9px
+    );
+  }
+  .cert-name {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 14.5px;
+    color: var(--ink);
+    margin-bottom: 6px;
+    letter-spacing: -0.005em;
+    line-height: 1.3;
+  }
+  .cert-issuer {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--subtle);
+    letter-spacing: 0.02em;
+  }
+  .cert-card.progress .cert-name::after {
+    content: ' (in progress)';
+    color: var(--subtle);
+    font-weight: 400;
+    font-size: 12px;
+    font-family: var(--body);
+  }
+
+  /* ————— CONTACT ————— */
+  .contact-list {
+    border-top: 1px solid var(--line);
+    margin-top: 8px;
+    max-width: 720px;
+  }
+  .contact-row {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    padding: 18px 4px;
+    border-bottom: 1px solid var(--line);
+    align-items: center;
+    font-family: var(--mono);
+    transition: padding-left .15s, background .15s, border-color .15s;
+    color: var(--text);
+  }
+  .contact-row:hover {
+    padding-left: 16px;
+    background: var(--ink-2);
+    border-bottom-color: var(--blue);
+  }
+  .contact-row .contact-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 500;
+    transition: color .15s;
+  }
+  .contact-row:hover .contact-label {
+    color: var(--blue);
+  }
+  .contact-row .contact-value {
+    font-size: 14.5px;
+    color: var(--text);
+    word-break: break-all;
+  }
+
+  /* ————— FOOTER ————— */
+  footer {
+    padding: 36px 0 32px;
+    border-top: 1px solid var(--line);
+    text-align: center;
+    color: var(--subtle);
+    font-size: 12px;
+    font-family: var(--mono);
+    letter-spacing: 0.02em;
+  }
+  footer p { margin-bottom: 6px; }
+  footer p:last-child { margin-bottom: 0; }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--blue); }
+
+  /* responsive */
+
+    /* ============================================================
+       Mobile stylesheet — tablet-portrait + small-phone breakpoints.
+       ============================================================ */
+    @media (max-width: 780px) {
+      section { padding: 56px 0 60px; }
+      .container { padding-left: 18px; padding-right: 18px; }
+
+      /* Nav — brand on top row, links wrap under it. */
+      nav.top-nav .nav-inner { flex-wrap: wrap; row-gap: 8px; padding: 12px 18px; }
+      .nav-links { flex-wrap: wrap; gap: 4px 10px; font-size: 11px; width: 100%; }
+      .nav-links a { padding: 4px 0; }
+
+      /* Contact bar wraps to two lines on narrow screens. */
+      .contact-bar .container { flex-wrap: wrap; gap: 4px 10px; justify-content: flex-start; font-size: 11.5px; padding: 10px 18px; }
+      .contact-bar .divider { display: inline; }
+
+      /* Hero */
+      .hero { padding: 32px 0 32px; }
+      .hero .availability { margin-bottom: 20px; padding: 4px 10px 4px 8px; font-size: 11px; }
+      .hero h1 { font-size: clamp(2rem, 9.5vw, 3rem); line-height: 1.02; margin-bottom: 20px; }
+      .hero-tagline { font-size: 13.5px; margin-bottom: 20px; }
+      .hero-cta { padding: 10px 18px; font-size: 13.5px; }
+
+      /* Section headers */
+      .section-header { margin-bottom: 32px; }
+      .section-header h2 { font-size: clamp(1.6rem, 7vw, 2.2rem); line-height: 1.15; }
+
+      /* Project cards */
+      .project { margin-bottom: 32px; }
+      .project-header { padding: 22px 20px 18px !important; }
+      .project-body { padding: 20px 20px 24px !important; }
+      .project-meta-top { gap: 6px 8px; flex-wrap: wrap; }
+      .project-title { font-size: clamp(1.5rem, 6vw, 1.9rem) !important; line-height: 1.15; }
+      .project-tagline { font-size: 13.5px; line-height: 1.55; }
+      .project-links { flex-wrap: wrap; gap: 6px; }
+      .project-links a { font-size: 11.5px; padding: 5px 10px; }
+
+      /* Blueprint corner ticks look busy at small size; hide them. */
+      .project-card::before, .project-card::after { display: none; }
+
+      /* Highlights bullets */
+      .project-body li { font-size: 13.5px; padding-left: 18px; }
+      .project-body li::before { left: 0; }
+
+      /* Hardware grid — SOC's stats — 2 across on mobile. */
+      .hardware-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+      .hw-item { padding: 10px 12px !important; }
+      .hw-item .name { font-size: 16px !important; }
+      .hw-item .role { font-size: 9.5px !important; letter-spacing: 0.08em !important; }
+
+      /* Stack chips — smaller pills */
+      .stack-row { gap: 5px; }
+      .stack-chip { font-size: 10.5px; padding: 4px 8px; }
+
+      /* Skills grid — single column. */
+      .skills-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+      .skill-cat { padding: 16px 16px 18px !important; }
+      section .skill-list { gap: 5px; }
+      section .skill-tag { font-size: 10.5px; padding: 4px 8px; }
+
+      /* Certs row + additional-cert row */
+      .cert-card { padding: 14px 16px 14px 20px !important; }
+      .certifications-row { flex-direction: column !important; gap: 10px !important; }
+      .additional-cert { padding: 10px 14px !important; }
+
+      /* Homelab section — force stack */
+      .homelab-card { padding: 22px 20px !important; }
+      .homelab-diagram { overflow-x: auto; }
+
+      /* Profile card — stack Contact row values under label. */
+      .profile-card { padding: 4px !important; }
+      .profile-card-header { padding: 9px 14px !important; font-size: 11.5px !important; }
+      .profile-card table { font-size: 13.5px; }
+      .profile-card td, .profile-card th { padding: 8px 12px !important; }
+      .profile-card .contact-inline { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+      .profile-card .contact-inline .sep { display: none; }
+
+      /* Contact card at bottom */
+      .contact-card { padding: 32px 20px !important; }
+      .contact-list { gap: 8px !important; }
+      .contact-row { grid-template-columns: 90px 1fr !important; padding: 8px 0 !important; }
+      .contact-label { font-size: 10.5px !important; }
+      .contact-value { font-size: 13px !important; }
+
+      /* ---------- Tokyo Zero card mobile ---------- */
+      .tz-card .project-body h4 { font-size: 16px; margin: 2px 0 10px; }
+      .tz-eyebrow { font-size: 10px; letter-spacing: 0.18em; margin: 24px 0 4px; }
+      .tz-ascii { font-size: 9.5px; line-height: 1.4; padding: 14px 16px; }
+      .tz-caption { font-size: 12.5px; padding: 4px 0 4px 12px; margin-bottom: 18px; }
+      .tz-tbl { font-size: 12px; }
+      .tz-tbl thead th { padding: 8px 10px; font-size: 9.5px; letter-spacing: 0.16em; }
+      .tz-tbl td { padding: 9px 10px; }
+      .tz-chip { font-size: 10px; padding: 4px 8px; }
+
+      /* Diagrams — allow horizontal scroll, hint visually. */
+      .arch-diagram { padding: 14px; overflow-x: auto; }
+      .arch-diagram svg { min-width: 640px; }
+      .arch-caption { font-size: 10.5px; line-height: 1.5; }
+
+      /* Footer bar */
+      footer { padding: 24px 0 22px; text-align: center; }
+      footer .container { flex-direction: column !important; gap: 6px !important; text-align: center !important; font-size: 11px; padding-left: 20px !important; padding-right: 20px !important; }
+      footer p { text-align: center !important; text-wrap: balance; line-height: 1.5; }
+    }
+
+    @media (max-width: 480px) {
+      .container { padding-left: 14px; padding-right: 14px; }
+      .hero { padding: 24px 0 28px; }
+      .hero h1 { font-size: clamp(1.8rem, 8.5vw, 2.4rem); }
+      .hero-tagline { font-size: 13px; margin-bottom: 18px; }
+      .nav-inner { padding: 10px 14px !important; }
+      .nav-links { font-size: 10.5px; gap: 3px 8px; }
+      .contact-bar .container { font-size: 10.5px; }
+
+      /* Hardware grid — single column on tiny screens. */
+      .hardware-grid { grid-template-columns: 1fr !important; }
+
+      /* tz-tbl — hide the middle "Purpose" column; keep Service + Why. */
+      .tz-tbl thead th:nth-child(2),
+      .tz-tbl tbody td:nth-child(2) { display: none; }
+      .tz-tbl td:first-child { width: 30% !important; }
+
+      /* Profile card fields stack under labels */
+      .profile-card table, .profile-card tbody, .profile-card tr, .profile-card td, .profile-card th { display: block; width: 100% !important; }
+      .profile-card th { padding-bottom: 0 !important; font-size: 10.5px !important; }
+      .profile-card td { padding-top: 4px !important; }
+    }
+
+
+    /* ============================================================
+       Tokyo Zero showcase card — mirrors showcase.dram-soc.org's
+       structural language (ASCII diagram, // eyebrows, services
+       table, yellow chip row) inside the dark parent palette.
+       ============================================================ */
+    .tz-card { background: var(--ink-2); }
+    .tz-card .project-title { letter-spacing: -0.015em; }
+    .tz-card .project-tagline a { color: var(--yellow); text-decoration: underline; text-underline-offset: 3px; }
+    .tz-eyebrow {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--blue-deep);
+      margin: 34px 0 6px;
+    }
+    .tz-eyebrow:first-child { margin-top: 4px; }
+    .tz-card .project-body h4 {
+      font-family: var(--display);
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 500;
+      margin: 4px 0 16px;
+      text-transform: lowercase;
+      letter-spacing: -0.01em;
+    }
+    .tz-ascii {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      line-height: 1.45;
+      background: var(--bone);
+      color: var(--text);
+      padding: 22px 26px;
+      margin: 0 0 14px;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      white-space: pre;
+    }
+    .tz-caption {
+      color: var(--muted);
+      font-family: var(--body);
+      font-size: 13.5px;
+      line-height: 1.55;
+      border-left: 3px solid var(--blue-deep);
+      padding: 6px 0 6px 14px;
+      margin: 0 0 22px;
+    }
+    .tz-tbl-wrap {
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      overflow-x: auto;
+      margin: 0 0 24px;
+    }
+    .tz-tbl {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--body);
+      font-size: 13.5px;
+      color: var(--text);
+    }
+    .tz-tbl thead th {
+      text-align: left;
+      padding: 10px 14px;
+      background: var(--bone);
+      border-bottom: 1px solid var(--line-2);
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--blue-deep);
+      font-weight: 500;
+    }
+    .tz-tbl tbody tr:nth-child(even) td { background: rgba(163, 201, 227, 0.03); }
+    .tz-tbl td {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    .tz-tbl tbody tr:last-child td { border-bottom: none; }
+    .tz-tbl td:first-child { width: 21%; }
+    .tz-tbl td:nth-child(2) { width: 33%; color: var(--text); }
+    .tz-tbl td:nth-child(3) { color: var(--muted); }
+    .tz-tbl code {
+      background: rgba(127, 179, 213, 0.18);
+      color: var(--blue-deep);
+      padding: 2px 6px;
+      border-radius: 2px;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    .tz-stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 0;
+    }
+    .tz-chip {
+      display: inline-block;
+      background: var(--yellow);
+      color: var(--ink);
+      border: 1px solid var(--yellow);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 5px 10px;
+      letter-spacing: 0.02em;
+      border-radius: 2px;
+      font-weight: 500;
+    }
+
+  
+    /* Skills — showcase aesthetic overlay on the existing dark section. */
+    section .skill-cat {
+      background: var(--ink-2);
+      border-color: var(--line);
+    }
+    section .skill-cat h3 {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--blue-deep);
+    }
+    section .skill-cat h3 .count {
+      color: var(--muted);
+      background: transparent;
+      font-family: var(--mono);
+      font-weight: 400;
+    }
+    section .skill-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    section .skill-tag {
+      background: var(--yellow);
+      color: var(--ink);
+      border: 1px solid var(--yellow);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 5px 10px;
+      letter-spacing: 0.02em;
+      border-radius: 2px;
+      font-weight: 500;
+    }
+    /* Section eyebrow — showcase's '// XX · label' pattern applied globally. */
+    .section-eyebrow {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--blue-deep);
+    }
+    .section-eyebrow .num { color: var(--blue-deep); font-weight: 500; }
+    .section-eyebrow .num::before { content: '// '; color: var(--blue-deep); }
+    .section-eyebrow .label { color: var(--muted); }
+
+  </style>
 </head>
 <body>
 
-<nav class="top">
-  <div class="row">
-    <div class="brand">SOC Detection Lab<span class="dot">.</span></div>
-    <div class="links">
-      <a href="https://github.com/dram64/soc-detection-lab" rel="noopener">GitHub</a>
-      <a href="#architecture">Architecture</a>
-      <a href="#decisions">Decisions</a>
-      <a class="cta" href="https://dashboard.dram-soc.org">View Dashboard →</a>
+<!-- ————— NAV ————— -->
+<nav>
+  <div class="container">
+    <div class="nav-logo">
+      <span>Desi Ramirez</span>
+    </div>
+    <div class="nav-links">
+      <a href="#about"><span class="num">01</span>About</a>
+      <a href="#projects"><span class="num">02</span>Projects</a>
+      <a href="#homelab"><span class="num">03</span>Homelab</a>
+      <a href="#skills"><span class="num">04</span>Skills</a>
+      <a href="#contact"><span class="num">05</span>Find me</a>
     </div>
   </div>
 </nav>
 
-<main>
+<!-- ————— CONTACT BAR ————— -->
+<div class="contact-bar">
+  <div class="container">
+    <a href="/cdn-cgi/l/email-protection#3f5b5a4c564d5e52564d5a45090d0d0f0f7f58525e5653115c5052"><span class="__cf_email__" data-cfemail="6a0e0f1903180b0703180f105c58585a5a2a0d070b030644090507">[email&#160;protected]</span></a>
+    <span class="divider">·</span>
+    <a href="https://www.linkedin.com/in/desi-ramirez" target="_blank">linkedin.com/in/desi-ramirez</a>
+    <span class="divider">·</span>
+    <a href="https://github.com/dram64" target="_blank">github.com/dram64</a>
+    <span class="divider">·</span>
+    <a href="tel:+13234236495">(323) 423-6495</a>
+  </div>
+</div>
 
-  <section class="hero" aria-labelledby="heroTitle">
-    <h1 id="heroTitle">A live SSH honeypot, <span class="accent">visualized</span>.</h1>
-    <p class="lede">
-      An SSH honeypot captures real attacker traffic. A serverless AWS pipeline ingests, classifies, and aggregates every login attempt. A React dashboard renders the result in near-real time — at <a href="https://dashboard.dram-soc.org">dashboard.dram-soc.org</a>.
-    </p>
+<!-- ————— HERO ————— -->
+<header class="hero">
+  <div class="container">
+    <h1>
+      <span class="name">Desi Ramirez.</span>
+    </h1>
 
     <div class="cta-row">
-      <a class="btn-primary" href="https://dashboard.dram-soc.org">View the live dashboard →</a>
-      <a class="btn-ghost" href="https://github.com/dram64/soc-detection-lab" rel="noopener">Source on GitHub</a>
+      <a href="#projects" class="btn btn-primary">View projects <span class="arrow">→</span></a>
+    </div>
+  </div>
+</header>
+
+<!-- ————— ABOUT ————— -->
+<section id="about" class="paper">
+  <div class="container">
+    <div class="section-header" style="margin-bottom: 32px;">
+      <div class="section-eyebrow">
+        <span class="num">01 / 05</span>
+        <span class="label">About</span>
+      </div>
     </div>
 
-    <figure class="hero-media" aria-label="Dashboard preview">
-      <video autoplay muted loop playsinline poster="/preview.jpg">
-        <source src="/preview.webm" type="video/webm">
-      </video>
-      <img class="poster" src="/preview.jpg" alt="Honeypot dashboard with attacker counters, top usernames, top passwords, choropleth map of source countries, and a virtualized recent-events table." style="display:none">
-      <figcaption class="hero-media-cap">
-        <span>dashboard.dram-soc.org</span>
-        <span class="live">live</span>
-      </figcaption>
-    </figure>
-
-    <p id="live-stat" class="live-stat" aria-live="polite">Loading live data…</p>
-  </section>
-
-  <section id="what" aria-labelledby="whatTitle">
-    <h2 id="whatTitle">What this is</h2>
-    <h3>An SSH honeypot's traffic, plumbed end-to-end on AWS.</h3>
-    <p>
-      A <strong>Cowrie</strong> SSH honeypot accepts every login attempt the public internet throws at it and records the username, the password, the source IP, the timing, and any post-login activity. Honeypots see attacker traffic almost exclusively — most legitimate users never hit one — so the data is unusually clean signal.
-    </p>
-    <p>
-      The pipeline ships those events as gzipped JSON to S3. A <strong>Python Lambda</strong> validates each event with a strict Pydantic schema, classifies passwords against a bundled known-bad dictionary (<a href="https://github.com/dram64/soc-detection-lab/blob/main/dashboard/docs/adr/005-password-filtering.md">ADR-005</a>), attaches GeoIP enrichment, and writes a single-table <strong>DynamoDB</strong> row. A second Lambda consumes DynamoDB Streams to produce SUMMARY and RANK rollups idempotently.
-    </p>
-    <p>
-      A read-only <strong>API Lambda</strong> serves a TypeScript-strict <strong>React + Recharts</strong> SPA over CloudFront, behind <strong>Cloudflare</strong>'s free WAF (<a href="https://github.com/dram64/soc-detection-lab/blob/main/dashboard/docs/adr/007-cloudflare-waf-over-aws-waf.md">ADR-007</a>). The whole stack is Terraformed and runs at <strong class="mono">~$2.60/month</strong>.
-    </p>
-  </section>
-
-  <section id="architecture" aria-labelledby="archHeading">
-    <h2 id="archHeading">Architecture</h2>
-    <h3>Three paths: ingest, read, render.</h3>
-    <figure class="arch" id="archFigure">
-      <img src="/architecture.svg" alt="System architecture: Cowrie SSH honeypot on Raspberry Pi → S3 raw bucket → ingest Lambda (password classifier, GeoIP) → DynamoDB single-table; aggregator Lambda consumes DDB Streams to write SUMMARY/RANK rollups; API Lambda serves read-only routes via API Gateway; S3 frontend bundle → CloudFront → Cloudflare proxy → browser." style="width:100%; display:block">
-
-      <figcaption>
-        Solid teal lines mark the ingest and origin-fetch paths; dashed teal marks the API read path the browser walks every 30 seconds. Two security boundaries are explicit: the password-classifier inside the ingest Lambda (<a href="https://github.com/dram64/soc-detection-lab/blob/main/dashboard/docs/adr/005-password-filtering.md">ADR-005</a>) splits dictionary attempts from raw plaintext; Cloudflare's proxy (<a href="https://github.com/dram64/soc-detection-lab/blob/main/dashboard/docs/adr/007-cloudflare-waf-over-aws-waf.md">ADR-007</a>) is the public WAF, replacing AWS WAF entirely.
-      </figcaption>
-    </figure>
-  </section>
-
-  <section id="stack" aria-labelledby="stackHeading">
-    <h2 id="stackHeading">Tech stack</h2>
-    <div class="chips">
-      <span class="chip accent">Python 3.13</span>
-      <span class="chip accent">TypeScript (strict)</span>
-      <span class="chip">AWS Lambda</span>
-      <span class="chip">DynamoDB</span>
-      <span class="chip">API Gateway</span>
-      <span class="chip">CloudFront</span>
-      <span class="chip">S3 + OAC</span>
-      <span class="chip">ACM</span>
-      <span class="chip">CloudWatch</span>
-      <span class="chip">Pydantic v2</span>
-      <span class="chip">boto3</span>
-      <span class="chip">Terraform</span>
-      <span class="chip">React 18</span>
-      <span class="chip">Vite</span>
-      <span class="chip">TanStack Query</span>
-      <span class="chip">Recharts</span>
-      <span class="chip">Tailwind CSS</span>
-      <span class="chip">Cloudflare</span>
-      <span class="chip">Cowrie</span>
+    <div class="profile-card" style="max-width: 640px;">
+      <div class="profile-card-header">
+        <span>Profile</span>
+      </div>
+      <div>
+        <div class="profile-row">
+          <span class="field">Location</span>
+          <span class="value">Moreno Valley, CA</span>
+        </div>
+        <div class="profile-row">
+          <span class="field">Education</span>
+          <span class="value">B.S. Software Engineering<span class="meta">Cal Poly San Luis Obispo · 2022</span></span>
+        </div>
+        <div class="profile-row">
+          <span class="field">Contact</span>
+          <span class="value contact-inline">
+            <a href="/cdn-cgi/l/email-protection#fd99988e948f9c90948f9887cbcfcfcdcdbd9a909c9491d39e9290"><span class="__cf_email__" data-cfemail="83e7e6f0eaf1e2eeeaf1e6f9b5b1b1b3b3c3e4eee2eaefade0ecee">[email&#160;protected]</span></a>
+            <span class="sep">·</span>
+            <a href="https://www.linkedin.com/in/desi-ramirez" target="_blank">linkedin.com/in/desi-ramirez</a>
+            <span class="sep">·</span>
+            <a href="https://github.com/dram64" target="_blank">github.com/dram64</a>
+            <span class="sep">·</span>
+            <a href="tel:+13234236495">(323) 423-6495</a>
+          </span>
+        </div>
+      </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section id="decisions" aria-labelledby="decHeading">
-    <h2 id="decHeading">Engineering decisions</h2>
-    <h3>Four trade-offs the project owns explicitly.</h3>
-    <div class="adr-grid">
-
-      <article class="adr-card">
-        <span class="badge">ADR-005</span>
-        <h4>Attempted-password dictionary filtering</h4>
-        <p>Cowrie captures every plaintext password tried. Publishing them verbatim risks surfacing real victims' credentials. The ingest Lambda checks each attempt against a bundled known-bad dictionary; matches are public, non-matches are length-redacted. <span class="mono">password_raw</span> never leaves the ingest path.</p>
-        <a class="read" href="https://github.com/dram64/soc-detection-lab/blob/main/dashboard/docs/adr/005-password-filtering.md" rel="noopener">Read full ADR →</a>
-      </article>
-
-      <article class="adr-card">
-        <span class="badge">ADR-007</span>
-        <h4>Cloudflare proxy as edge WAF (no AWS WAF)</h4>
-        <p>AWS WAF runs ~$5.40/mo on this volume — the largest line item on the bill. Cloudflare's free tier covers DDoS, managed WAF rules, bot management, and TLS at the edge. Decision: orange-cloud the dashboard behind Cloudflare; CloudFront origin sits behind it.</p>
-        <a class="read" href="https://github.com/dram64/soc-detection-lab/blob/main/dashboard/docs/adr/007-cloudflare-waf-over-aws-waf.md" rel="noopener">Read full ADR →</a>
-      </article>
-
-      <article class="adr-card">
-        <span class="badge">ADR-003</span>
-        <h4>DynamoDB single-table design</h4>
-        <p>Five distinct entity shapes — events, hourly aggregates, rank items, daily summaries, heartbeats — share one table with overloaded keys and three GSIs. Every access pattern resolves to a Query, never a Scan. Costs ~$0.55/mo; alternative (Aurora Serverless) would alone breach the cap.</p>
-        <a class="read" href="https://github.com/dram64/soc-detection-lab/blob/main/dashboard/docs/adr/003-single-table-design.md" rel="noopener">Read full ADR →</a>
-      </article>
-
-      <article class="adr-card">
-        <span class="badge">ADR-009</span>
-        <h4>Captured-malware policy: SHA + URL only</h4>
-        <p>Cowrie can store the binaries attackers try to drop. The dashboard does not — only the SHA-256 and source URL are kept; the binary itself is dropped at the Pi. Eliminates the binary-custody liability from the cloud surface and keeps the AWS storage policy boring.</p>
-        <a class="read" href="https://github.com/dram64/soc-detection-lab/blob/main/dashboard/docs/adr/009-captured-malware-policy.md" rel="noopener">Read full ADR →</a>
-      </article>
-
+<!-- ————— PROJECTS ————— -->
+<section id="projects">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-eyebrow">
+        <span class="num">02 / 05</span>
+        <span class="label">Projects</span>
+      </div>
+      <h2>Live systems,<br>deployed and <span class="accent">running.</span></h2>
     </div>
-  </section>
 
-  <section id="links" aria-labelledby="linksHeading">
-    <h2 id="linksHeading">Links</h2>
-    <div class="links-row">
-      <a href="https://dashboard.dram-soc.org">Live dashboard</a>
-      <a href="https://github.com/dram64/soc-detection-lab" rel="noopener">GitHub repo</a>
-      <a href="https://github.com/dram64/soc-detection-lab/tree/main/dashboard/docs/adr" rel="noopener">All ADRs</a>
-      <a href="https://github.com/dram64/soc-detection-lab/blob/main/dashboard/docs/ENGINEERING_NARRATIVE.md" rel="noopener">Engineering narrative</a>
+    <!-- PROJECT 1: SOC -->
+    <div class="project">
+      <div class="project-card">
+        <div class="project-header">
+          <div class="project-meta-top">
+            <span class="project-status"><span class="live-dot" style="animation:none"></span>14-DAY RUN</span>
+            <span class="project-tag">Security</span>
+          </div>
+          <h3 class="project-title">SOC Detection Lab</h3>
+          <p class="project-tagline">Hybrid edge-to-cloud SSH honeypot pipeline. A Cowrie honeypot at the network edge captured real-world attacks over a 14-day run, shipped logs through a serverless AWS pipeline, and rendered attack telemetry in a React dashboard. The AWS pipeline and dashboard remain live; the edge sensor has been decommissioned after its collection run.</p>
+          <div class="project-links">
+            <a href="https://dram-soc.org" target="_blank">↗ dram-soc.org</a>
+            <a href="https://dashboard.dram-soc.org" target="_blank">↗ Live dashboard</a>
+            <a href="https://github.com/dram64/soc-detection-lab-honeypot" target="_blank">↗ GitHub</a>
+          </div>
+        </div>
+        <div class="project-body">
+          <h4>Architecture</h4>
+          <div class="arch-diagram">
+            <svg viewBox="0 0 880 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="soc-diag-title">
+              <title id="soc-diag-title">SOC Detection Lab architecture diagram</title>
+              <defs>
+                <marker id="soc-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#7fb3d5"/>
+                </marker>
+              </defs>
+
+              <!-- THREE TIERS -->
+              <text x="100" y="28" font-family="JetBrains Mono, monospace" font-size="10" fill="#7fb3d5" letter-spacing="1.5">EDGE</text>
+              <rect x="20" y="40" width="160" height="240" fill="none" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4 4" rx="6"/>
+
+              <text x="280" y="28" font-family="JetBrains Mono, monospace" font-size="10" fill="#7fb3d5" letter-spacing="1.5">VPS &middot; INGRESS</text>
+              <rect x="200" y="40" width="160" height="240" fill="none" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4 4" rx="6"/>
+
+              <text x="510" y="28" font-family="JetBrains Mono, monospace" font-size="10" fill="#7fb3d5" letter-spacing="1.5">AWS PIPELINE</text>
+              <rect x="380" y="40" width="320" height="240" fill="none" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4 4" rx="6"/>
+
+              <text x="780" y="28" font-family="JetBrains Mono, monospace" font-size="10" fill="#7fb3d5" letter-spacing="1.5">VIEWER</text>
+              <rect x="720" y="40" width="140" height="240" fill="none" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4 4" rx="6"/>
+
+              <text x="100" y="68" font-family="JetBrains Mono, monospace" font-size="11" fill="#6b7280" text-anchor="middle">attacker</text>
+              <text x="100" y="84" font-family="JetBrains Mono, monospace" font-size="13" fill="#1a1f2b" text-anchor="middle" font-weight="600">SSH probe</text>
+
+              <rect x="40" y="150" width="120" height="94" fill="#f4f8fc" stroke="#7fb3d5" stroke-width="1.5" rx="4"/>
+              <text x="100" y="170" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#1a1f2b" text-anchor="middle">Raspberry Pi 5</text>
+              <text x="100" y="188" font-family="JetBrains Mono, monospace" font-size="10" fill="#7fb3d5" text-anchor="middle">k3s worker</text>
+              <text x="100" y="204" font-family="JetBrains Mono, monospace" font-size="10" fill="#7fb3d5" text-anchor="middle">cowrie pod</text>
+              <text x="100" y="220" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">fluent-bit</text>
+              <text x="100" y="234" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">SSH honeypot</text>
+
+              <rect x="220" y="100" width="120" height="56" fill="#f4f8fc" stroke="#7fb3d5" stroke-width="1.5" rx="4"/>
+              <text x="280" y="120" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#1a1f2b" text-anchor="middle">HAProxy</text>
+              <text x="280" y="136" font-family="JetBrains Mono, monospace" font-size="9" fill="#7fb3d5" text-anchor="middle">DigitalOcean</text>
+              <text x="280" y="150" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b7280" text-anchor="middle">public :22</text>
+
+              <rect x="220" y="172" width="120" height="56" fill="#f4f8fc" stroke="#cbd5e1" rx="4"/>
+              <text x="280" y="192" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#1a1f2b" text-anchor="middle">autossh</text>
+              <text x="280" y="208" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">reverse tunnel</text>
+              <text x="280" y="220" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b7280" text-anchor="middle">Pi-initiated</text>
+
+              <text x="280" y="252" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">fluent-bit &middot; haproxy.log</text>
+
+              <line x1="160" y1="195" x2="216" y2="195" stroke="#7fb3d5" stroke-width="1.5" marker-end="url(#soc-arrow)"/>
+              <line x1="340" y1="130" x2="396" y2="80" stroke="#7fb3d5" stroke-width="1.5" marker-end="url(#soc-arrow)"/>
+              <text x="378" y="115" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">S3 put</text>
+
+              <rect x="400" y="60" width="100" height="40" fill="#eef2f6" stroke="#cbd5e1" rx="3"/>
+              <text x="450" y="84" font-family="Inter, sans-serif" font-size="12" font-weight="500" fill="#1a1f2b" text-anchor="middle">S3</text>
+
+              <rect x="400" y="130" width="100" height="56" fill="#eef2f6" stroke="#cbd5e1" rx="3"/>
+              <text x="450" y="150" font-family="Inter, sans-serif" font-size="11" font-weight="500" fill="#1a1f2b" text-anchor="middle">Ingest &lambda;</text>
+              <text x="450" y="164" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b7280" text-anchor="middle">timestamp corr.</text>
+              <text x="450" y="177" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b7280" text-anchor="middle">+ GeoLite2</text>
+
+              <rect x="525" y="130" width="100" height="40" fill="#eef2f6" stroke="#cbd5e1" rx="3"/>
+              <text x="575" y="148" font-family="Inter, sans-serif" font-size="11" font-weight="500" fill="#1a1f2b" text-anchor="middle">DynamoDB</text>
+              <text x="575" y="161" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b7280" text-anchor="middle">single-table</text>
+
+              <rect x="525" y="200" width="100" height="40" fill="#eef2f6" stroke="#cbd5e1" rx="3"/>
+              <text x="575" y="218" font-family="Inter, sans-serif" font-size="11" font-weight="500" fill="#1a1f2b" text-anchor="middle">Aggregator &lambda;</text>
+              <text x="575" y="231" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b7280" text-anchor="middle">rollups</text>
+
+              <rect x="640" y="130" width="60" height="40" fill="#eef2f6" stroke="#cbd5e1" rx="3"/>
+              <text x="670" y="148" font-family="Inter, sans-serif" font-size="11" font-weight="500" fill="#1a1f2b" text-anchor="middle">API &lambda;</text>
+              <text x="670" y="161" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b7280" text-anchor="middle">HTTP API</text>
+
+              <line x1="450" y1="100" x2="450" y2="125" stroke="#7fb3d5" stroke-width="1.2" marker-end="url(#soc-arrow)"/>
+              <line x1="500" y1="155" x2="520" y2="150" stroke="#7fb3d5" stroke-width="1.2" marker-end="url(#soc-arrow)"/>
+              <line x1="575" y1="170" x2="575" y2="195" stroke="#7fb3d5" stroke-width="1.2" marker-end="url(#soc-arrow)"/>
+              <line x1="625" y1="150" x2="638" y2="150" stroke="#7fb3d5" stroke-width="1.2" marker-end="url(#soc-arrow)"/>
+              <line x1="700" y1="150" x2="730" y2="150" stroke="#7fb3d5" stroke-width="1.5" marker-end="url(#soc-arrow)"/>
+
+              <rect x="730" y="100" width="120" height="100" fill="#f4f8fc" stroke="#cbd5e1" rx="4"/>
+              <text x="790" y="124" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#1a1f2b" text-anchor="middle">Cloudflare</text>
+              <text x="790" y="142" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">edge WAF (ADR-007)</text>
+              <line x1="740" y1="155" x2="840" y2="155" stroke="#e2e8f0" stroke-width="1"/>
+              <text x="790" y="172" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#1a1f2b" text-anchor="middle">CloudFront</text>
+              <text x="790" y="190" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">React SPA</text>
+
+              <text x="790" y="232" font-family="JetBrains Mono, monospace" font-size="10" fill="#6b7280" text-anchor="middle">dashboard.dram-soc.org</text>
+            </svg>
+          </div>
+          <div class="arch-caption">Three tiers, real deployment: Raspberry Pi 5 running Cowrie as a k3s pod (edge) &rarr; HAProxy on a DigitalOcean droplet with an autossh reverse tunnel (VPS ingress) &rarr; fluent-bit &rarr; S3 &rarr; Lambda pipeline (ingest with timestamp-window correlation + MaxMind GeoLite2 &rarr; DynamoDB &rarr; aggregator &rarr; API Gateway HTTP API) &rarr; CloudFront React dashboard fronted by Cloudflare proxied DNS.</div>
+
+          <h4>Highlights</h4>
+          <ul>
+            <li><strong>Reverse-tunnel edge architecture:</strong> the Pi 5 never has a port forwarded from a residential ISP &mdash; <code>autossh</code> holds a persistent reverse SSH tunnel to a DigitalOcean droplet running HAProxy as the public ingress. Home IP stays private; attackers hit the droplet.</li>
+            <li><strong>Bidirectional timestamp-window correlation:</strong> Cowrie sees every attacker as <code>127.0.0.1</code> because of the reverse tunnel. The ingest Lambda joins each Cowrie session to the corresponding HAProxy log line on a 500ms window (empirically widened from a 200ms baseline after measuring real-traffic handshake latency &mdash; see ADR-010), recovering the real source IP. Enriched with MaxMind GeoLite2 Country + ASN.</li>
+            <li><strong>Serverless AWS pipeline:</strong> fluent-bit on both edges &rarr; S3 (per-prefix scoped IAM) &rarr; 3 Python 3.13 Lambdas (ingest / aggregator / api) &rarr; single-table DynamoDB (ADR-003) &rarr; API Gateway HTTP API &rarr; CloudFront + ACM &rarr; React 18 + Vite + TS + TanStack Query SPA. Cloudflare proxied DNS as edge WAF (ADR-007). All Terraform.</li>
+            <li><strong>Detection engineering:</strong> 5 Sigma rules covering MITRE ATT&amp;CK Initial Access (T1110), Lateral Movement (T1021), and Command &amp; Control (T1071), syntax-validated in CI via <code>sigma-validate.yml</code>. Real-attacker-fixture corpus with sanitization enforced by ADR-005 (password strip, RFC 5737 doc-IP swap for the maintainer&rsquo;s home IP).</li>
+            <li><strong>Security engineering:</strong> GitHub Actions OIDC &rarr; scoped deploy role with the ADR-011 permission boundary (CI role explicitly cannot mint AWS access keys &mdash; human-managed credentials live in separate Terraform state). 262 pytest gates + ruff + tflint + tfsec + gitleaks + Sigma validation, all required before merge.</li>
+            <li><strong>Observability:</strong> CloudWatch metric filters + alarms on the ingest Lambda&rsquo;s log group, SNS-backed alerting on <code>cowrie-heartbeat-missing</code> and <code>haproxy-heartbeat-missing</code> (15-min window, <code>treat_missing_data: breaching</code>). 9 ADRs documenting the design trade-offs.</li>
+          </ul>          </ul>
+
+          <h4>Collection summary <span style="font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted);letter-spacing:0;">— 14-day run · May 6–21, 2026</span></h4>
+          <div class="hardware-grid">
+            <div class="hw-item"><div class="role">Events captured</div><div class="name" style="font-family:var(--display);font-size:23px;font-weight:800;letter-spacing:-0.01em;">231,930</div></div>
+            <div class="hw-item"><div class="role">Attack sessions</div><div class="name" style="font-family:var(--display);font-size:23px;font-weight:800;letter-spacing:-0.01em;">36,440</div></div>
+            <div class="hw-item"><div class="role">SSH login attempts</div><div class="name" style="font-family:var(--display);font-size:23px;font-weight:800;letter-spacing:-0.01em;">36,405</div></div>
+            <div class="hw-item"><div class="role">Unique attacker IPs</div><div class="name" style="font-family:var(--display);font-size:23px;font-weight:800;letter-spacing:-0.01em;">1,322</div></div>
+            <div class="hw-item"><div class="role">Source countries</div><div class="name" style="font-family:var(--display);font-size:23px;font-weight:800;letter-spacing:-0.01em;">84</div></div>
+            <div class="hw-item"><div class="role">Commands executed</div><div class="name" style="font-family:var(--display);font-size:23px;font-weight:800;letter-spacing:-0.01em;">16,180</div></div>
+            <div class="hw-item"><div class="role">Malware-download attempts</div><div class="name" style="font-family:var(--display);font-size:23px;font-weight:800;letter-spacing:-0.01em;">1,592</div></div>
+            <div class="hw-item"><div class="role">Distinct commands</div><div class="name" style="font-family:var(--display);font-size:23px;font-weight:800;letter-spacing:-0.01em;">70</div></div>
+          </div>
+          <div class="arch-caption">Captured live botnet activity — Mirai credential markers (<code>345gs5662d34</code>), SSH-key implant persistence, crypto-mining reconnaissance, and automated Go / libssh scanners. Top origins: Netherlands, Uzbekistan, United States (374 IPs), Hong Kong, Germany. Raw events archived to S3; correlated + GeoIP-enriched in DynamoDB.</div>
+
+          <h4>Stack</h4>
+          <div class="stack-row">
+            <span class="stack-chip">Cowrie</span>
+            <span class="stack-chip">HAProxy</span>
+            <span class="stack-chip">autossh</span>
+            <span class="stack-chip">fluent-bit</span>
+            <span class="stack-chip">k3s</span>
+            <span class="stack-chip">AWS Lambda</span>
+            <span class="stack-chip">DynamoDB</span>
+            <span class="stack-chip">API Gateway HTTP</span>
+            <span class="stack-chip">S3</span>
+            <span class="stack-chip">CloudFront</span>
+            <span class="stack-chip">EventBridge</span>
+            <span class="stack-chip">CloudWatch + SNS</span>
+            <span class="stack-chip">MaxMind GeoLite2</span>
+            <span class="stack-chip">Sigma</span>
+            <span class="stack-chip">Cloudflare</span>
+            <span class="stack-chip">Terraform</span>
+            <span class="stack-chip">GitHub Actions OIDC</span>
+            <span class="stack-chip">Python 3.13</span>
+            <span class="stack-chip">React 18 + Vite + TS</span>
+            <span class="stack-chip">TanStack Query</span>
+            <span class="stack-chip">pytest (262)</span>
+          </div>
+        </div>
+      </div>
     </div>
-  </section>
 
-</main>
+    <!-- PROJECT 2: TOKYO ZERO SHOWCASE -->
+    <div class="project">
+      <div class="project-card tz-card">
+        <div class="project-header">
+          <div class="project-meta-top">
+            <span class="project-status"><span class="live-dot"></span>LIVE</span>
+            <span class="project-tag">Design &middot; Cloud &middot; Case study</span>
+          </div>
+          <h3 class="project-title">Tokyo Zero &mdash; showcase.</h3>
+          <p class="project-tagline">Portfolio + design case study for Tokyo Zero. Astro static frontend, palette + typography writeup at <a href="https://showcase.dram-soc.org/process" target="_blank">/process</a>. Underneath: a multi-region serverless AWS stack &mdash; CloudFront with origin-group failover, hourly Puppeteer canary, nightly digest Lambda writing live JSON to <a href="https://showcase.dram-soc.org/status" target="_blank">/status</a> and <a href="https://showcase.dram-soc.org/insights" target="_blank">/insights</a>. All Terraform, one apply.</p>
+          <div class="project-links">
+            <a href="https://showcase.dram-soc.org" target="_blank">&#8599; showcase.dram-soc.org</a>
+            <a href="https://showcase.dram-soc.org/architecture" target="_blank">&#8599; /architecture</a>
+            <a href="https://showcase.dram-soc.org/process" target="_blank">&#8599; /process</a>
+            <a href="https://github.com/dram64/showcase.dram-soc.org" target="_blank">&#8599; GitHub</a>
+          </div>
+        </div>
+        <div class="project-body">
+          <p class="tz-eyebrow">// case study &middot; cloud</p>
+          <h4>Architecture.</h4>
+<pre class="tz-ascii">      user
+       &#9474;
+       &#9660;
+   &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;        &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+   &#9474;  cloudflare &#9474;        &#9474;  acm (us-east-1) &#9474;
+   &#9474;     dns     &#9474;        &#9474;  wildcard cert   &#9474;
+   &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;        &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
+          &#9474;                        &#9474;
+          &#9660;                        &#9660;
+   &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+   &#9474;           cloudfront (us-west-2)         &#9474;
+   &#9474;  &middot; origin group (failover on 5xx/403)    &#9474;
+   &#9474;  &middot; viewer-request rewrite fn             &#9474;
+   &#9474;  &middot; security-headers policy               &#9474;
+   &#9492;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
+        &#9474;                             &#9474;
+GET *   &#9474;                             &#9474;  POST /contact
+        &#9660;                             &#9660;
+ &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;             &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+ &#9474;  s3 primary  &#9474;             &#9474;   http api v2  &#9474;
+ &#9474;  us-west-2   &#9474;             &#9474;   api gateway  &#9474;
+ &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;             &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
+        &#9474; crr (async)                  &#9474;
+        &#9660;                              &#9660;
+ &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;             &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+ &#9474;  s3 dr       &#9474;             &#9474;  lambda        &#9474;
+ &#9474;  us-east-1   &#9474;             &#9474;  (node 20)     &#9474;
+ &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;             &#9492;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9496;
+                                 &#9474;        &#9474;
+                                 &#9660;        &#9660;
+                          &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488; &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+                          &#9474;  ses   &#9474; &#9474; dynamodb   &#9474;
+                          &#9474;  send  &#9474; &#9474;  audit     &#9474;
+                          &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496; &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
+
+  observability plane
+  &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
+  synthetics canary &#9472; 3 endpoints, hourly, us-west-2 &#9472;&#9654; cloudwatch alarms
+  x-ray tracing     &#9472; lambda + api gw + digest lambda &#9472;&#9654; trace map
+  eventbridge sched &#9472; nightly 03:00 utc               &#9472;&#9654; digest lambda
+     digest lambda  &#9472; synthetics + athena
+                     &#9472;&#9654; json &#8594; s3 (primary + dr) &#8594; /status /insights</pre>
+          <p class="tz-caption">Cloudflare DNS &rarr; CloudFront (OAC, security headers, viewer-request URL rewrite) &rarr; S3 primary in us-west-2, cross-region replicated to a DR bucket in us-east-1. Origin group flips to DR on 5xx/timeout &mdash; no DNS change. Contact form: API GW HTTP v2 &rarr; Node 20 Lambda &rarr; DynamoDB audit + SES send. Observability: hourly Synthetics canary + nightly EventBridge &rarr; digest Lambda &rarr; Athena over CloudFront logs &rarr; status.json + insights.json.</p>
+
+          <p class="tz-eyebrow">// services &middot; purpose</p>
+          <h4>Services.</h4>
+          <div class="tz-tbl-wrap">
+            <table class="tz-tbl">
+              <thead><tr><th>Service</th><th>Purpose</th><th>Why</th></tr></thead>
+              <tbody>
+                <tr><td><code>s3</code></td><td>Origin bucket + DR replica + logs + Athena results.</td><td>Private, OAC-only reads. Cross-region replication to us-east-1 for a passive DR.</td></tr>
+                <tr><td><code>cloudfront</code></td><td>HTTPS-terminating CDN + edge cache.</td><td>Origin group failover, security-headers policy, JS URL rewrite at the edge.</td></tr>
+                <tr><td><code>acm</code></td><td>TLS cert in us-east-1 for CloudFront.</td><td>DNS-01 validated via a Cloudflare CNAME.</td></tr>
+                <tr><td><code>api gateway v2</code></td><td>Public POST /contact endpoint.</td><td>Lighter than REST. CORS enforced at the gateway so Lambda never sees preflights.</td></tr>
+                <tr><td><code>lambda</code></td><td>Contact handler + nightly digest job.</td><td>Node 20 with X-Ray active tracing. IAM scoped tight per function.</td></tr>
+                <tr><td><code>ses</code></td><td>Sends contact submissions to the owner.</td><td>Policy condition on <code>ses:FromAddress</code> blocks impersonation.</td></tr>
+                <tr><td><code>dynamodb</code></td><td>Contact audit table + Terraform state lock.</td><td>Pay-per-request + PITR + encryption at rest.</td></tr>
+                <tr><td><code>athena + glue</code></td><td>Analytics over CloudFront access logs.</td><td>Workgroup capped at 1 GB scanned per query. Saved queries in Terraform.</td></tr>
+                <tr><td><code>synthetics</code></td><td>Puppeteer canary hitting 3 pages hourly.</td><td>Screenshots + timing + alarm on <code>SuccessPercent &lt; 100</code>.</td></tr>
+                <tr><td><code>eventbridge sched</code></td><td>Nightly cron for the digest Lambda.</td><td>Cleaner IAM model than legacy CloudWatch Events.</td></tr>
+                <tr><td><code>x-ray</code></td><td>Distributed tracing across Lambda + API GW.</td><td>Request path shows up in the trace map when something breaks.</td></tr>
+                <tr><td><code>cloudwatch logs</code></td><td>Lambda + HTTP API access logs.</td><td>30-day retention on every group so nothing quietly creeps up.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="tz-eyebrow">// stack</p>
+          <h4>Stack.</h4>
+          <div class="tz-stack">
+            <span class="tz-chip">Astro</span>
+            <span class="tz-chip">TypeScript</span>
+            <span class="tz-chip">Terraform</span>
+            <span class="tz-chip">AWS Lambda</span>
+            <span class="tz-chip">API Gateway HTTP v2</span>
+            <span class="tz-chip">DynamoDB</span>
+            <span class="tz-chip">SES</span>
+            <span class="tz-chip">CloudFront</span>
+            <span class="tz-chip">S3 (multi-region)</span>
+            <span class="tz-chip">ACM</span>
+            <span class="tz-chip">Synthetics</span>
+            <span class="tz-chip">EventBridge</span>
+            <span class="tz-chip">Athena &middot; Glue</span>
+            <span class="tz-chip">X-Ray</span>
+            <span class="tz-chip">SNS &middot; Budgets</span>
+            <span class="tz-chip">GitHub Actions OIDC</span>
+            <span class="tz-chip">Cloudflare</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ————— HOMELAB ————— -->
+<section id="homelab">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-eyebrow">
+        <span class="num">03 / 05</span>
+        <span class="label">Homelab</span>
+      </div>
+      <h2>Personal<br><span class="accent">homelab.</span></h2>
+      <p class="section-intro" style="margin-top: 18px;">Self-hosted homelab environment, services platform, and continuous-deployment target — used to deepen hands-on networking, security, and infrastructure skills beyond what cloud-only environments offer.</p>
+    </div>
+
+    <div class="homelab-card">
+      <h4>Network Topology</h4>
+      <div class="arch-diagram" style="padding:22px 16px;">
+        <svg viewBox="0 0 880 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="lab-diag-title">
+          <title id="lab-diag-title">Homelab network topology</title>
+          <defs>
+            <marker id="lab-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#7fb3d5"/>
+            </marker>
+          </defs>
+
+          <!-- Internet -->
+          <text x="440" y="22" font-family="JetBrains Mono, monospace" font-size="10" fill="#6b7280" letter-spacing="1.5" text-anchor="middle">INTERNET</text>
+          <line x1="440" y1="32" x2="440" y2="62" stroke="#7fb3d5" stroke-width="1.5" marker-end="url(#lab-arrow)"/>
+
+          <!-- Palo Alto firewall -->
+          <rect x="280" y="65" width="320" height="46" fill="#f4f8fc" stroke="#7fb3d5" stroke-width="1.5" rx="4"/>
+          <text x="440" y="83" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1a1f2b" text-anchor="middle">Palo Alto PA-440</text>
+          <text x="440" y="99" font-family="JetBrains Mono, monospace" font-size="10" fill="#7fb3d5" text-anchor="middle">NGFW &middot; zone policies</text>
+
+          <line x1="440" y1="111" x2="440" y2="135" stroke="#7fb3d5" stroke-width="1.5" marker-end="url(#lab-arrow)"/>
+
+          <!-- Cisco switch -->
+          <rect x="280" y="135" width="320" height="44" fill="#f4f8fc" stroke="#7fb3d5" stroke-width="1.5" rx="4"/>
+          <text x="440" y="154" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1a1f2b" text-anchor="middle">Cisco Catalyst C1000-8T</text>
+          <text x="440" y="170" font-family="JetBrains Mono, monospace" font-size="10" fill="#7fb3d5" text-anchor="middle">VLANs &middot; mgmt / servers / lab</text>
+
+          <!-- Three branch lines down -->
+          <line x1="160" y1="190" x2="160" y2="212" stroke="#7fb3d5" stroke-width="1.2"/>
+          <line x1="160" y1="190" x2="380" y2="182" stroke="#6b7280" stroke-width="1" stroke-dasharray="2 3"/>
+          <line x1="440" y1="182" x2="440" y2="212" stroke="#7fb3d5" stroke-width="1.2"/>
+          <line x1="720" y1="190" x2="720" y2="212" stroke="#7fb3d5" stroke-width="1.2"/>
+          <line x1="720" y1="190" x2="500" y2="182" stroke="#6b7280" stroke-width="1" stroke-dasharray="2 3"/>
+
+          <!-- VLAN labels -->
+          <text x="160" y="203" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">vlan 10 &middot; mgmt</text>
+          <text x="440" y="203" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">vlan 20 &middot; servers</text>
+          <text x="720" y="203" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">vlan 30 &middot; lab</text>
+
+          <!-- UniFi AP -->
+          <rect x="60" y="220" width="200" height="150" fill="#eef2f6" stroke="#cbd5e1" rx="4"/>
+          <text x="160" y="242" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1a1f2b" text-anchor="middle">Ubiquiti UniFi U6+</text>
+          <text x="160" y="258" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">managed wireless &middot; PoE</text>
+          <line x1="80" y1="270" x2="240" y2="270" stroke="#e2e8f0" stroke-width="1"/>
+          <text x="160" y="290" font-family="JetBrains Mono, monospace" font-size="10" fill="#6b7280" text-anchor="middle">Wi-Fi 6 (802.11ax)</text>
+          <text x="160" y="306" font-family="JetBrains Mono, monospace" font-size="10" fill="#6b7280" text-anchor="middle">multi-SSID / VLAN tag</text>
+          <text x="160" y="326" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">UniFi Network</text>
+          <text x="160" y="340" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">controller</text>
+
+          <!-- Proxmox HA cluster -->
+          <rect x="320" y="220" width="240" height="180" fill="#eef2f6" stroke="#7fb3d5" stroke-width="1.5" rx="4"/>
+          <text x="440" y="242" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1a1f2b" text-anchor="middle">Proxmox VE HA cluster</text>
+          <text x="440" y="258" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">3 nodes &middot; ZFS &middot; live migration</text>
+          <line x1="340" y1="270" x2="540" y2="270" stroke="#e2e8f0" stroke-width="1"/>
+
+          <rect x="335" y="280" width="105" height="48" fill="#f4f8fc" stroke="#cbd5e1" rx="3"/>
+          <text x="387" y="298" font-family="Inter, sans-serif" font-size="10" font-weight="500" fill="#1a1f2b" text-anchor="middle">OptiPlex Micro</text>
+          <text x="387" y="312" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b7280" text-anchor="middle">node A &middot; vPro/AMT</text>
+          <text x="387" y="322" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b7280" text-anchor="middle">ZFS mirror</text>
+
+          <rect x="445" y="280" width="105" height="48" fill="#f4f8fc" stroke="#cbd5e1" rx="3"/>
+          <text x="497" y="298" font-family="Inter, sans-serif" font-size="10" font-weight="500" fill="#1a1f2b" text-anchor="middle">OptiPlex Micro</text>
+          <text x="497" y="312" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b7280" text-anchor="middle">node B &middot; vPro/AMT</text>
+          <text x="497" y="322" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b7280" text-anchor="middle">ZFS mirror</text>
+
+          <rect x="335" y="334" width="215" height="46" fill="#f4f8fc" stroke="#cbd5e1" rx="3"/>
+          <text x="442" y="352" font-family="Inter, sans-serif" font-size="10" font-weight="500" fill="#1a1f2b" text-anchor="middle">HPE ProLiant MicroServer Gen10 Plus v2</text>
+          <text x="442" y="366" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b7280" text-anchor="middle">node C &middot; iLO out-of-band &middot; ZFS</text>
+
+          <text x="440" y="394" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">AD / DC &middot; k3s VMs &middot; SIEM &middot; self-hosted services</text>
+
+          <!-- Pi 5 -->
+          <rect x="620" y="220" width="200" height="150" fill="#eef2f6" stroke="#cbd5e1" rx="4"/>
+          <text x="720" y="242" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1a1f2b" text-anchor="middle">Raspberry Pi 5</text>
+          <text x="720" y="258" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">k3s worker &middot; lab VLAN</text>
+          <line x1="640" y1="270" x2="800" y2="270" stroke="#e2e8f0" stroke-width="1"/>
+          <text x="720" y="290" font-family="JetBrains Mono, monospace" font-size="10" fill="#6b7280" text-anchor="middle">edge k3s worker</text>
+          <text x="720" y="306" font-family="JetBrains Mono, monospace" font-size="10" fill="#6b7280" text-anchor="middle">Argo CD deploy target</text>
+          <text x="720" y="326" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">cowrie pod</text>
+          <text x="720" y="340" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">(retired collection run)</text>
+
+          <!-- UPS bar underneath -->
+          <rect x="280" y="405" width="320" height="14" fill="#f4f8fc" stroke="#7fb3d5" stroke-width="1" rx="3" opacity="0.85"/>
+          <text x="440" y="415" font-family="JetBrains Mono, monospace" font-size="9" fill="#7fb3d5" text-anchor="middle">APC UPS &middot; NUT graceful-shutdown automation</text>
+        </svg>
+      </div>
+      <div class="arch-caption" style="margin-bottom:24px;">Internet &rarr; PA-440 (NGFW zone policies) &rarr; Catalyst C1000-8T (VLAN segmentation, mgmt / servers / lab) &rarr; UniFi U6+ wireless / Proxmox HA cluster (2&times; OptiPlex Micro + HPE MicroServer Gen10 Plus v2, ZFS replication, live migration, HPE iLO + Intel vPro/AMT out-of-band) / Raspberry Pi 5 k3s worker. APC UPS with NUT graceful-shutdown on the whole rack.</div>
+
+      <h4 style="margin-top: 28px;">Hardware</h4>
+      <div class="hardware-grid">
+        <div class="hw-item">
+          <div class="role">Hypervisor cluster</div>
+          <div class="name">2&times; Dell OptiPlex Micro + HPE ProLiant MicroServer Gen10 Plus v2</div>
+        </div>
+        <div class="hw-item">
+          <div class="role">L2 switching</div>
+          <div class="name">Cisco Catalyst C1000-8T (VLAN-segmented)</div>
+        </div>
+        <div class="hw-item">
+          <div class="role">Firewall</div>
+          <div class="name">Palo Alto PA-440 NGFW</div>
+        </div>
+        <div class="hw-item">
+          <div class="role">Wireless</div>
+          <div class="name">Ubiquiti UniFi U6+ (managed, PoE)</div>
+        </div>
+        <div class="hw-item">
+          <div class="role">Edge / worker</div>
+          <div class="name">Raspberry Pi 5 (k3s worker)</div>
+        </div>
+        <div class="hw-item">
+          <div class="role">Storage</div>
+          <div class="name">ZFS mirror across cluster nodes</div>
+        </div>
+        <div class="hw-item">
+          <div class="role">Out-of-band mgmt</div>
+          <div class="name">HPE iLO + Intel vPro / AMT</div>
+        </div>
+        <div class="hw-item">
+          <div class="role">Power</div>
+          <div class="name">APC UPS + NUT (graceful shutdown)</div>
+        </div>
+      </div>
+
+      <h4 style="margin-top: 28px;">What it does</h4>
+      <ul class="lab-list">
+        <li><strong>Windows Server Active Directory domain</strong> &mdash; users, groups, OUs, GPO, DNS, DHCP; hybrid-joined to Entra ID with Intune device policies applied.</li>
+        <li><strong>Multi-node k3s across Proxmox VMs + the Pi 5</strong> &mdash; GitOps deploys via Argo CD; self-hosted services (DNS filtering, internal Git, password manager) monitored with Prometheus/Grafana.</li>
+        <li><strong>Three-node Proxmox HA cluster</strong> &mdash; ZFS replication, live migration between nodes, out-of-band management over HPE iLO (MicroServer) and Intel vPro / AMT (OptiPlex Micros).</li>
+        <li><strong>Segmented network</strong> &mdash; VLANs and trunking on the Catalyst C1000-8T, inter-zone security policies on the PA-440, UniFi U6+ for managed wireless.</li>
+        <li><strong>Detection stack:</strong> Wazuh SIEM with agents across the Windows domain and Linux VMs (Sysmon telemetry, detections tested with Atomic Red Team). Suricata IDS on a SPAN port off the Catalyst monitoring the lab VLAN. Elastic Stack ingesting the archived honeypot dataset (S3 replay via Filebeat/Logstash) with the project&rsquo;s 5 Sigma rules deployed against it in Kibana.</li>
+        <li><strong>Operations routine:</strong> Ansible-driven patching, scheduled backups, UPS-backed graceful shutdown via NUT, monitoring and log review.</li>
+      </ul>
+    </div>
+    </div>
+  </div>
+</section>
+
+<!-- ————— SKILLS ————— -->
+<section id="skills" class="paper">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-eyebrow">
+        <span class="num">04 / 05</span>
+        <span class="label">Skills</span>
+      </div>
+      <h2>Stack &amp; <span class="accent">capabilities.</span></h2>
+    </div>
+
+    <div class="skills-grid">
+      <div class="skill-cat">
+        <h3>Cloud <span class="count">13</span></h3>
+        <div class="skill-list">
+          <span class="skill-tag">AWS</span>
+          <span class="skill-tag">Lambda</span>
+          <span class="skill-tag">DynamoDB</span>
+          <span class="skill-tag">API Gateway</span>
+          <span class="skill-tag">CloudFront</span>
+          <span class="skill-tag">S3</span>
+          <span class="skill-tag">IAM</span>
+          <span class="skill-tag">ACM</span>
+          <span class="skill-tag">CloudWatch</span>
+          <span class="skill-tag">EventBridge</span>
+          <span class="skill-tag">Bedrock</span>
+          <span class="skill-tag">VPC</span>
+          <span class="skill-tag">Cloudflare</span>
+        </div>
+      </div>
+      <div class="skill-cat">
+        <h3>Security <span class="count">10</span></h3>
+        <div class="skill-list">
+          <span class="skill-tag">Wazuh SIEM</span>
+          <span class="skill-tag">Elastic Stack (ELK)</span>
+          <span class="skill-tag">Suricata IDS/IPS</span>
+          <span class="skill-tag">Sigma rules / MITRE ATT&amp;CK</span>
+          <span class="skill-tag">Honeypot &amp; attacker telemetry analysis</span>
+          <span class="skill-tag">Log analysis</span>
+          <span class="skill-tag">Packet capture</span>
+          <span class="skill-tag">Network security</span>
+          <span class="skill-tag">Firewall policy</span>
+          <span class="skill-tag">TLS/SSL</span>
+        </div>
+      </div>
+      <div class="skill-cat">
+        <h3>DevOps <span class="count">11</span></h3>
+        <div class="skill-list">
+          <span class="skill-tag">GitHub Actions</span>
+          <span class="skill-tag">CI/CD pipelines</span>
+          <span class="skill-tag">GitOps</span>
+          <span class="skill-tag">Argo CD</span>
+          <span class="skill-tag">Ansible</span>
+          <span class="skill-tag">Kubernetes</span>
+          <span class="skill-tag">k3s</span>
+          <span class="skill-tag">Multi-node clusters</span>
+          <span class="skill-tag">Container orchestration</span>
+          <span class="skill-tag">IaC</span>
+          <span class="skill-tag">Terraform</span>
+        </div>
+      </div>
+      <div class="skill-cat">
+        <h3>Networking <span class="count">6</span></h3>
+        <div class="skill-list">
+          <span class="skill-tag">VLANs</span>
+          <span class="skill-tag">ACLs</span>
+          <span class="skill-tag">Cisco Catalyst C1000</span>
+          <span class="skill-tag">Palo Alto NGFW</span>
+          <span class="skill-tag">Ubiquiti UniFi</span>
+          <span class="skill-tag">Routing</span>
+        </div>
+      </div>
+      <div class="skill-cat">
+        <h3>Infrastructure <span class="count">7</span></h3>
+        <div class="skill-list">
+          <span class="skill-tag">Dell OptiPlex + HPE ProLiant</span>
+          <span class="skill-tag">HPE iLO + Intel vPro/AMT (out-of-band)</span>
+          <span class="skill-tag">Proxmox VE (HA clustering)</span>
+          <span class="skill-tag">ZFS (replication, mirror)</span>
+          <span class="skill-tag">Windows Server AD + Entra ID / Intune</span>
+          <span class="skill-tag">UPS-backed power (APC + NUT)</span>
+          <span class="skill-tag">Self-hosted services</span>
+        </div>
+      </div>
+      <div class="skill-cat">
+        <h3>Backend &amp; Data <span class="count">8</span></h3>
+        <div class="skill-list">
+          <span class="skill-tag">Python</span>
+          <span class="skill-tag">Lambda</span>
+          <span class="skill-tag">pytest</span>
+          <span class="skill-tag">Serverless event-driven</span>
+          <span class="skill-tag">Single-table design</span>
+          <span class="skill-tag">REST</span>
+          <span class="skill-tag">WebSocket APIs</span>
+          <span class="skill-tag">Real-time fanout</span>
+        </div>
+      </div>
+      <div class="skill-cat">
+        <h3>Frontend <span class="count">7</span></h3>
+        <div class="skill-list">
+          <span class="skill-tag">React</span>
+          <span class="skill-tag">TypeScript</span>
+          <span class="skill-tag">Vite</span>
+          <span class="skill-tag">TanStack Query</span>
+          <span class="skill-tag">Tailwind CSS</span>
+          <span class="skill-tag">Recharts</span>
+          <span class="skill-tag">Responsive SPA</span>
+        </div>
+      </div>
+      <div class="skill-cat">
+        <h3>Methodology <span class="count">5</span></h3>
+        <div class="skill-list">
+          <span class="skill-tag">Agile/Scrum</span>
+          <span class="skill-tag">Git</span>
+          <span class="skill-tag">ADRs</span>
+          <span class="skill-tag">Code review</span>
+          <span class="skill-tag">Technical writing</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="certs-section">
+      <div class="certs-heading">Certifications</div>
+      <div class="certs-row">
+        <div class="cert-card">
+          <div class="cert-name">AWS Certified Solutions Architect — Associate</div>
+          <div class="cert-issuer">SAA-C03 · Amazon Web Services</div>
+        </div>
+        <div class="cert-card">
+          <div class="cert-name">CompTIA Security+</div>
+          <div class="cert-issuer">SY0-701 · CompTIA</div>
+        </div>
+      </div>
+
+      <div class="certs-heading" style="margin-top: 32px;">In Progress</div>
+      <div class="certs-row">
+        <div class="cert-card progress">
+          <div class="cert-name">Cisco Certified Network Associate</div>
+          <div class="cert-issuer">CCNA · Cisco</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ————— CONTACT ————— -->
+<section id="contact">
+  <div class="container">
+    <div class="section-header" style="margin-bottom: 24px;">
+      <div class="section-eyebrow">
+        <span class="num">05 / 05</span>
+        <span class="label">Find me</span>
+      </div>
+    </div>
+    <div class="contact-list">
+      <a href="/cdn-cgi/l/email-protection#3c58594f554e5d51554e59460a0e0e0c0c7c5b515d5550125f5351" class="contact-row">
+        <span class="contact-label">Email</span>
+        <span class="contact-value"><span class="__cf_email__" data-cfemail="6d09081e041f0c00041f08175b5f5f5d5d2d0a000c0401430e0200">[email&#160;protected]</span></span>
+      </a>
+      <a href="https://www.linkedin.com/in/desi-ramirez" target="_blank" class="contact-row">
+        <span class="contact-label">LinkedIn</span>
+        <span class="contact-value">linkedin.com/in/desi-ramirez</span>
+      </a>
+      <a href="https://github.com/dram64" target="_blank" class="contact-row">
+        <span class="contact-label">GitHub</span>
+        <span class="contact-value">github.com/dram64</span>
+      </a>
+      <a href="tel:+13234236495" class="contact-row">
+        <span class="contact-label">Phone</span>
+        <span class="contact-value">(323) 423-6495</span>
+      </a>
+    </div>
+  </div>
+</section>
 
 <footer>
-  © 2026 dram-soc.org · Built on AWS · <a href="https://github.com/dram64/soc-detection-lab" rel="noopener" aria-label="GitHub">GitHub</a>
+  <div class="container">
+    <p>Desi Ramirez · Built with care · Hosted on AWS · 2026</p>
+    <p>Source: <a href="https://github.com/dram64">github.com/dram64</a></p>
+  </div>
 </footer>
 
-<script>
-(function () {
-  var API = "https://mlncxsr5a9.execute-api.us-east-1.amazonaws.com";
-  var el = document.getElementById("live-stat");
-
-  function setError() {
-    el.classList.add("error");
-    el.innerHTML = 'Live data unavailable — <a href="https://dashboard.dram-soc.org">view the dashboard for current stats →</a>';
-  }
-
-  // 5-second timeout. AbortSignal.timeout shipped in Node 18 / Chromium 103.
-  var controller = (typeof AbortSignal !== "undefined" && AbortSignal.timeout)
-    ? { signal: AbortSignal.timeout(5000) }
-    : {};
-
-  fetch(API + "/api/top/countries?limit=50", controller)
-    .then(function (res) {
-      if (!res.ok) throw new Error("status " + res.status);
-      return res.json();
-    })
-    .then(function (body) {
-      var items = (body && body.items) || [];
-      var n = 0;
-      for (var i = 0; i < items.length; i++) { if (items[i] && items[i].count > 0) n++; }
-      if (n <= 0) { setError(); return; }
-      el.innerHTML = 'Currently observing <strong>' + n + '</strong> countries targeting this honeypot.';
-    })
-    .catch(setError);
-})();
-</script>
-
-</body>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script></body>
 </html>
