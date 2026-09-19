@@ -171,7 +171,7 @@ Nine ADRs documenting the trade-offs that shaped the design:
 
 Seven workflows in [.github/workflows/](.github/workflows/):
 
-- **`dashboard-ci.yml`** — pytest (262 backend tests), ruff lint + format-check, terraform validate (matrix on `environments/dev` + `stacks/edge-shippers-credentials`), tflint. Runs on every PR + push to main under `dashboard/**`.
+- **`dashboard-ci.yml`** — pytest (262 backend tests), ruff lint + format-check, terraform validate (`environments/dev`), tflint. Runs on every PR + push to main under `dashboard/**`.
 - **`dashboard-tf-plan.yml`** — On PRs touching `dashboard/infrastructure/**`: OIDC-assumes the deploy role, runs `terraform plan`, posts the output as a PR comment.
 - **`dashboard-backend-deploy.yml`** — `workflow_dispatch` only (the auto-trigger flip lands after 5+ clean manual deploys per the Phase 11B-1 design). Builds Lambda zips + GeoIP layer, runs `terraform apply`.
 - **`dashboard-frontend-deploy.yml`** — Auto-fires on `dashboard/web/**` changes pushed to main. Vite build, S3 sync (with `--delete`), CloudFront invalidation. The API endpoint is resolved at deploy time via `aws apigatewayv2 get-apis --query "Items[?Name=='dram-soc-api'].ApiEndpoint"` rather than hardcoded — survives API-recreation events.

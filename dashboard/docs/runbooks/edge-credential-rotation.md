@@ -1,6 +1,8 @@
 # Runbook — Rotating fluent-bit edge credentials
 
-**Cadence:** every 90 days. Calendar reminder; rotation is manual.
+> **RETIRED 2026-09-19 — nothing to rotate.** Both fluent-bit users (`dram-soc-fluentbit-pi`, `dram-soc-fluentbit-droplet`) and their access keys were deleted when the edge hosts were decommissioned. Kept as the record of the key-exposure incident and of the rotation design, in case a future sensor needs the same pattern.
+
+**Cadence (while it was live):** every 90 days. Calendar reminder; rotation was manual.
 
 The Pi and the DigitalOcean droplet each carry a static AWS access key for fluent-bit's S3 output. Each key is scoped to `s3:PutObject` on a single prefix only (`raw/cowrie/*` for Pi, `raw/haproxy/*` for droplet) — see [ADR-010](../adr/010-fluent-bit-edge-shippers.md). Rotation is the primary mitigation for the static-key exposure surface.
 
