@@ -1,0 +1,88 @@
+# Phase 2 — local, offline detection & analysis stack.
+#
+# Single-node Elasticsearch + Kibana for replaying the archived 14-day Cowrie
+# dataset (May 6–21, 2026). This was NOT running during collection; it is an
+# after-the-fact analysis environment.
+#
+# Every port binds to 127.0.0.1 only: nothing here is reachable from the LAN or
+# the internet. Secrets come from elastic/.env (gitignored), created from
+# .env.example.
+#
+#   cd elastic && cp .env.example .env   # then set the three secrets
+#   docker compose up -d
+#   docker compose down        # stop, keep data
+#   docker compose down -v     # stop AND delete the indexed data volume
+
+name: soc-elastic
+
+services:
+  # One-shot: waits for Elasticsearch, then sets the kibana_system password so
+  # Kibana can authenticate. Exits 0 when done.
+  setup:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    environment:
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:?set ELASTIC_PASSWORD in elastic/.env}
+      KIBANA_PASSWORD: ${KIBANA_PASSWORD:?set KIBANA_PASSWORD in elastic/.env}
+    command: >
+      bash -c '
+        until curl -sf -u "elastic:$${ELASTIC_PASSWORD}" "http://es01:9200/_cluster/health?wait_for_status=yellow&timeout=5s" >/dev/null; do
+          echo "waiting for elasticsearch..."; sleep 5;
+        done;
+        until curl -s -o /dev/null -w "%{http_code}" -u "elastic:$${ELASTIC_PASSWORD}" -H "Content-Type: application/json" -X POST http://es01:9200/_security/user/kibana_system/_password -d "{\"password\":\"$${KIBANA_PASSWORD}\"}" | grep -q "^200$$"; do
+          echo "setting kibana_system password..."; sleep 5;
+        done;
+        echo "setup complete"
+      '
+    depends_on:
+      - es01
+
+  es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    environment:
+      node.name: es01
+      cluster.name: soc-detection-lab
+      discovery.type: single-node
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+      bootstrap.memory_lock: "true"
+      xpack.security.enabled: "true"
+      # Plain HTTP is acceptable only because the port is bound to loopback.
+      xpack.security.http.ssl.enabled: "false"
+      xpack.security.transport.ssl.enabled: "false"
+      xpack.license.self_generated.type: basic
+      ES_JAVA_OPTS: -Xms${ES_HEAP:-2g} -Xmx${ES_HEAP:-2g}
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    ports:
+      - "127.0.0.1:9200:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf -u elastic:$${ELASTIC_PASSWORD} 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s' >/dev/null"]
+      interval: 10s
+      timeout: 10s
+      retries: 60
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
+    environment:
+      ELASTICSEARCH_HOSTS: http://es01:9200
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: ${KIBANA_PASSWORD}
+      KIBANA_ENCRYPTION_KEY: ${KIBANA_ENCRYPTION_KEY:?set KIBANA_ENCRYPTION_KEY (32+ chars) in elastic/.env}
+      NODE_OPTIONS: --max-old-space-size=1536
+    volumes:
+      - ./kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    ports:
+      - "127.0.0.1:5601:5601"
+    depends_on:
+      es01:
+        condition: service_healthy
+    healthcheck:
+      # 401 = up but wants auth; either code means Kibana is serving.
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:5601/api/status | grep -qE '200|401'"]
+      interval: 10s
+      timeout: 10s
+      retries: 60
+
+volumes:
+  esdata:

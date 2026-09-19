@@ -1,0 +1,21 @@
+# Kibana config for the local Phase 2 replay stack (mounted read-only).
+server.name: kibana
+server.host: "0.0.0.0"          # inside the container; the host publishes it on 127.0.0.1 only
+elasticsearch.hosts: ["${ELASTICSEARCH_HOSTS}"]
+elasticsearch.username: "${ELASTICSEARCH_USERNAME}"
+elasticsearch.password: "${ELASTICSEARCH_PASSWORD}"
+
+# Required by the Security detection engine, alerting and saved-object encryption.
+xpack.encryptedSavedObjects.encryptionKey: "${KIBANA_ENCRYPTION_KEY}"
+xpack.security.encryptionKey: "${KIBANA_ENCRYPTION_KEY}"
+xpack.reporting.encryptionKey: "${KIBANA_ENCRYPTION_KEY}"
+
+# Offline lab: no usage telemetry, no "what's new" news feed.
+telemetry.optIn: false
+telemetry.allowChangingOptInStatus: false
+newsfeed.enabled: false
+
+# Per-run alert cap. The historical replay runs each rule once over the whole
+# 14-day window, and the per-event rules produce up to ~1.6k alerts in that
+# single run, so the default of 1000 would silently truncate them.
+xpack.alerting.rules.run.alerts.max: 5000

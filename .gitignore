@@ -85,3 +85,13 @@ dashboard/_ds_*.json
 # mutex; never commit.
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+
+# Python build/test artifacts (any subproject)
+__pycache__/
+*.egg-info/
+.coverage
+.pytest_cache/
+.ruff_cache/
+
+# Phase 2 local Elastic stack: screenshot tooling scratch
+elastic/.screenshots-tmp/
