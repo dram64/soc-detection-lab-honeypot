@@ -4,9 +4,10 @@ status: experimental
 description: |
   Detects outbound connections from internal hosts to non-standard ports
   that may indicate C2 traffic, data exfiltration, or covert channels.
+  NOT DEPLOYED: requires Zeek conn logs, which this lab does not collect —
+  see sigma/rules/not-deployed/README.md.
   Flags ports commonly abused by malware: 4444, 8888, 9001, 31337, etc.
 references:
-  - https://attack.mitre.org/techniques/T1571/
   - https://attack.mitre.org/techniques/T1571/
 author: dram64
 date: 2026/04/27

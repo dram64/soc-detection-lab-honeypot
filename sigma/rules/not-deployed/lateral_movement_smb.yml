@@ -4,7 +4,8 @@ status: experimental
 description: |
   Detects potential lateral movement via SMB administrative shares
   (C$, ADMIN$, IPC$). Flags connections to admin shares from non-server
-  hosts during off-hours, or from accounts not normally accessing infrastructure.
+  hosts during off-hours. NOT DEPLOYED: requires Zeek smb logs, which this
+  lab does not collect — see sigma/rules/not-deployed/README.md.
 references:
   - https://attack.mitre.org/techniques/T1021/002/
 author: dram64

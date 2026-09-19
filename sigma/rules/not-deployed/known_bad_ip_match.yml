@@ -1,10 +1,11 @@
 title: Connection to Known-Bad IP from MISP Feed
 id: c4a7d2e9-3f81-4b12-9e37-1a6c8d3f2b95
-status: stable
+status: experimental
 description: |
   Detects any inbound or outbound connection to/from an IP address that
   appears in the MISP threat intelligence feed. Correlates Suricata flow
-  records against the MISP IOC database refreshed every 6 hours.
+  records against a MISP IOC feed. NOT DEPLOYED: no Suricata sensor or
+  MISP instance exists in this lab — see sigma/rules/not-deployed/README.md.
 references:
   - https://attack.mitre.org/techniques/T1071/
   - https://www.misp-project.org/
