@@ -1,0 +1,112 @@
+{
+  "total_alerts": 4905,
+  "rules": {
+    "bc1c826e-f397-48e2-8288-fe41a92f3d70": {
+      "name": "[Sigma] SSH Authorized Keys Implant via Shell Command",
+      "severity": "high",
+      "attack": [
+        "T1098.004",
+        "T1222.002"
+      ],
+      "alerts": 1577,
+      "expected_from_direct_esql": 1577,
+      "matches_expected": true,
+      "distinct_source_ips": 445,
+      "first_event": "2026-05-07T05:41:38.682Z",
+      "last_event": "2026-05-21T12:18:50.466Z"
+    },
+    "e235dc7b-3dbe-43c4-88c3-38e33a85b080": {
+      "name": "[Sigma] Known Botnet Credential Marker Used Against SSH (345gs5662d34)",
+      "severity": "medium",
+      "attack": [
+        "T1110.001"
+      ],
+      "alerts": 1523,
+      "expected_from_direct_esql": 1523,
+      "matches_expected": true,
+      "distinct_source_ips": 438,
+      "first_event": "2026-05-14T14:25:41.345Z",
+      "last_event": "2026-05-21T12:18:52.254Z"
+    },
+    "a8f47e1c-9b22-4d3e-8c5a-2f9d8e1b6c47": {
+      "name": "[Sigma] SSH Brute Force Attack",
+      "severity": "medium",
+      "attack": [
+        "T1110.001"
+      ],
+      "alerts": 1054,
+      "expected_from_direct_esql": 1054,
+      "matches_expected": true,
+      "distinct_source_ips": 73,
+      "first_event": "2026-05-07T08:45:00.000Z",
+      "last_event": "2026-05-21T12:00:00.000Z"
+    },
+    "517341d6-4488-4f38-a08e-c5b24aa30496": {
+      "name": "[Sigma] High-Rate Automated SSH Scanner From Single Source",
+      "severity": "low",
+      "attack": [
+        "T1595"
+      ],
+      "alerts": 219,
+      "expected_from_direct_esql": 219,
+      "matches_expected": true,
+      "distinct_source_ips": 130,
+      "first_event": "2026-05-07T20:00:00.000Z",
+      "last_event": "2026-05-21T12:00:00.000Z"
+    },
+    "365b73e5-7b21-43a9-ae6b-d69deab771a6": {
+      "name": "[Sigma] Crypto-Miner Payload Uploaded to Honeypot (RedTail)",
+      "severity": "high",
+      "attack": [
+        "T1105",
+        "T1496.001"
+      ],
+      "alerts": 188,
+      "expected_from_direct_esql": 188,
+      "matches_expected": true,
+      "distinct_source_ips": 2,
+      "first_event": "2026-05-07T05:41:38.917Z",
+      "last_event": "2026-05-20T19:08:27.706Z"
+    },
+    "b3e91f4d-7a55-4c1b-9e22-8f3d1e5a7b4c": {
+      "name": "[Sigma] Credential Stuffing \u2014 Multiple Usernames from Single Source",
+      "severity": "high",
+      "attack": [
+        "T1110.004"
+      ],
+      "alerts": 168,
+      "expected_from_direct_esql": 168,
+      "matches_expected": true,
+      "distinct_source_ips": 30,
+      "first_event": "2026-05-07T11:10:00.000Z",
+      "last_event": "2026-05-21T08:20:00.000Z"
+    },
+    "91f0e1bb-037a-4fdf-87e1-9f0a4747fa13": {
+      "name": "[Sigma] SSH Port-Forward (direct-tcpip) Request Through Honeypot",
+      "severity": "medium",
+      "attack": [
+        "T1090"
+      ],
+      "alerts": 130,
+      "expected_from_direct_esql": 130,
+      "matches_expected": true,
+      "distinct_source_ips": 37,
+      "first_event": "2026-05-06T20:58:38.017Z",
+      "last_event": "2026-05-21T08:52:53.550Z"
+    },
+    "b5eec7ec-aa02-4c81-aebc-bc11577761e7": {
+      "name": "[Sigma] Crypto-Mining Host Reconnaissance Commands",
+      "severity": "medium",
+      "attack": [
+        "T1057",
+        "T1082"
+      ],
+      "alerts": 46,
+      "expected_from_direct_esql": 46,
+      "matches_expected": true,
+      "distinct_source_ips": 13,
+      "first_event": "2026-05-09T14:58:22.701Z",
+      "last_event": "2026-05-21T09:04:51.808Z"
+    }
+  }
+}

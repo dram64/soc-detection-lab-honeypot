@@ -1,0 +1,35 @@
+{
+  "cowrie_archive": {
+    "files": 7753,
+    "records": 231930,
+    "malformed_lines": 0,
+    "unreadable_files": 0
+  },
+  "haproxy_archive": {
+    "files": 7413,
+    "records": 36446,
+    "unparseable_records": 12,
+    "unique_client_ips": 1322
+  },
+  "correlation": {
+    "sessions": 36440,
+    "sessions_by_status": {
+      "ambiguous": 545,
+      "matched": 34297,
+      "matched_same_ip": 659,
+      "missed": 590,
+      "no_haproxy_coverage": 349
+    },
+    "attributed_unique_source_ips": 1287
+  },
+  "events": {
+    "events": 231930,
+    "events_ambiguous": 3346,
+    "events_matched": 220110,
+    "events_matched_same_ip": 2378,
+    "events_missed": 4092,
+    "events_no_haproxy_coverage": 2004
+  },
+  "indexed": 231930,
+  "dry_run": false
+}

@@ -19,3 +19,7 @@ newsfeed.enabled: false
 # 14-day window, and the per-event rules produce up to ~1.6k alerts in that
 # single run, so the default of 1000 would silently truncate them.
 xpack.alerting.rules.run.alerts.max: 5000
+
+# Display every timestamp in UTC so dashboards match the docs and write-ups.
+uiSettings.overrides:
+  "dateFormat:tz": "UTC"

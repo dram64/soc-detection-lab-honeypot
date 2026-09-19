@@ -1,0 +1,79 @@
+{
+  "rule_id": "365b73e5-7b21-43a9-ae6b-d69deab771a6",
+  "name": "[Sigma] Crypto-Miner Payload Uploaded to Honeypot (RedTail)",
+  "description": "An attacker uploaded (SCP/SFTP) files matching the RedTail cryptominer\nkit: per-architecture 'redtail.*' binaries plus the 'setup.sh' / 'clean.sh'\ninstaller scripts. The honeypot records the SHA-256; per ADR-009 the binaries\nthemselves are not retained in this repo or in Elasticsearch.",
+  "type": "esql",
+  "language": "esql",
+  "query": "from cowrie-* metadata _id, _index, _version | where event.action==\"cowrie.session.file_upload\" and (starts_with(file.name, \"redtail.\") or file.name in (\"setup.sh\", \"clean.sh\"))",
+  "severity": "high",
+  "risk_score": 73,
+  "from": "now-139d",
+  "to": "now",
+  "interval": "24h",
+  "enabled": false,
+  "max_signals": 2000,
+  "threat": [
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {
+        "id": "TA0011",
+        "name": "Command and Control",
+        "reference": "https://attack.mitre.org/tactics/TA0011/"
+      },
+      "technique": [
+        {
+          "id": "T1105",
+          "name": "Ingress Tool Transfer",
+          "reference": "https://attack.mitre.org/techniques/T1105/",
+          "subtechnique": []
+        }
+      ]
+    },
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {
+        "id": "TA0040",
+        "name": "Impact",
+        "reference": "https://attack.mitre.org/tactics/TA0040/"
+      },
+      "technique": [
+        {
+          "id": "T1496",
+          "name": "Resource Hijacking",
+          "reference": "https://attack.mitre.org/techniques/T1496/",
+          "subtechnique": [
+            {
+              "id": "T1496.001",
+              "name": "Compute Hijacking",
+              "reference": "https://attack.mitre.org/techniques/T1496/001/"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "Sigma",
+    "Cowrie",
+    "Phase 2 replay",
+    "sigma-status:experimental",
+    "T1105",
+    "T1496.001"
+  ],
+  "references": [
+    "https://attack.mitre.org/techniques/T1105/",
+    "https://attack.mitre.org/techniques/T1496/001/"
+  ],
+  "false_positives": [
+    "Legitimate files that happen to be named setup.sh/clean.sh (on a real server)"
+  ],
+  "author": [
+    "dram64"
+  ],
+  "license": "MIT",
+  "meta": {
+    "source": "sigma",
+    "sigma_status": "experimental",
+    "attack_version": "19.2"
+  }
+}

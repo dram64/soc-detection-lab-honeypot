@@ -1,0 +1,55 @@
+{
+  "rule_id": "91f0e1bb-037a-4fdf-87e1-9f0a4747fa13",
+  "name": "[Sigma] SSH Port-Forward (direct-tcpip) Request Through Honeypot",
+  "description": "The SSH client asked the honeypot to open a TCP connection to a third party\n(a direct-tcpip channel, i.e. 'ssh -L' / -W style forwarding). Attackers\nuse this to proxy traffic, check their apparent egress IP, or reach STUN\nand web endpoints through the compromised host. Cowrie logs the request and\ndoes not relay it.",
+  "type": "esql",
+  "language": "esql",
+  "query": "from cowrie-* metadata _id, _index, _version | where event.action==\"cowrie.direct-tcpip.request\"",
+  "severity": "medium",
+  "risk_score": 47,
+  "from": "now-139d",
+  "to": "now",
+  "interval": "24h",
+  "enabled": false,
+  "max_signals": 2000,
+  "threat": [
+    {
+      "framework": "MITRE ATT&CK",
+      "tactic": {
+        "id": "TA0011",
+        "name": "Command and Control",
+        "reference": "https://attack.mitre.org/tactics/TA0011/"
+      },
+      "technique": [
+        {
+          "id": "T1090",
+          "name": "Proxy",
+          "reference": "https://attack.mitre.org/techniques/T1090/",
+          "subtechnique": []
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "Sigma",
+    "Cowrie",
+    "Phase 2 replay",
+    "sigma-status:experimental",
+    "T1090"
+  ],
+  "references": [
+    "https://attack.mitre.org/techniques/T1090/"
+  ],
+  "false_positives": [
+    "Legitimate SSH port forwarding by an administrator (not applicable on a honeypot)"
+  ],
+  "author": [
+    "dram64"
+  ],
+  "license": "MIT",
+  "meta": {
+    "source": "sigma",
+    "sigma_status": "experimental",
+    "attack_version": "19.2"
+  }
+}

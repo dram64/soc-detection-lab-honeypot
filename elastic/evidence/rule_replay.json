@@ -1,0 +1,53 @@
+{
+  "lookback": "now-139d",
+  "rules": {
+    "[Sigma] High-Rate Automated SSH Scanner From Single Source": {
+      "rule_id": "517341d6-4488-4f38-a08e-c5b24aa30496",
+      "status": "succeeded",
+      "message": "Rule execution completed successfully",
+      "executed_at": "2026-09-19T09:34:34.866Z"
+    },
+    "[Sigma] Known Botnet Credential Marker Used Against SSH (345gs5662d34)": {
+      "rule_id": "e235dc7b-3dbe-43c4-88c3-38e33a85b080",
+      "status": "succeeded",
+      "message": "Rule execution completed successfully",
+      "executed_at": "2026-09-19T09:34:43.863Z"
+    },
+    "[Sigma] SSH Port-Forward (direct-tcpip) Request Through Honeypot": {
+      "rule_id": "91f0e1bb-037a-4fdf-87e1-9f0a4747fa13",
+      "status": "succeeded",
+      "message": "Rule execution completed successfully",
+      "executed_at": "2026-09-19T09:34:52.866Z"
+    },
+    "[Sigma] Crypto-Miner Payload Uploaded to Honeypot (RedTail)": {
+      "rule_id": "365b73e5-7b21-43a9-ae6b-d69deab771a6",
+      "status": "succeeded",
+      "message": "Rule execution completed successfully",
+      "executed_at": "2026-09-19T09:35:01.865Z"
+    },
+    "[Sigma] Crypto-Mining Host Reconnaissance Commands": {
+      "rule_id": "b5eec7ec-aa02-4c81-aebc-bc11577761e7",
+      "status": "succeeded",
+      "message": "Rule execution completed successfully",
+      "executed_at": "2026-09-19T09:35:10.864Z"
+    },
+    "[Sigma] SSH Authorized Keys Implant via Shell Command": {
+      "rule_id": "bc1c826e-f397-48e2-8288-fe41a92f3d70",
+      "status": "succeeded",
+      "message": "Rule execution completed successfully",
+      "executed_at": "2026-09-19T09:35:19.879Z"
+    },
+    "[Sigma] Credential Stuffing \u2014 Multiple Usernames from Single Source": {
+      "rule_id": "b3e91f4d-7a55-4c1b-9e22-8f3d1e5a7b4c",
+      "status": "succeeded",
+      "message": "Rule execution completed successfully",
+      "executed_at": "2026-09-19T09:35:28.866Z"
+    },
+    "[Sigma] SSH Brute Force Attack": {
+      "rule_id": "a8f47e1c-9b22-4d3e-8c5a-2f9d8e1b6c47",
+      "status": "succeeded",
+      "message": "Rule execution completed successfully",
+      "executed_at": "2026-09-19T09:35:37.866Z"
+    }
+  }
+}
