@@ -1194,8 +1194,9 @@
       <a href="#about"><span class="num">01</span>About</a>
       <a href="#projects"><span class="num">02</span>Projects</a>
       <a href="#homelab"><span class="num">03</span>Homelab</a>
-      <a href="#skills"><span class="num">04</span>Skills</a>
-      <a href="#contact"><span class="num">05</span>Find me</a>
+      <a href="#experience"><span class="num">04</span>Experience</a>
+      <a href="#skills"><span class="num">05</span>Skills</a>
+      <a href="#contact"><span class="num">06</span>Find me</a>
     </div>
   </div>
 </nav>
@@ -1231,7 +1232,7 @@
   <div class="container">
     <div class="section-header" style="margin-bottom: 32px;">
       <div class="section-eyebrow">
-        <span class="num">01 / 05</span>
+        <span class="num">01 / 06</span>
         <span class="label">About</span>
       </div>
     </div>
@@ -1243,7 +1244,7 @@
       <div>
         <div class="profile-row">
           <span class="field">Location</span>
-          <span class="value">Moreno Valley, CA</span>
+          <span class="value">Riverside, CA</span>
         </div>
         <div class="profile-row">
           <span class="field">Education</span>
@@ -1271,7 +1272,7 @@
   <div class="container">
     <div class="section-header">
       <div class="section-eyebrow">
-        <span class="num">02 / 05</span>
+        <span class="num">02 / 06</span>
         <span class="label">Projects</span>
       </div>
       <h2>Live systems,<br>deployed and <span class="accent">running.</span></h2>
@@ -1550,7 +1551,7 @@ GET *   &#9474;                             &#9474;  POST /contact
   <div class="container">
     <div class="section-header">
       <div class="section-eyebrow">
-        <span class="num">03 / 05</span>
+        <span class="num">03 / 06</span>
         <span class="label">Homelab</span>
       </div>
       <h2>Personal<br><span class="accent">homelab.</span></h2>
@@ -1665,11 +1666,41 @@ GET *   &#9474;                             &#9474;  POST /contact
         <li><strong>Windows Server Active Directory domain</strong> &mdash; users, groups, OUs, GPO, DNS, DHCP; hybrid-joined to Entra ID with Intune device policies applied.</li>
         <li><strong>Multi-node k3s across Proxmox VMs</strong> &mdash; GitOps deploys via Argo CD; self-hosted services (DNS filtering, internal Git, password manager) monitored with Prometheus/Grafana.</li>
         <li><strong>Three-node Proxmox HA cluster</strong> &mdash; ZFS replication, live migration between nodes, out-of-band management over HPE iLO (MicroServer) and Intel vPro / AMT (OptiPlex Micros).</li>
-        <li><strong>Segmented network</strong> &mdash; VLANs and trunking on the Catalyst C1000-8T, UniFi U6+ for managed wireless.</li>
+        <li><strong>Segmented network</strong> &mdash; VLANs and trunking on the Catalyst C1000-8T with inter-VLAN routing, subnetting, DHCP scopes, DNS and ACLs; UniFi U6+ for managed wireless.</li>
         <li><strong>Detection stack:</strong> Wazuh SIEM with agents across the Windows domain and Linux VMs (Sysmon telemetry). Elastic Stack ingesting the archived honeypot dataset via a Python ingest loader (local replay, not Filebeat/Logstash), with 8 Sigma-derived detection rules deployed in Kibana and 3 parked for lack of a Zeek/Suricata/MISP source.</li>
+        <li><strong>Microsoft 365 and cloud identity</strong> &mdash; MFA, SSO, conditional access and least-privilege; Windows, macOS and mobile devices enrolled in Intune (MDM).</li>
+        <li><strong>Remote support for the team</strong> &mdash; connectivity troubleshooting (ping, ipconfig, nslookup, traceroute), plus diagnosing and replacing failed hardware (drives, memory, power supplies).</li>
         <li><strong>Operations routine:</strong> Ansible-driven patching, scheduled backups, UPS-backed graceful shutdown via NUT, monitoring and log review.</li>
       </ul>
     </div>
+    </div>
+  </div>
+</section>
+
+<!-- ————— EXPERIENCE ————— -->
+<section id="experience">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-eyebrow">
+        <span class="num">04 / 06</span>
+        <span class="label">Experience</span>
+      </div>
+      <h2>Professional<br><span class="accent">experience.</span></h2>
+    </div>
+
+    <div class="homelab-card">
+      <h4>Graphic Specialist &mdash; Soboba Casino Resort <span style="font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted);letter-spacing:0;">&mdash; Feb 2025 &ndash; Mar 2026</span></h4>
+      <ul class="lab-list">
+        <li>Produced time-sensitive print and digital design for teams across the property through a deadline-driven Asana ticket queue &mdash; intake, prioritization and delivery &mdash; and maintained the resort&rsquo;s public website.</li>
+      </ul>
+    </div>
+
+    <div class="homelab-card" style="margin-top: 24px;">
+      <h4>Frontend Developer &mdash; Puldy Resiliency Partners <span style="font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted);letter-spacing:0;">&mdash; Sep 2021 &ndash; Jun 2022</span></h4>
+      <ul class="lab-list">
+        <li>Built the frontend and cross-platform app (React, Vue, TypeScript) integrated with backend REST APIs, on a three-person team working Agile/Scrum with Jira-tracked sprints and code reviews.</li>
+        <li>Tested and debugged features across the front end and API integration, validating fixes with QA before release.</li>
+      </ul>
     </div>
   </div>
 </section>
@@ -1679,7 +1710,7 @@ GET *   &#9474;                             &#9474;  POST /contact
   <div class="container">
     <div class="section-header">
       <div class="section-eyebrow">
-        <span class="num">04 / 05</span>
+        <span class="num">05 / 06</span>
         <span class="label">Skills</span>
       </div>
       <h2>Stack &amp; <span class="accent">capabilities.</span></h2>
@@ -1705,11 +1736,13 @@ GET *   &#9474;                             &#9474;  POST /contact
         </div>
       </div>
       <div class="skill-cat">
-        <h3>Security <span class="count">9</span></h3>
+        <h3>Security <span class="count">11</span></h3>
         <div class="skill-list">
           <span class="skill-tag">Wazuh SIEM</span>
           <span class="skill-tag">Elastic Stack (ELK)</span>
           <span class="skill-tag">Sigma rules / MITRE ATT&amp;CK</span>
+          <span class="skill-tag">Palo Alto Networks (PAN-OS)</span>
+          <span class="skill-tag">Least-privilege IAM</span>
           <span class="skill-tag">Honeypot &amp; attacker telemetry analysis</span>
           <span class="skill-tag">Log analysis</span>
           <span class="skill-tag">Packet capture</span>
@@ -1735,9 +1768,16 @@ GET *   &#9474;                             &#9474;  POST /contact
         </div>
       </div>
       <div class="skill-cat">
-        <h3>Networking <span class="count">5</span></h3>
+        <h3>Networking <span class="count">12</span></h3>
         <div class="skill-list">
+          <span class="skill-tag">TCP/IP</span>
+          <span class="skill-tag">DNS</span>
+          <span class="skill-tag">DHCP</span>
+          <span class="skill-tag">Subnetting</span>
           <span class="skill-tag">VLANs</span>
+          <span class="skill-tag">Inter-VLAN routing</span>
+          <span class="skill-tag">NAT</span>
+          <span class="skill-tag">VPN</span>
           <span class="skill-tag">ACLs</span>
           <span class="skill-tag">Cisco Catalyst C1000</span>
           <span class="skill-tag">Ubiquiti UniFi</span>
@@ -1745,17 +1785,46 @@ GET *   &#9474;                             &#9474;  POST /contact
         </div>
       </div>
       <div class="skill-cat">
-        <h3>Infrastructure <span class="count">7</span></h3>
+        <h3>Infrastructure <span class="count">9</span></h3>
         <div class="skill-list">
           <span class="skill-tag">Dell OptiPlex + HPE ProLiant</span>
           <span class="skill-tag">HPE iLO + Intel vPro/AMT (out-of-band)</span>
           <span class="skill-tag">Proxmox VE (HA clustering)</span>
           <span class="skill-tag">ZFS (replication, mirror)</span>
           <span class="skill-tag">Windows Server AD + Entra ID / Intune</span>
+          <span class="skill-tag">Microsoft 365</span>
+          <span class="skill-tag">Group Policy</span>
           <span class="skill-tag">UPS-backed power (APC + NUT)</span>
           <span class="skill-tag">Self-hosted services</span>
         </div>
       </div>
+      <div class="skill-cat">
+        <h3>Support &amp; Endpoints <span class="count">7</span></h3>
+        <div class="skill-list">
+          <span class="skill-tag">Remote support</span>
+          <span class="skill-tag">Ticketing systems</span>
+          <span class="skill-tag">Microsoft Defender</span>
+          <span class="skill-tag">Windows / macOS / Linux support</span>
+          <span class="skill-tag">Device provisioning</span>
+          <span class="skill-tag">Hardware troubleshooting</span>
+          <span class="skill-tag">KB documentation</span>
+        </div>
+      </div>
+
+      <div class="skill-cat">
+        <h3>Languages &amp; Tools <span class="count">8</span></h3>
+        <div class="skill-list">
+          <span class="skill-tag">SQL</span>
+          <span class="skill-tag">Bash</span>
+          <span class="skill-tag">PowerShell</span>
+          <span class="skill-tag">C++</span>
+          <span class="skill-tag">C#</span>
+          <span class="skill-tag">Vue</span>
+          <span class="skill-tag">Node.js</span>
+          <span class="skill-tag">Docker</span>
+        </div>
+      </div>
+
       <div class="skill-cat">
         <h3>Backend &amp; Data <span class="count">8</span></h3>
         <div class="skill-list">
@@ -1804,13 +1873,17 @@ GET *   &#9474;                             &#9474;  POST /contact
           <div class="cert-name">CompTIA Security+</div>
           <div class="cert-issuer">SY0-701 · CompTIA</div>
         </div>
+        <div class="cert-card">
+          <div class="cert-name">Palo Alto Networks Academy</div>
+          <div class="cert-issuer">Completed training · Palo Alto Networks</div>
+        </div>
       </div>
 
       <div class="certs-heading" style="margin-top: 32px;">In Progress</div>
       <div class="certs-row">
         <div class="cert-card progress">
           <div class="cert-name">Cisco Certified Network Associate</div>
-          <div class="cert-issuer">CCNA · Cisco</div>
+          <div class="cert-issuer">CCNA 200-301 · Cisco</div>
         </div>
       </div>
     </div>
@@ -1822,7 +1895,7 @@ GET *   &#9474;                             &#9474;  POST /contact
   <div class="container">
     <div class="section-header" style="margin-bottom: 24px;">
       <div class="section-eyebrow">
-        <span class="num">05 / 05</span>
+        <span class="num">06 / 06</span>
         <span class="label">Find me</span>
       </div>
     </div>
