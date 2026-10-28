@@ -55,9 +55,10 @@ module "api" {
 module "hosting" {
   source = "../../modules/hosting"
 
-  name_prefix                 = var.name_prefix
-  domain_name                 = var.domain_name
-  billing_alarm_threshold_usd = var.billing_alarm_threshold_usd
+  name_prefix                    = var.name_prefix
+  domain_name                    = var.domain_name
+  billing_alarm_threshold_usd    = var.billing_alarm_threshold_usd
+  extra_reader_distribution_arns = var.extra_reader_distribution_arns
 
   tags = local.common_tags
 }

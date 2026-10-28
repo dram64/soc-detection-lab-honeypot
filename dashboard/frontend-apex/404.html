@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Page not found — Desi Ramirez</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231a1f2b'/%3E%3Ctext x='32' y='42' font-family='Arial,Helvetica,sans-serif' font-size='27' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EDR%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* CloudFront serves this for misses on both desiramirez.com sites (the
+     resume at / and the showcase under /tokyo-zero/), so every link is
+     root-relative. Same tokens as index.html. */
+  :root {
+    --paper: #ffffff;
+    --text: #1a1f2b;
+    --muted: #5f6877;
+    --line: #e4e8ee;
+    --display: 'Archivo', system-ui, -apple-system, sans-serif;
+    --body: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  html { font-size: clamp(1rem, 0.3125vw + 0.75rem, 1.22rem); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 2rem 1rem;
+    background: var(--paper);
+    color: var(--text);
+    font-family: var(--body);
+    text-align: center;
+  }
+  .code {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(4rem, 14vw, 8rem);
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+  p { margin: 1rem 0 2rem; color: var(--muted); font-size: 1.05rem; }
+  .actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex;
+    padding: 0.75rem 1.4rem;
+    border: 1.5px solid var(--line);
+    border-radius: 0.4rem;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 0.94rem;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .btn:hover { border-color: var(--text); }
+  .btn-primary { background: var(--text); border-color: var(--text); color: #ffffff; }
+  .btn-primary:hover { background: #2c3445; }
+</style>
+</head>
+<body>
+<main>
+  <div class="code">404</div>
+  <p>That page doesn't exist, or it moved.</p>
+  <div class="actions">
+    <a class="btn btn-primary" href="/">Desi Ramirez</a>
+    <a class="btn" href="/tokyo-zero/">Tokyo Zero showcase</a>
+  </div>
+</main>
+</body>
+</html>

@@ -90,20 +90,20 @@ resource "aws_cloudfront_origin_access_control" "frontend" {
 }
 
 ###############################################################################
-# Host-header URI rewrite.
+# Host-header router.
 #
 # CloudFront cache behaviors match on path-pattern only, not Host header.
-# This function rewrites the URI to /apex/... when the request Host is the
-# apex or www, so the same distribution + same S3 bucket can serve two
-# distinct site contents (dashboard SPA at /, apex landing at /apex/).
-#
-# Trailing-slash and bare-host requests get /index.html appended.
+# Phase 8.5 had this function rewrite apex/www requests to /apex/... so one
+# distribution + bucket served both the dashboard SPA (/) and the apex page
+# (/apex/). The apex page now lives at var.apex_redirect_to (a distribution
+# in the showcase repo reads the same apex/ prefix), so apex/www requests
+# get a 301 to the same path and query there. Dashboard requests pass through.
 ###############################################################################
 
 resource "aws_cloudfront_function" "host_router" {
   name    = "${var.name_prefix}-host-router"
   runtime = "cloudfront-js-2.0"
-  comment = "Phase 8.5 — rewrite apex/www requests to /apex/* prefix"
+  comment = "301 apex/www requests to ${var.apex_redirect_to}"
   publish = true
   code    = <<-EOT
     function handler(event) {
@@ -114,16 +114,21 @@ resource "aws_cloudfront_function" "host_router" {
       var isApex = apexHosts.indexOf(host) !== -1;
       if (!isApex) return req;
 
-      var uri = req.uri;
-      // bare-host / dir-style → /index.html
-      if (uri === '/' || uri === '') uri = '/index.html';
-      else if (uri.charAt(uri.length - 1) === '/') uri = uri + 'index.html';
-
-      // already-rewritten requests (re-entrancy guard): don't double-prefix.
-      if (uri.indexOf('/apex/') !== 0) {
-        req.uri = '/apex' + uri;
+      var query = [];
+      for (var key in req.querystring) {
+        var param = req.querystring[key];
+        var values = param.multiValue ? param.multiValue : [param];
+        for (var i = 0; i < values.length; i++) {
+          query.push(key + '=' + values[i].value);
+        }
       }
-      return req;
+      return {
+        statusCode: 301,
+        statusDescription: 'Moved Permanently',
+        headers: {
+          location: { value: '${var.apex_redirect_to}' + req.uri + (query.length ? '?' + query.join('&') : '') }
+        }
+      };
     }
   EOT
 }
@@ -302,7 +307,7 @@ data "aws_iam_policy_document" "frontend" {
     condition {
       test     = "StringEquals"
       variable = "AWS:SourceArn"
-      values   = [aws_cloudfront_distribution.frontend.arn]
+      values   = concat([aws_cloudfront_distribution.frontend.arn], var.extra_reader_distribution_arns)
     }
   }
 }

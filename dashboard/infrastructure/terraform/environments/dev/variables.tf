@@ -74,3 +74,9 @@ variable "maxmind_license_key" {
   default     = ""
   sensitive   = true
 }
+
+variable "extra_reader_distribution_arns" {
+  description = "Passed to the hosting module. The desiramirez.com distribution (showcase stack output site_domain_distribution_arn) serves apex/ from the frontend bucket."
+  type        = list(string)
+  default     = ["arn:aws:cloudfront::334856751632:distribution/E1HIC7V2XPH22L"]
+}

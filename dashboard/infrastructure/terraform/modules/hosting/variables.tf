@@ -32,3 +32,15 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
+
+variable "extra_reader_distribution_arns" {
+  description = "Other CloudFront distributions allowed to read the bucket through OAC. The desiramirez.com distribution (showcase repo, infra/site_domain.tf) serves apex/ from here."
+  type        = list(string)
+  default     = []
+}
+
+variable "apex_redirect_to" {
+  description = "Origin that apex and www requests are 301-redirected to, path and query kept. The apex page moved to desiramirez.com."
+  type        = string
+  default     = "https://desiramirez.com"
+}

@@ -50,9 +50,14 @@ VITE_API_BASE_URL="$api_endpoint" npm run build
 #    b) index.html (and anything not hashed) — no-cache, must-revalidate
 ###############################################################################
 echo ">> syncing hashed assets (immutable, 1y)"
+# The apex portfolio (dram-soc.org) lives at s3://<bucket>/apex/* in this
+# same bucket and deploys separately (deploy_apex.sh). Without the apex/*
+# exclude, --delete treats that prefix as orphans and wipes the portfolio.
+# Same exclude as dashboard-frontend-deploy.yml; keep them in step.
 aws s3 sync "$WEB_DIR/dist/" "s3://$bucket_name/" \
   --delete \
   --exclude "index.html" \
+  --exclude "apex/*" \
   --cache-control "public, max-age=31536000, immutable"
 
 echo ">> uploading index.html (no-cache)"
