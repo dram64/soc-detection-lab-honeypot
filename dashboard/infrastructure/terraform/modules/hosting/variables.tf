@@ -38,3 +38,9 @@ variable "extra_reader_distribution_arns" {
   type        = list(string)
   default     = []
 }
+
+variable "apex_redirect_to" {
+  description = "Origin that apex and www requests are 301-redirected to, path and query kept. The apex page moved to desiramirez.com."
+  type        = string
+  default     = "https://desiramirez.com"
+}
