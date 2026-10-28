@@ -28,7 +28,7 @@ jobs:
       - name: Install sigma-cli + Elasticsearch backend (pinned)
         run: |
           pip install --upgrade pip
-          pip install "sigma-cli==3.1.0" "pysigma==1.5.0" "pysigma-backend-elasticsearch==2.1.1"
+          pip install "sigma-cli==3.1.0" "pysigma==1.5.0" "pysigma-backend-elasticsearch==2.1.1" "pyparsing==3.3.2"
 
       - name: Validate all rules (deployed and not-deployed)
         run: |
