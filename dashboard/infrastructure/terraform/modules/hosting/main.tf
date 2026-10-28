@@ -302,7 +302,7 @@ data "aws_iam_policy_document" "frontend" {
     condition {
       test     = "StringEquals"
       variable = "AWS:SourceArn"
-      values   = [aws_cloudfront_distribution.frontend.arn]
+      values   = concat([aws_cloudfront_distribution.frontend.arn], var.extra_reader_distribution_arns)
     }
   }
 }

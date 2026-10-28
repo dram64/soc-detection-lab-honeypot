@@ -74,3 +74,9 @@ variable "maxmind_license_key" {
   default     = ""
   sensitive   = true
 }
+
+variable "extra_reader_distribution_arns" {
+  description = "Passed to the hosting module. The desiramirez.com distribution's ARN goes here once it exists (showcase stack output site_domain_distribution_arn)."
+  type        = list(string)
+  default     = []
+}

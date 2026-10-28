@@ -32,3 +32,9 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
+
+variable "extra_reader_distribution_arns" {
+  description = "Other CloudFront distributions allowed to read the bucket through OAC. The desiramirez.com distribution (showcase repo, infra/site_domain.tf) serves apex/ from here."
+  type        = list(string)
+  default     = []
+}
