@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Desi Ramirez — Networking, Cloud &amp; Security</title>
-<meta name="description" content="Desi Ramirez — software engineering graduate focused on networking, cloud and security. CCNA, AWS Certified Solutions Architect – Associate and CompTIA Security+ certified.">
+<title>Desi Ramirez — IT Support, Systems Administration &amp; Security</title>
+<meta name="description" content="Desi Ramirez — software engineering graduate focused on IT support, systems administration and security. CompTIA Security+, Cisco CCNA and AWS Certified Solutions Architect – Associate certified.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://desiramirez.com/">
-<meta property="og:title" content="Desi Ramirez — Networking, Cloud &amp; Security">
-<meta property="og:description" content="CCNA, AWS Solutions Architect – Associate and Security+ certified. Projects, experience and contact.">
+<meta property="og:title" content="Desi Ramirez — IT Support, Systems Administration &amp; Security">
+<meta property="og:description" content="CompTIA Security+, Cisco CCNA and AWS Solutions Architect – Associate certified. Projects, experience and contact.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231a1f2b'/%3E%3Ctext x='32' y='42' font-family='Arial,Helvetica,sans-serif' font-size='27' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EDR%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -104,23 +104,25 @@
     box-shadow: 0 0.6rem 1.9rem -0.9rem rgba(15, 20, 30, 0.45);
   }
 
-  /* certification band. Official issuer artwork, unaltered, on white only
-     and never with a circle behind it; Security+ stays at least 60px wide
-     (CompTIA). The CCNA badge has a wide transparent margin around a short
+  /* certifications, a centered row under the brief. Official issuer
+     artwork, unaltered, on white only and never with a circle behind it;
+     Security+ stays at least 60px wide (CompTIA), which the 4rem floor
+     covers. The CCNA badge has a wide transparent margin around a short
      mark, so its box crops that margin and the three marks line up. */
   .certs {
-    --badge: clamp(5.25rem, 16vw, 14rem);
+    --badge: clamp(4rem, 9vw, 7.5rem);
     list-style: none;
     display: flex;
-    justify-content: space-evenly;
+    justify-content: center;
     align-items: flex-start;
-    margin: clamp(1.5rem, 3vw, 2.5rem) 0;
+    gap: clamp(1.5rem, 5vw, 4rem);
+    margin: clamp(1.5rem, 3vw, 2.25rem) 0 0;
   }
   .cert {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.9rem;
+    gap: 0.6rem;
   }
   .cert-badge {
     height: var(--badge);
@@ -144,7 +146,7 @@
 
   .brief {
     max-width: 46rem;
-    margin: 0 auto;
+    margin: clamp(1.25rem, 2.5vw, 2rem) auto 0;
     font-size: clamp(1.03rem, 1.4vw, 1.2rem);
     color: var(--muted);
     text-wrap: pretty;
@@ -152,7 +154,7 @@
   .brief strong { color: var(--text); font-weight: 600; }
   .nowrap { white-space: nowrap; }
   .location {
-    margin-top: 1rem;
+    margin-top: 1.5rem;
     font-family: var(--mono);
     font-size: 0.75rem;
     letter-spacing: 0.12em;
@@ -432,10 +434,10 @@
 
               <rect x="40" y="150" width="120" height="94" fill="#f4f8fc" stroke="#7fb3d5" stroke-width="1.5" rx="4"/>
               <text x="100" y="170" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#1a1f2b" text-anchor="middle">Raspberry Pi 5</text>
-              <text x="100" y="188" font-family="JetBrains Mono, monospace" font-size="10" fill="#7fb3d5" text-anchor="middle">k3s worker</text>
-              <text x="100" y="204" font-family="JetBrains Mono, monospace" font-size="10" fill="#7fb3d5" text-anchor="middle">cowrie pod</text>
+              <text x="100" y="188" font-family="JetBrains Mono, monospace" font-size="10" fill="#7fb3d5" text-anchor="middle">Cowrie</text>
+              <text x="100" y="204" font-family="JetBrains Mono, monospace" font-size="10" fill="#7fb3d5" text-anchor="middle">SSH honeypot</text>
               <text x="100" y="220" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">fluent-bit</text>
-              <text x="100" y="234" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">SSH honeypot</text>
+              <text x="100" y="234" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">log shipper</text>
 
               <rect x="220" y="100" width="120" height="56" fill="#f4f8fc" stroke="#7fb3d5" stroke-width="1.5" rx="4"/>
               <text x="280" y="120" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#1a1f2b" text-anchor="middle">HAProxy</text>
@@ -568,68 +570,60 @@
       <text x="760" y="320" font-family="JetBrains Mono, monospace" font-size="9" fill="#7fb3d5" text-anchor="middle">&#8594; /status &#183; /insights</text>
     </symbol>
     <symbol id="diagram-lab" viewBox="0 0 880 420">
+      <!-- Internet -->
+      <text x="440" y="20" font-family="JetBrains Mono, monospace" font-size="10" fill="#6b7280" letter-spacing="1.5" text-anchor="middle">INTERNET</text>
+      <line x1="440" y1="28" x2="440" y2="48" stroke="#7fb3d5" stroke-width="1.5" marker-end="url(#arch-arrow)"/>
 
+      <!-- ISP router -->
+      <rect x="320" y="50" width="240" height="34" fill="#eef2f6" stroke="#cbd5e1" stroke-width="1.5" rx="4"/>
+      <text x="440" y="72" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1a1f2b" text-anchor="middle">ISP router</text>
+      <line x1="440" y1="84" x2="440" y2="102" stroke="#7fb3d5" stroke-width="1.5" marker-end="url(#arch-arrow)"/>
 
-          <!-- Internet -->
-          <text x="440" y="22" font-family="JetBrains Mono, monospace" font-size="10" fill="#6b7280" letter-spacing="1.5" text-anchor="middle">INTERNET</text>
-          <line x1="440" y1="32" x2="440" y2="62" stroke="#7fb3d5" stroke-width="1.5" marker-end="url(#arch-arrow)"/>
+      <!-- Firewall -->
+      <rect x="280" y="104" width="320" height="46" fill="#f4f8fc" stroke="#7fb3d5" stroke-width="1.5" rx="4"/>
+      <text x="440" y="123" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1a1f2b" text-anchor="middle">Palo Alto PA-440 firewall</text>
+      <text x="440" y="140" font-family="JetBrains Mono, monospace" font-size="10" fill="#7fb3d5" text-anchor="middle">security policies &middot; NAT</text>
+      <line x1="440" y1="150" x2="440" y2="168" stroke="#7fb3d5" stroke-width="1.5" marker-end="url(#arch-arrow)"/>
 
-          <!-- ISP gateway (stock ISP equipment; no firewall appliance in the path) -->
-          <rect x="280" y="65" width="320" height="46" fill="#eef2f6" stroke="#cbd5e1" stroke-width="1.5" rx="4"/>
-          <text x="440" y="83" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1a1f2b" text-anchor="middle">ISP router / gateway</text>
-          <text x="440" y="99" font-family="JetBrains Mono, monospace" font-size="10" fill="#6b7280" text-anchor="middle">stock ISP equipment</text>
+      <!-- Switch -->
+      <rect x="250" y="170" width="380" height="62" fill="#f4f8fc" stroke="#7fb3d5" stroke-width="1.5" rx="4"/>
+      <text x="440" y="190" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1a1f2b" text-anchor="middle">Cisco Catalyst switch</text>
+      <text x="440" y="207" font-family="JetBrains Mono, monospace" font-size="10" fill="#7fb3d5" text-anchor="middle">VLANs &middot; servers / clients / lab devices</text>
+      <text x="440" y="223" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">ACLs &middot; SSH-only management &middot; unused ports shut</text>
 
-          <line x1="440" y1="111" x2="440" y2="135" stroke="#7fb3d5" stroke-width="1.5" marker-end="url(#arch-arrow)"/>
+      <!-- Distribution -->
+      <line x1="440" y1="232" x2="440" y2="248" stroke="#7fb3d5" stroke-width="1.2"/>
+      <line x1="150" y1="248" x2="730" y2="248" stroke="#7fb3d5" stroke-width="1.2"/>
+      <line x1="150" y1="248" x2="150" y2="266" stroke="#7fb3d5" stroke-width="1.2" marker-end="url(#arch-arrow)"/>
+      <line x1="440" y1="248" x2="440" y2="266" stroke="#7fb3d5" stroke-width="1.2" marker-end="url(#arch-arrow)"/>
+      <line x1="730" y1="248" x2="730" y2="266" stroke="#7fb3d5" stroke-width="1.2" marker-end="url(#arch-arrow)"/>
 
-          <!-- Cisco switch -->
-          <rect x="280" y="135" width="320" height="44" fill="#f4f8fc" stroke="#7fb3d5" stroke-width="1.5" rx="4"/>
-          <text x="440" y="154" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1a1f2b" text-anchor="middle">Cisco Catalyst C1000-8T</text>
-          <text x="440" y="170" font-family="JetBrains Mono, monospace" font-size="10" fill="#7fb3d5" text-anchor="middle">VLANs &middot; mgmt / servers</text>
+      <!-- Proxmox host with the domain controller VM -->
+      <rect x="40" y="268" width="220" height="128" fill="#eef2f6" stroke="#7fb3d5" stroke-width="1.5" rx="4"/>
+      <text x="150" y="289" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1a1f2b" text-anchor="middle">Proxmox VE host</text>
+      <text x="150" y="304" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">Dell OptiPlex &middot; Linux CLI</text>
+      <rect x="56" y="316" width="188" height="66" fill="#f4f8fc" stroke="#cbd5e1" rx="3"/>
+      <text x="150" y="335" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#1a1f2b" text-anchor="middle">Windows Server DC (VM)</text>
+      <text x="150" y="352" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">AD DS &middot; DNS &middot; DHCP</text>
+      <text x="150" y="367" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">users &middot; groups &middot; Group Policy</text>
 
-          <!-- Three branch lines down -->
-          <line x1="160" y1="190" x2="160" y2="212" stroke="#7fb3d5" stroke-width="1.2"/>
-          <line x1="160" y1="190" x2="380" y2="182" stroke="#6b7280" stroke-width="1" stroke-dasharray="2 3"/>
-          <line x1="440" y1="182" x2="440" y2="212" stroke="#7fb3d5" stroke-width="1.2"/>
+      <!-- Lab client PCs -->
+      <rect x="330" y="268" width="220" height="128" fill="#eef2f6" stroke="#cbd5e1" stroke-width="1.5" rx="4"/>
+      <text x="440" y="289" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1a1f2b" text-anchor="middle">Lab client PCs</text>
+      <text x="440" y="304" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">Windows &middot; built and repaired</text>
+      <line x1="350" y1="316" x2="530" y2="316" stroke="#e2e8f0" stroke-width="1"/>
+      <text x="440" y="337" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">troubleshooting</text>
+      <text x="440" y="353" font-family="JetBrains Mono, monospace" font-size="10" fill="#7fb3d5" text-anchor="middle">ipconfig &middot; ping &middot; nslookup</text>
+      <text x="440" y="371" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">drives &middot; RAM &middot; power supplies</text>
 
-          <!-- VLAN labels -->
-          <text x="160" y="203" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">vlan 10 &middot; mgmt</text>
-          <text x="440" y="203" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">vlan 20 &middot; servers</text>
+      <!-- UniFi access point -->
+      <rect x="620" y="268" width="220" height="62" fill="#eef2f6" stroke="#cbd5e1" stroke-width="1.5" rx="4"/>
+      <text x="730" y="289" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1a1f2b" text-anchor="middle">UniFi access point</text>
+      <text x="730" y="306" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">Ubiquiti &middot; wireless</text>
 
-          <!-- UniFi AP -->
-          <rect x="60" y="220" width="200" height="150" fill="#eef2f6" stroke="#cbd5e1" rx="4"/>
-          <text x="160" y="242" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1a1f2b" text-anchor="middle">Ubiquiti UniFi U6+</text>
-          <text x="160" y="258" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">managed wireless &middot; PoE</text>
-          <line x1="80" y1="270" x2="240" y2="270" stroke="#e2e8f0" stroke-width="1"/>
-          <text x="160" y="290" font-family="JetBrains Mono, monospace" font-size="10" fill="#6b7280" text-anchor="middle">Wi-Fi 6 (802.11ax)</text>
-          <text x="160" y="306" font-family="JetBrains Mono, monospace" font-size="10" fill="#6b7280" text-anchor="middle">multi-SSID / VLAN tag</text>
-          <text x="160" y="326" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">UniFi Network</text>
-          <text x="160" y="340" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">controller</text>
-
-          <!-- Proxmox HA cluster -->
-          <rect x="320" y="220" width="240" height="180" fill="#eef2f6" stroke="#7fb3d5" stroke-width="1.5" rx="4"/>
-          <text x="440" y="242" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1a1f2b" text-anchor="middle">Proxmox VE HA cluster</text>
-          <text x="440" y="258" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">3 nodes &middot; ZFS &middot; live migration</text>
-          <line x1="340" y1="270" x2="540" y2="270" stroke="#e2e8f0" stroke-width="1"/>
-
-          <rect x="335" y="280" width="105" height="48" fill="#f4f8fc" stroke="#cbd5e1" rx="3"/>
-          <text x="387" y="298" font-family="Inter, sans-serif" font-size="10" font-weight="500" fill="#1a1f2b" text-anchor="middle">OptiPlex Micro</text>
-          <text x="387" y="312" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b7280" text-anchor="middle">node A &middot; vPro/AMT</text>
-          <text x="387" y="322" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b7280" text-anchor="middle">ZFS mirror</text>
-
-          <rect x="445" y="280" width="105" height="48" fill="#f4f8fc" stroke="#cbd5e1" rx="3"/>
-          <text x="497" y="298" font-family="Inter, sans-serif" font-size="10" font-weight="500" fill="#1a1f2b" text-anchor="middle">OptiPlex Micro</text>
-          <text x="497" y="312" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b7280" text-anchor="middle">node B &middot; vPro/AMT</text>
-          <text x="497" y="322" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b7280" text-anchor="middle">ZFS mirror</text>
-
-          <rect x="335" y="334" width="215" height="46" fill="#f4f8fc" stroke="#cbd5e1" rx="3"/>
-          <text x="442" y="352" font-family="Inter, sans-serif" font-size="10" font-weight="500" fill="#1a1f2b" text-anchor="middle">HPE ProLiant MicroServer Gen10 Plus v2</text>
-          <text x="442" y="366" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b7280" text-anchor="middle">node C &middot; iLO out-of-band &middot; ZFS</text>
-
-          <text x="440" y="394" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b7280" text-anchor="middle">AD / DC &middot; k3s VMs &middot; SIEM &middot; self-hosted services</text>
-
-          <!-- UPS bar underneath -->
-          <rect x="280" y="405" width="320" height="14" fill="#f4f8fc" stroke="#7fb3d5" stroke-width="1" rx="3" opacity="0.85"/>
-          <text x="440" y="415" font-family="JetBrains Mono, monospace" font-size="9" fill="#7fb3d5" text-anchor="middle">APC UPS &middot; NUT graceful-shutdown automation</text>
+      <!-- Cabling -->
+      <text x="730" y="362" font-family="JetBrains Mono, monospace" font-size="9" fill="#7fb3d5" text-anchor="middle">Cat6 cabling,</text>
+      <text x="730" y="376" font-family="JetBrains Mono, monospace" font-size="9" fill="#7fb3d5" text-anchor="middle">run by hand</text>
     </symbol>
 </svg>
 
@@ -655,22 +649,23 @@
       <h1>Desi Ramirez.</h1>
     </div>
 
+    <p class="brief">Software engineering graduate from California Polytechnic State University, <span class="nowrap">San Luis Obispo</span>, focused on IT support, systems administration and security. Certified in CompTIA Security+, Cisco CCNA and AWS <span class="nowrap">Solutions Architect – Associate</span>.</p>
+
     <ul class="certs" aria-label="Certifications">
       <li class="cert">
-        <span class="cert-badge"><img src="/badges/aws-saa.png" width="250" height="250" alt="AWS Certified Solutions Architect – Associate"></span>
-        <span class="cert-code">SAA-C03</span>
+        <span class="cert-badge"><img src="/badges/comptia-security-plus.svg" width="250" height="250" alt="CompTIA Security+"></span>
+        <span class="cert-code">SY0-701</span>
       </li>
       <li class="cert cert--ccna">
         <span class="cert-badge"><img src="/badges/ccna.png" width="325" height="200" alt="Cisco Certified Network Associate (CCNA)"></span>
         <span class="cert-code">200-301</span>
       </li>
       <li class="cert">
-        <span class="cert-badge"><img src="/badges/comptia-security-plus.svg" width="250" height="250" alt="CompTIA Security+"></span>
-        <span class="cert-code">SY0-701</span>
+        <span class="cert-badge"><img src="/badges/aws-saa.png" width="250" height="250" alt="AWS Certified Solutions Architect – Associate"></span>
+        <span class="cert-code">SAA-C03</span>
       </li>
     </ul>
 
-    <p class="brief">Software engineering graduate (<strong>B.S., Cal Poly San Luis Obispo, 2022</strong>) focused on networking, cloud and security. Certified in CCNA, AWS <span class="nowrap">Solutions Architect – Associate</span> and CompTIA Security+.</p>
     <p class="location">Riverside, CA</p>
 
     <div class="actions">
@@ -701,12 +696,13 @@
         </button>
       </div>
       <div class="item-body">
-        <p>Edge-to-cloud SSH honeypot. A Cowrie sensor on a Raspberry Pi 5 captured real attacks over a 14-day run, and its logs flowed through a serverless AWS pipeline into a live React dashboard.</p>
+        <p>Edge-to-cloud SSH honeypot. A Cowrie sensor on a Raspberry Pi 5 captured real attacks over a 14-day run in May 2026 without opening any inbound ports on my home network, and its logs flowed through a serverless AWS pipeline into a live React dashboard.</p>
         <ul>
-          <li>36,440 attack sessions from 1,322 IPs in 83 countries, correlated and GeoIP-enriched.</li>
-          <li>Deployed 8 Sigma detection rules in Kibana, mapped to MITRE ATT&amp;CK credential access, persistence and command-and-control.</li>
-          <li>Pipeline built in Terraform: S3 → Python Lambdas → DynamoDB → API Gateway → CloudFront.</li>
-          <li>Every merge gated on 262 tests, secret scanning and Sigma validation, deployed by GitHub Actions over OIDC.</li>
+          <li>36,440 attack sessions and 231,930 events from 1,322 IPs in 83 countries, with true source IPs recovered through the tunnel and enriched with GeoIP and ASN data.</li>
+          <li>Traced brute-force attacks, SSH key persistence and crypto-mining recon across 16,180 attacker commands.</li>
+          <li>Logged 16 malware payloads uploaded over SCP/SFTP as SHA-256 hashes (IOCs) without keeping the files, and length-redacted attempted passwords outside the attack dictionary so they never reach the dashboard or API.</li>
+          <li>Deployed 8 Sigma detection rules in Kibana against an offline replay of the archived run, mapped to MITRE ATT&amp;CK tactics including credential access, persistence, discovery and command and control.</li>
+          <li>Pipeline built in Terraform: S3 → Python Lambdas → DynamoDB → API Gateway → CloudFront, with least-privilege IAM. Every merge is gated on 262 tests and secret scanning, deployed by GitHub Actions over OIDC.</li>
         </ul>
       </div>
       <div class="diagram-pop" id="arch-soc" popover>
@@ -717,14 +713,14 @@
         <div class="diagram-pop-body">
           <svg viewBox="0 0 880 320" role="img" aria-label="SOC Detection Lab architecture diagram"><use href="#diagram-soc"/></svg>
         </div>
-        <p class="diagram-caption">As deployed for the May 6–21, 2026 run: a Raspberry Pi 5 running Cowrie as a k3s pod, reached through HAProxy on a DigitalOcean droplet over an autossh reverse tunnel (both edge hosts since decommissioned). fluent-bit ships logs to S3, then Lambda ingest (timestamp-window correlation and MaxMind GeoLite2) → DynamoDB → aggregator → API Gateway HTTP API → React dashboard on CloudFront behind Cloudflare.</p>
+        <p class="diagram-caption">As deployed for the May 6–21, 2026 run: a Raspberry Pi 5 running Cowrie, reached through HAProxy on a DigitalOcean droplet over an autossh reverse tunnel (both edge hosts since decommissioned). fluent-bit ships logs to S3, then Lambda ingest (timestamp-window correlation and MaxMind GeoLite2) → DynamoDB → aggregator → API Gateway HTTP API → React dashboard on CloudFront behind Cloudflare.</p>
       </div>
     </article>
 
     <article class="item">
       <div class="item-head">
         <h3>Tokyo Zero</h3>
-        <p class="item-meta">Founder · since 2022 · $100K+ revenue</p>
+        <p class="item-meta">Founder · 2022 – 2026 · $100K+ revenue</p>
         <p class="item-links">
           <a href="https://desiramirez.com/tokyo-zero/" target="_blank" rel="noopener">Case study ↗</a>
           <a href="https://desiramirez.com/tokyo-zero/work/" target="_blank" rel="noopener">Storefronts ↗</a>
@@ -748,10 +744,10 @@
         </button>
       </div>
       <div class="item-body">
-        <p>My anime-inspired streetwear and merchandise brand, and my career before IT. I founded it in 2022 and ran it end to end, growing it past <strong>$100K in revenue</strong> with a repeat customer base, selling at conventions and online.</p>
+        <p>The anime-inspired streetwear and merchandise brand I founded, and my career before IT. I ran it end to end from 2022 to 2026, growing it past <strong>$100K in revenue</strong> with a repeat customer base, selling at conventions and online.</p>
         <ul>
           <li>Designed the brand from the ground up: art direction and product design for 30+ products (prints, die-cut stickers, deskmats, tapestries, flags, totes and lanyards), the visual identity and three themed storefronts.</li>
-          <li>Directed a small remote team and independent artists through brief, review and quality control on every release; shot the product photography and ran social media, drawing 100K+ engagements.</li>
+          <li>Directed independent artists through brief, review and quality control on every release; shot the product photography and ran social media, drawing 100K+ engagements.</li>
           <li>Rebuilt the brand’s portfolio as a case study on a multi-region AWS stack in Terraform, with CloudFront failover to an S3 replica in a second region.</li>
           <li>Hourly canary and a nightly digest Lambda behind live <a href="https://desiramirez.com/tokyo-zero/status/" target="_blank" rel="noopener">/status</a> and <a href="https://desiramirez.com/tokyo-zero/insights/" target="_blank" rel="noopener">/insights</a> pages; the contact form runs on API Gateway, Lambda and SES, deployed by GitHub Actions over OIDC.</li>
         </ul>
@@ -790,19 +786,20 @@
     <article class="item">
       <div class="item-head">
         <h3>Homelab</h3>
-        <p class="item-meta">Networking · Systems</p>
+        <p class="item-meta">IT support · Systems · Networking</p>
         <button class="diagram-thumb" type="button" popovertarget="arch-lab">
           <svg viewBox="0 0 880 420" aria-hidden="true"><use href="#diagram-lab"/></svg>
           <span class="diagram-hint">Network topology · expand</span>
         </button>
       </div>
       <div class="item-body">
-        <p>Three-node Proxmox cluster on a VLAN-segmented Cisco network, built to practice enterprise networking, identity and security operations hands-on.</p>
+        <p>Practice lab built at home to prepare for the CCNA and get hands-on with IT support, systems administration and security tasks.</p>
         <ul>
-          <li>Cisco Catalyst C1000-8T: VLANs, trunking, inter-VLAN routing and ACLs; Ubiquiti UniFi for managed wireless.</li>
-          <li>Windows Server Active Directory with Group Policy, DNS and DHCP, hybrid-joined to Entra ID with Intune.</li>
-          <li>Proxmox VE HA with ZFS replication, live migration and out-of-band management over HPE iLO and Intel vPro/AMT.</li>
-          <li>Ansible patching, scheduled backups and UPS-backed shutdown via NUT.</li>
+          <li>Practice network with a Cisco Catalyst switch, Palo Alto PA-440 firewall, UniFi access point and Cat6 cabling.</li>
+          <li>VLAN segmentation with firewall security policies and NAT. Switch hardened with ACLs, SSH-only management and shut-down unused ports.</li>
+          <li>Windows Server domain controller VM on Proxmox (Dell OptiPlex) for DHCP, DNS and server administration. Host managed from the Linux command line.</li>
+          <li>Active Directory practice: users and groups, password resets, Group Policy for password and account lockout rules.</li>
+          <li>Troubleshooting with ipconfig, ping and nslookup across the switch, DHCP, DNS and Windows Firewall, plus PC hardware repair (drives, RAM, power supplies).</li>
         </ul>
       </div>
       <div class="diagram-pop" id="arch-lab" popover>
@@ -813,7 +810,7 @@
         <div class="diagram-pop-body">
           <svg viewBox="0 0 880 420" role="img" aria-label="Homelab network topology diagram"><use href="#diagram-lab"/></svg>
         </div>
-        <p class="diagram-caption">Internet → ISP gateway → Cisco Catalyst C1000-8T (VLAN segmentation: management and servers) → UniFi U6+ wireless and a three-node Proxmox HA cluster (2× Dell OptiPlex Micro and an HPE MicroServer Gen10 Plus v2) with ZFS replication, live migration and out-of-band management over HPE iLO and Intel vPro/AMT. An APC UPS with NUT handles graceful shutdown for the whole rack.</p>
+        <p class="diagram-caption">Internet → ISP router → Palo Alto PA-440 firewall (security policies and NAT) → Cisco Catalyst switch (VLANs for servers, clients and lab devices; ACLs, SSH-only management, unused ports shut down) → a Proxmox host (Dell OptiPlex) running the Windows Server domain controller VM, the lab client PCs and a UniFi access point. Cabled with Cat6.</p>
       </div>
     </article>
     </div>
@@ -846,7 +843,7 @@
       </div>
       <div class="item-body">
         <ul>
-          <li>Built the frontend and cross-platform app (React, Vue, TypeScript) on backend REST APIs, in a three-person Agile/Scrum team with Jira sprints and code reviews.</li>
+          <li>Built the frontend and cross-platform app (React, Vue, TypeScript) on backend REST APIs, in a three-person Agile/Scrum team with Jira sprints.</li>
           <li>Tested and debugged features across the front end and API integration, validating fixes with QA before release.</li>
         </ul>
       </div>
@@ -855,7 +852,13 @@
     <article class="item">
       <div class="item-head">
         <h3>B.S. Software Engineering</h3>
-        <p class="item-meta">Cal Poly San Luis Obispo · 2022</p>
+        <p class="item-meta">California Polytechnic State University, San Luis Obispo</p>
+      </div>
+      <div class="item-body">
+        <ul>
+          <li>Member of the White Hat cybersecurity club, practicing Linux, networking, and attack-and-defense skills in hands-on labs and CTFs.</li>
+          <li>Relevant coursework: Computer Security, Cryptography, Network Security, Computer Networks, Operating Systems, Systems Programming (C, Linux), Database Systems (SQL).</li>
+        </ul>
       </div>
     </article>
     </div>
@@ -868,24 +871,24 @@
     <h2>Skills</h2>
     <dl class="skills">
       <div>
+        <dt>Systems &amp; support</dt>
+        <dd>Windows Server AD, Group Policy, Microsoft 365, Proxmox VE, Windows / Linux support, hardware troubleshooting, ticketing</dd>
+      </div>
+      <div>
+        <dt>Security</dt>
+        <dd>Wazuh SIEM, Elastic Stack, Sigma rules and MITRE ATT&amp;CK, log analysis, Palo Alto firewall policy, Microsoft Defender, least-privilege IAM</dd>
+      </div>
+      <div>
         <dt>Networking</dt>
-        <dd>TCP/IP, subnetting, VLANs and inter-VLAN routing, ACLs, NAT, VPN, DNS, DHCP · Cisco Catalyst, Ubiquiti UniFi</dd>
+        <dd>TCP/IP, subnetting, VLANs and inter-VLAN routing, ACLs, NAT, DNS, DHCP · Cisco Catalyst, Cisco Packet Tracer, Ubiquiti UniFi</dd>
       </div>
       <div>
         <dt>Cloud</dt>
         <dd>AWS (IAM, VPC, S3, Lambda, DynamoDB, API Gateway, CloudFront, CloudWatch) · Terraform · Cloudflare</dd>
       </div>
       <div>
-        <dt>Security</dt>
-        <dd>Wazuh SIEM, Elastic Stack, Sigma rules and MITRE ATT&amp;CK, log analysis, packet capture, firewall policy, least-privilege IAM</dd>
-      </div>
-      <div>
-        <dt>Systems &amp; support</dt>
-        <dd>Windows Server AD, Group Policy, Entra ID and Intune, Microsoft 365, Proxmox VE, Windows / macOS / Linux support, hardware troubleshooting, ticketing</dd>
-      </div>
-      <div>
         <dt>Automation &amp; code</dt>
-        <dd>Python, Bash, PowerShell, SQL · GitHub Actions CI/CD, Ansible, Docker, Kubernetes (k3s) · React, TypeScript</dd>
+        <dd>Python, PowerShell, Bash, SQL, JavaScript, Node.js, C#, C++ · GitHub Actions CI/CD, Docker, Kubernetes (k3s) · React, TypeScript</dd>
       </div>
     </dl>
   </div>
@@ -895,7 +898,7 @@
 <section id="contact" class="block">
   <div class="wrap">
     <h2>Contact</h2>
-    <p class="contact-lead">Open to roles in networking, cloud and security. Email is the fastest way to reach me.</p>
+    <p class="contact-lead">Open to roles in IT support, systems administration, networking and security. Email is the fastest way to reach me.</p>
     <ul class="contact-list">
       <li><span>Email</span><a href="mailto:desiramirez62200@gmail.com">desiramirez62200@gmail.com</a></li>
       <li><span>LinkedIn</span><a href="https://www.linkedin.com/in/desi-ramirez" target="_blank" rel="noopener">linkedin.com/in/desi-ramirez</a></li>
